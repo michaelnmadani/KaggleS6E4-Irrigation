@@ -1,0 +1,23 @@
+{
+  "total_runs": 1,
+  "runs": [
+    {
+      "run_id": 1,
+      "seed": 42,
+      "best_model": "lightgbm",
+      "best_score": 0.96207,
+      "model_scores": {
+        "xgboost": 0.96173,
+        "lightgbm": 0.96207,
+        "random_forest": 0.95353,
+        "logistic_regression": 0.61342,
+        "ensemble": 0.96207
+      },
+      "submission_file": "outputs/submissions/submission_run01_seed42.csv",
+      "elapsed_seconds": 797.4
+    }
+  ],
+  "best_run": 1,
+  "best_score": 0.96207,
+  "mean_score": 0.96207
+}
