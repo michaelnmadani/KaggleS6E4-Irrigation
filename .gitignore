@@ -1,0 +1,13 @@
+node_modules/
+dist/
+__pycache__/
+*.pyc
+*.pyo
+data/*.csv
+data/*.zip
+.kaggle/
+.env
+*.egg-info/
+.vite/
+outputs/submissions/*.csv
+.DS_Store
