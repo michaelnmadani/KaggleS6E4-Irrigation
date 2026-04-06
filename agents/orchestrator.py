@@ -51,12 +51,15 @@ def run_pipeline(auto_submit=True):
 
     # Auto-submit if approved
     if auto_submit and review["verdict"] != "REJECT":
-        logger.info("Submitting predictions to Kaggle...")
-        submit_predictions(
-            submission_path,
-            message=f"AutoKaggle: {builder_results['best_model']} "
-                    f"(BA={builder_results['best_score']:.5f})"
-        )
+        try:
+            logger.info("Submitting predictions to Kaggle...")
+            submit_predictions(
+                submission_path,
+                message=f"AutoKaggle: {builder_results['best_model']} "
+                        f"(BA={builder_results['best_score']:.5f})"
+            )
+        except Exception as e:
+            logger.warning(f"Kaggle submission failed ({e}). Submission saved locally.")
     elif review["verdict"] == "REJECT":
         logger.warning("Submission rejected by Reviewer. Fix issues before submitting.")
     else:

@@ -94,13 +94,13 @@ def _preprocess(train, test):
 
     for col in num_cols:
         median_val = X_train[col].median()
-        X_train[col].fillna(median_val, inplace=True)
-        X_test[col].fillna(median_val, inplace=True)
+        X_train[col] = X_train[col].fillna(median_val)
+        X_test[col] = X_test[col].fillna(median_val)
 
     for col in cat_cols:
         mode_val = X_train[col].mode()[0] if not X_train[col].mode().empty else "Unknown"
-        X_train[col].fillna(mode_val, inplace=True)
-        X_test[col].fillna(mode_val, inplace=True)
+        X_train[col] = X_train[col].fillna(mode_val)
+        X_test[col] = X_test[col].fillna(mode_val)
 
     pipeline_steps.append({
         "step": 2,
@@ -127,21 +127,21 @@ def _preprocess(train, test):
     })
 
     # Step 4: Feature interactions
-    if "Soil_Moisture" in X_train.columns and "Temperature" in X_train.columns:
-        X_train["Moisture_Temp_Ratio"] = X_train["Soil_Moisture"] / (X_train["Temperature"] + 1)
-        X_test["Moisture_Temp_Ratio"] = X_test["Soil_Moisture"] / (X_test["Temperature"] + 1)
+    if "Soil_Moisture" in X_train.columns and "Temperature_C" in X_train.columns:
+        X_train["Moisture_Temp_Ratio"] = X_train["Soil_Moisture"] / (X_train["Temperature_C"] + 1)
+        X_test["Moisture_Temp_Ratio"] = X_test["Soil_Moisture"] / (X_test["Temperature_C"] + 1)
 
-    if "Rainfall" in X_train.columns and "Humidity" in X_train.columns:
-        X_train["Rain_Humidity_Product"] = X_train["Rainfall"] * X_train["Humidity"]
-        X_test["Rain_Humidity_Product"] = X_test["Rainfall"] * X_test["Humidity"]
+    if "Rainfall_mm" in X_train.columns and "Humidity" in X_train.columns:
+        X_train["Rain_Humidity_Product"] = X_train["Rainfall_mm"] * X_train["Humidity"]
+        X_test["Rain_Humidity_Product"] = X_test["Rainfall_mm"] * X_test["Humidity"]
 
-    if "Soil_pH" in X_train.columns and "Soil_Organic_Carbon" in X_train.columns:
-        X_train["pH_Carbon_Interaction"] = X_train["Soil_pH"] * X_train["Soil_Organic_Carbon"]
-        X_test["pH_Carbon_Interaction"] = X_test["Soil_pH"] * X_test["Soil_Organic_Carbon"]
+    if "Soil_pH" in X_train.columns and "Organic_Carbon" in X_train.columns:
+        X_train["pH_Carbon_Interaction"] = X_train["Soil_pH"] * X_train["Organic_Carbon"]
+        X_test["pH_Carbon_Interaction"] = X_test["Soil_pH"] * X_test["Organic_Carbon"]
 
-    if "Sunlight_Hours" in X_train.columns and "Wind_Speed" in X_train.columns:
-        X_train["Sun_Wind_Ratio"] = X_train["Sunlight_Hours"] / (X_train["Wind_Speed"] + 1)
-        X_test["Sun_Wind_Ratio"] = X_test["Sunlight_Hours"] / (X_test["Wind_Speed"] + 1)
+    if "Sunlight_Hours" in X_train.columns and "Wind_Speed_kmh" in X_train.columns:
+        X_train["Sun_Wind_Ratio"] = X_train["Sunlight_Hours"] / (X_train["Wind_Speed_kmh"] + 1)
+        X_test["Sun_Wind_Ratio"] = X_test["Sunlight_Hours"] / (X_test["Wind_Speed_kmh"] + 1)
 
     pipeline_steps.append({
         "step": 4,
@@ -202,7 +202,6 @@ def _get_models():
             n_jobs=-1,
         ),
         "logistic_regression": LogisticRegression(
-            multi_class="multinomial",
             solver="lbfgs",
             max_iter=1000,
             random_state=RANDOM_STATE,

@@ -12,24 +12,24 @@ OUTPUT_DIR = "outputs"
 SUBMISSION_DIR = "outputs/submissions"
 
 SOIL_FEATURES = [
-    "Soil_Type", "Soil_pH", "Soil_Moisture", "Soil_Organic_Carbon",
-    "Soil_Electrical_Conductivity"
+    "Soil_Type", "Soil_pH", "Soil_Moisture", "Organic_Carbon",
+    "Electrical_Conductivity"
 ]
 WEATHER_FEATURES = [
-    "Temperature", "Humidity", "Rainfall", "Sunlight_Hours", "Wind_Speed"
+    "Temperature_C", "Humidity", "Rainfall_mm", "Sunlight_Hours", "Wind_Speed_kmh"
 ]
 CROP_FEATURES = [
-    "Crop_Type", "Growth_Stage", "Season", "Irrigation_Method", "Water_Source"
+    "Crop_Type", "Crop_Growth_Stage", "Season", "Irrigation_Type", "Water_Source"
 ]
 FIELD_FEATURES = [
-    "Field_Area", "Mulching", "Prev_Irrigation_Amount", "Region"
+    "Field_Area_hectare", "Mulching_Used", "Previous_Irrigation_mm", "Region"
 ]
 
 ALL_FEATURES = SOIL_FEATURES + WEATHER_FEATURES + CROP_FEATURES + FIELD_FEATURES
 
 CATEGORICAL_FEATURES = [
-    "Soil_Type", "Crop_Type", "Growth_Stage", "Season",
-    "Irrigation_Method", "Water_Source", "Mulching", "Region"
+    "Soil_Type", "Crop_Type", "Crop_Growth_Stage", "Season",
+    "Irrigation_Type", "Water_Source", "Mulching_Used", "Region"
 ]
 NUMERIC_FEATURES = [
     f for f in ALL_FEATURES if f not in CATEGORICAL_FEATURES
