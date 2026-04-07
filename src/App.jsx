@@ -576,7 +576,14 @@ export default function App() {
 
   useEffect(() => {
     fetch('/results.json')
-      .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
+      .then(r => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const ct = r.headers.get('content-type') || '';
+        if (!ct.includes('json')) {
+          return r.text().then(t => { throw new Error(`Expected JSON but got ${ct}: ${t.slice(0, 100)}`); });
+        }
+        return r.json();
+      })
       .then(d => { setData(d); setLoading(false); })
       .catch(e => { setError(e.message); setLoading(false); });
   }, []);

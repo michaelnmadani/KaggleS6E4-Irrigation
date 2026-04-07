@@ -3,7 +3,18 @@
   "outputDirectory": "dist",
   "installCommand": "npm install",
   "framework": "vite",
+  "rewrites": [
+    { "source": "/results.json", "destination": "/results.json" },
+    { "source": "/((?!assets|results\\.json).*)", "destination": "/index.html" }
+  ],
   "headers": [
+    {
+      "source": "/results.json",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" },
+        { "key": "Content-Type", "value": "application/json" }
+      ]
+    },
     {
       "source": "/assets/(.*)",
       "headers": [
