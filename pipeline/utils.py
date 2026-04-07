@@ -45,7 +45,12 @@ class NumpyEncoder(json.JSONEncoder):
 def save_results_json(results, path="outputs/results.json"):
     """Save results dict to JSON for the React dashboard."""
     import os
+    import shutil
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w") as f:
         json.dump(results, f, cls=NumpyEncoder, indent=2)
-    print(f"Results saved to {path}")
+    # Also copy to public/ for Vercel deployment
+    public_path = "public/results.json"
+    os.makedirs("public", exist_ok=True)
+    shutil.copy2(path, public_path)
+    print(f"Results saved to {path} and {public_path}")

@@ -1,0 +1,1258 @@
+{
+  "competition": {
+    "name": "Predicting Irrigation Need",
+    "slug": "playground-series-s6e4",
+    "metric": "balanced_accuracy",
+    "target": "Irrigation_Need",
+    "classes": [
+      "Low",
+      "Medium",
+      "High"
+    ]
+  },
+  "dataset": {
+    "train_shape": [
+      630000,
+      21
+    ],
+    "test_shape": [
+      270000,
+      20
+    ],
+    "train_columns": [
+      "id",
+      "Soil_Type",
+      "Soil_pH",
+      "Soil_Moisture",
+      "Organic_Carbon",
+      "Electrical_Conductivity",
+      "Temperature_C",
+      "Humidity",
+      "Rainfall_mm",
+      "Sunlight_Hours",
+      "Wind_Speed_kmh",
+      "Crop_Type",
+      "Crop_Growth_Stage",
+      "Season",
+      "Irrigation_Type",
+      "Water_Source",
+      "Field_Area_hectare",
+      "Mulching_Used",
+      "Previous_Irrigation_mm",
+      "Region",
+      "Irrigation_Need"
+    ],
+    "test_columns": [
+      "id",
+      "Soil_Type",
+      "Soil_pH",
+      "Soil_Moisture",
+      "Organic_Carbon",
+      "Electrical_Conductivity",
+      "Temperature_C",
+      "Humidity",
+      "Rainfall_mm",
+      "Sunlight_Hours",
+      "Wind_Speed_kmh",
+      "Crop_Type",
+      "Crop_Growth_Stage",
+      "Season",
+      "Irrigation_Type",
+      "Water_Source",
+      "Field_Area_hectare",
+      "Mulching_Used",
+      "Previous_Irrigation_mm",
+      "Region"
+    ],
+    "dtypes": {
+      "id": "int64",
+      "Soil_Type": "str",
+      "Soil_pH": "float64",
+      "Soil_Moisture": "float64",
+      "Organic_Carbon": "float64",
+      "Electrical_Conductivity": "float64",
+      "Temperature_C": "float64",
+      "Humidity": "float64",
+      "Rainfall_mm": "float64",
+      "Sunlight_Hours": "float64",
+      "Wind_Speed_kmh": "float64",
+      "Crop_Type": "str",
+      "Crop_Growth_Stage": "str",
+      "Season": "str",
+      "Irrigation_Type": "str",
+      "Water_Source": "str",
+      "Field_Area_hectare": "float64",
+      "Mulching_Used": "str",
+      "Previous_Irrigation_mm": "float64",
+      "Region": "str",
+      "Irrigation_Need": "str"
+    }
+  },
+  "eda": {
+    "class_distribution": {
+      "counts": {
+        "Low": 369917,
+        "Medium": 239074,
+        "High": 21009
+      },
+      "percentages": {
+        "Low": 58.72,
+        "Medium": 37.95,
+        "High": 3.33
+      }
+    },
+    "missing_values": {
+      "train": {},
+      "test": {},
+      "train_total": 0,
+      "test_total": 0
+    },
+    "numeric_stats": {
+      "Soil_pH": {
+        "count": 630000.0,
+        "mean": 6.4825,
+        "std": 0.9225,
+        "min": 4.8,
+        "25%": 5.69,
+        "50%": 6.44,
+        "75%": 7.27,
+        "max": 8.2
+      },
+      "Soil_Moisture": {
+        "count": 630000.0,
+        "mean": 37.3045,
+        "std": 16.3771,
+        "min": 8.0,
+        "25%": 23.34,
+        "50%": 37.75,
+        "75%": 51.27,
+        "max": 64.99
+      },
+      "Organic_Carbon": {
+        "count": 630000.0,
+        "mean": 0.9229,
+        "std": 0.3658,
+        "min": 0.3,
+        "25%": 0.61,
+        "50%": 0.91,
+        "75%": 1.22,
+        "max": 1.6
+      },
+      "Electrical_Conductivity": {
+        "count": 630000.0,
+        "mean": 1.7446,
+        "std": 0.9523,
+        "min": 0.1,
+        "25%": 0.93,
+        "50%": 1.74,
+        "75%": 2.58,
+        "max": 3.5
+      },
+      "Temperature_C": {
+        "count": 630000.0,
+        "mean": 26.9982,
+        "std": 8.6236,
+        "min": 12.0,
+        "25%": 19.5175,
+        "50%": 26.96,
+        "75%": 34.54,
+        "max": 42.0
+      },
+      "Humidity": {
+        "count": 630000.0,
+        "mean": 61.5632,
+        "std": 19.7082,
+        "min": 25.0,
+        "25%": 45.39,
+        "50%": 61.65,
+        "75%": 79.12,
+        "max": 94.99
+      },
+      "Rainfall_mm": {
+        "count": 630000.0,
+        "mean": 1462.2076,
+        "std": 612.9897,
+        "min": 0.38,
+        "25%": 954.57,
+        "50%": 1467.16,
+        "75%": 2054.28,
+        "max": 2499.69
+      },
+      "Sunlight_Hours": {
+        "count": 630000.0,
+        "mean": 7.5134,
+        "std": 1.9993,
+        "min": 4.0,
+        "25%": 5.76,
+        "50%": 7.58,
+        "75%": 9.25,
+        "max": 11.0
+      },
+      "Wind_Speed_kmh": {
+        "count": 630000.0,
+        "mean": 10.3754,
+        "std": 5.6895,
+        "min": 0.5,
+        "25%": 5.28,
+        "50%": 10.48,
+        "75%": 15.43,
+        "max": 20.0
+      },
+      "Field_Area_hectare": {
+        "count": 630000.0,
+        "mean": 7.5177,
+        "std": 4.2181,
+        "min": 0.3,
+        "25%": 3.88,
+        "50%": 7.38,
+        "75%": 11.14,
+        "max": 15.0
+      },
+      "Previous_Irrigation_mm": {
+        "count": 630000.0,
+        "mean": 62.3182,
+        "std": 34.2469,
+        "min": 0.02,
+        "25%": 33.14,
+        "50%": 61.15,
+        "75%": 92.69,
+        "max": 119.99
+      }
+    },
+    "categorical_stats": {
+      "Soil_Type": {
+        "unique_count": 4,
+        "top_values": {
+          "Sandy": 166509,
+          "Clay": 158470,
+          "Loamy": 156455,
+          "Silt": 148566
+        }
+      },
+      "Crop_Type": {
+        "unique_count": 6,
+        "top_values": {
+          "Sugarcane": 108910,
+          "Rice": 106697,
+          "Cotton": 104645,
+          "Maize": 104274,
+          "Wheat": 103005,
+          "Potato": 102469
+        }
+      },
+      "Crop_Growth_Stage": {
+        "unique_count": 4,
+        "top_values": {
+          "Harvest": 167689,
+          "Flowering": 157563,
+          "Vegetative": 157246,
+          "Sowing": 147502
+        }
+      },
+      "Season": {
+        "unique_count": 3,
+        "top_values": {
+          "Kharif": 216561,
+          "Rabi": 208033,
+          "Zaid": 205406
+        }
+      },
+      "Irrigation_Type": {
+        "unique_count": 4,
+        "top_values": {
+          "Canal": 161901,
+          "Sprinkler": 161400,
+          "Rainfed": 155607,
+          "Drip": 151092
+        }
+      },
+      "Water_Source": {
+        "unique_count": 4,
+        "top_values": {
+          "Reservoir": 162994,
+          "River": 159819,
+          "Groundwater": 154155,
+          "Rainwater": 153032
+        }
+      },
+      "Mulching_Used": {
+        "unique_count": 2,
+        "top_values": {
+          "No": 316453,
+          "Yes": 313547
+        }
+      },
+      "Region": {
+        "unique_count": 5,
+        "top_values": {
+          "South": 134809,
+          "West": 131189,
+          "East": 126163,
+          "Central": 123712,
+          "North": 114127
+        }
+      }
+    },
+    "correlations": {
+      "Soil_pH": {
+        "Soil_pH": 1.0,
+        "Soil_Moisture": -0.0035,
+        "Organic_Carbon": -0.003,
+        "Electrical_Conductivity": -0.0002,
+        "Temperature_C": -0.0024,
+        "Humidity": 0.0014,
+        "Rainfall_mm": -0.0048,
+        "Sunlight_Hours": 0.0006,
+        "Wind_Speed_kmh": 0.003,
+        "Field_Area_hectare": 0.0043,
+        "Previous_Irrigation_mm": 0.0022
+      },
+      "Soil_Moisture": {
+        "Soil_pH": -0.0035,
+        "Soil_Moisture": 1.0,
+        "Organic_Carbon": -0.0151,
+        "Electrical_Conductivity": -0.0091,
+        "Temperature_C": -0.0379,
+        "Humidity": 0.0154,
+        "Rainfall_mm": 0.0445,
+        "Sunlight_Hours": 0.0058,
+        "Wind_Speed_kmh": -0.0279,
+        "Field_Area_hectare": -0.0054,
+        "Previous_Irrigation_mm": -0.0234
+      },
+      "Organic_Carbon": {
+        "Soil_pH": -0.003,
+        "Soil_Moisture": -0.0151,
+        "Organic_Carbon": 1.0,
+        "Electrical_Conductivity": 0.0109,
+        "Temperature_C": -0.002,
+        "Humidity": 0.0031,
+        "Rainfall_mm": -0.0174,
+        "Sunlight_Hours": -0.0004,
+        "Wind_Speed_kmh": 0.0113,
+        "Field_Area_hectare": -0.0063,
+        "Previous_Irrigation_mm": -0.0005
+      },
+      "Electrical_Conductivity": {
+        "Soil_pH": -0.0002,
+        "Soil_Moisture": -0.0091,
+        "Organic_Carbon": 0.0109,
+        "Electrical_Conductivity": 1.0,
+        "Temperature_C": 0.0036,
+        "Humidity": 0.0003,
+        "Rainfall_mm": -0.004,
+        "Sunlight_Hours": 0.0001,
+        "Wind_Speed_kmh": -0.0016,
+        "Field_Area_hectare": 0.0077,
+        "Previous_Irrigation_mm": 0.0017
+      },
+      "Temperature_C": {
+        "Soil_pH": -0.0024,
+        "Soil_Moisture": -0.0379,
+        "Organic_Carbon": -0.002,
+        "Electrical_Conductivity": 0.0036,
+        "Temperature_C": 1.0,
+        "Humidity": -0.0204,
+        "Rainfall_mm": -0.0168,
+        "Sunlight_Hours": -0.003,
+        "Wind_Speed_kmh": -0.002,
+        "Field_Area_hectare": 0.0108,
+        "Previous_Irrigation_mm": 0.0082
+      },
+      "Humidity": {
+        "Soil_pH": 0.0014,
+        "Soil_Moisture": 0.0154,
+        "Organic_Carbon": 0.0031,
+        "Electrical_Conductivity": 0.0003,
+        "Temperature_C": -0.0204,
+        "Humidity": 1.0,
+        "Rainfall_mm": 0.0006,
+        "Sunlight_Hours": 0.0018,
+        "Wind_Speed_kmh": 0.0117,
+        "Field_Area_hectare": 0.0057,
+        "Previous_Irrigation_mm": 0.0187
+      },
+      "Rainfall_mm": {
+        "Soil_pH": -0.0048,
+        "Soil_Moisture": 0.0445,
+        "Organic_Carbon": -0.0174,
+        "Electrical_Conductivity": -0.004,
+        "Temperature_C": -0.0168,
+        "Humidity": 0.0006,
+        "Rainfall_mm": 1.0,
+        "Sunlight_Hours": -0.0062,
+        "Wind_Speed_kmh": -0.0328,
+        "Field_Area_hectare": -0.0116,
+        "Previous_Irrigation_mm": 0.0132
+      },
+      "Sunlight_Hours": {
+        "Soil_pH": 0.0006,
+        "Soil_Moisture": 0.0058,
+        "Organic_Carbon": -0.0004,
+        "Electrical_Conductivity": 0.0001,
+        "Temperature_C": -0.003,
+        "Humidity": 0.0018,
+        "Rainfall_mm": -0.0062,
+        "Sunlight_Hours": 1.0,
+        "Wind_Speed_kmh": 0.0001,
+        "Field_Area_hectare": -0.005,
+        "Previous_Irrigation_mm": 0.0024
+      },
+      "Wind_Speed_kmh": {
+        "Soil_pH": 0.003,
+        "Soil_Moisture": -0.0279,
+        "Organic_Carbon": 0.0113,
+        "Electrical_Conductivity": -0.0016,
+        "Temperature_C": -0.002,
+        "Humidity": 0.0117,
+        "Rainfall_mm": -0.0328,
+        "Sunlight_Hours": 0.0001,
+        "Wind_Speed_kmh": 1.0,
+        "Field_Area_hectare": 0.0097,
+        "Previous_Irrigation_mm": 0.0095
+      },
+      "Field_Area_hectare": {
+        "Soil_pH": 0.0043,
+        "Soil_Moisture": -0.0054,
+        "Organic_Carbon": -0.0063,
+        "Electrical_Conductivity": 0.0077,
+        "Temperature_C": 0.0108,
+        "Humidity": 0.0057,
+        "Rainfall_mm": -0.0116,
+        "Sunlight_Hours": -0.005,
+        "Wind_Speed_kmh": 0.0097,
+        "Field_Area_hectare": 1.0,
+        "Previous_Irrigation_mm": 0.0072
+      },
+      "Previous_Irrigation_mm": {
+        "Soil_pH": 0.0022,
+        "Soil_Moisture": -0.0234,
+        "Organic_Carbon": -0.0005,
+        "Electrical_Conductivity": 0.0017,
+        "Temperature_C": 0.0082,
+        "Humidity": 0.0187,
+        "Rainfall_mm": 0.0132,
+        "Sunlight_Hours": 0.0024,
+        "Wind_Speed_kmh": 0.0095,
+        "Field_Area_hectare": 0.0072,
+        "Previous_Irrigation_mm": 1.0
+      }
+    },
+    "sample_data": {
+      "columns": [
+        "id",
+        "Soil_Type",
+        "Soil_pH",
+        "Soil_Moisture",
+        "Organic_Carbon",
+        "Electrical_Conductivity",
+        "Temperature_C",
+        "Humidity",
+        "Rainfall_mm",
+        "Sunlight_Hours",
+        "Wind_Speed_kmh",
+        "Crop_Type",
+        "Crop_Growth_Stage",
+        "Season",
+        "Irrigation_Type",
+        "Water_Source",
+        "Field_Area_hectare",
+        "Mulching_Used",
+        "Previous_Irrigation_mm",
+        "Region",
+        "Irrigation_Need"
+      ],
+      "rows": [
+        [
+          0,
+          "Loamy",
+          4.92,
+          32.58,
+          1.01,
+          3.05,
+          15.01,
+          50.61,
+          725.99,
+          5.9,
+          16.79,
+          "Sugarcane",
+          "Sowing",
+          "Zaid",
+          "Drip",
+          "Rainwater",
+          0.82,
+          "No",
+          112.16,
+          "East",
+          "Low"
+        ],
+        [
+          1,
+          "Clay",
+          7.08,
+          56.61,
+          0.44,
+          2.0,
+          22.92,
+          67.86,
+          985.66,
+          6.98,
+          3.39,
+          "Wheat",
+          "Vegetative",
+          "Kharif",
+          "Rainfed",
+          "River",
+          5.27,
+          "Yes",
+          47.16,
+          "South",
+          "Low"
+        ],
+        [
+          2,
+          "Clay",
+          5.69,
+          27.71,
+          0.81,
+          2.83,
+          26.97,
+          92.22,
+          2201.7,
+          6.05,
+          3.85,
+          "Rice",
+          "Vegetative",
+          "Kharif",
+          "Sprinkler",
+          "Reservoir",
+          8.24,
+          "Yes",
+          110.38,
+          "North",
+          "Low"
+        ],
+        [
+          3,
+          "Sandy",
+          5.65,
+          13.32,
+          1.33,
+          0.87,
+          13.32,
+          61.57,
+          1357.33,
+          9.12,
+          2.31,
+          "Wheat",
+          "Flowering",
+          "Kharif",
+          "Canal",
+          "River",
+          8.32,
+          "Yes",
+          53.85,
+          "South",
+          "Medium"
+        ],
+        [
+          4,
+          "Clay",
+          7.96,
+          59.14,
+          0.38,
+          0.96,
+          20.22,
+          91.11,
+          1538.2,
+          6.95,
+          13.94,
+          "Wheat",
+          "Sowing",
+          "Rabi",
+          "Canal",
+          "River",
+          7.37,
+          "No",
+          93.19,
+          "South",
+          "Low"
+        ]
+      ]
+    },
+    "feature_categories": {
+      "soil": [
+        "Soil_Type",
+        "Soil_pH",
+        "Soil_Moisture",
+        "Organic_Carbon",
+        "Electrical_Conductivity"
+      ],
+      "weather": [
+        "Temperature_C",
+        "Humidity",
+        "Rainfall_mm",
+        "Sunlight_Hours",
+        "Wind_Speed_kmh"
+      ],
+      "crop": [
+        "Crop_Type",
+        "Crop_Growth_Stage",
+        "Season",
+        "Irrigation_Type",
+        "Water_Source"
+      ],
+      "field": [
+        "Field_Area_hectare",
+        "Mulching_Used",
+        "Previous_Irrigation_mm",
+        "Region"
+      ]
+    }
+  },
+  "pipeline": {
+    "steps": [
+      {
+        "step": 1,
+        "name": "Encode target labels",
+        "description": "LabelEncoder: Low=0, Medium=1, High=2",
+        "code": "label_enc = LabelEncoder(); y = label_enc.fit_transform(train['Irrigation_Need'])"
+      },
+      {
+        "step": 2,
+        "name": "Handle missing values",
+        "description": "Median imputation for numeric, mode imputation for categorical",
+        "code": "X[num_cols].fillna(X[num_cols].median()); X[cat_cols].fillna(X[cat_cols].mode())"
+      },
+      {
+        "step": 3,
+        "name": "Label encode categoricals",
+        "description": "LabelEncoder applied to 8 categorical features",
+        "code": "for col in cat_cols: le.fit(concat(train, test)); train[col] = le.transform(train[col])"
+      },
+      {
+        "step": 4,
+        "name": "Feature interactions",
+        "description": "Created ratio/product features: Moisture/Temp, Rain*Humidity, pH*Carbon, Sun/Wind",
+        "code": "X['Moisture_Temp_Ratio'] = X['Soil_Moisture'] / (X['Temperature'] + 1)"
+      },
+      {
+        "step": 5,
+        "name": "Standard scaling",
+        "description": "StandardScaler applied to 23 numeric features",
+        "code": "scaler = StandardScaler(); X[num_cols] = scaler.fit_transform(X[num_cols])"
+      }
+    ]
+  },
+  "models": {
+    "xgboost": {
+      "fold_scores": [
+        0.96123,
+        0.96282,
+        0.9619,
+        0.96164,
+        0.96103
+      ],
+      "mean_balanced_accuracy": 0.96173,
+      "metrics": {
+        "balanced_accuracy": 0.96173,
+        "classification_report": {
+          "0": {
+            "precision": 0.9673120442544632,
+            "recall": 0.915559998096054,
+            "f1-score": 0.9407248007042598,
+            "support": 21009.0
+          },
+          "1": {
+            "precision": 0.9854340731856841,
+            "recall": 0.9950934939459393,
+            "f1-score": 0.9902402281225621,
+            "support": 369917.0
+          },
+          "2": {
+            "precision": 0.9848291429247755,
+            "recall": 0.9745225327722797,
+            "f1-score": 0.9796487303582917,
+            "support": 239074.0
+          },
+          "accuracy": 0.9846349206349206,
+          "macro avg": {
+            "precision": 0.9791917534549742,
+            "recall": 0.9617253416047576,
+            "f1-score": 0.9702045863950378,
+            "support": 630000.0
+          },
+          "weighted avg": {
+            "precision": 0.9846001861967755,
+            "recall": 0.9846349206349206,
+            "f1-score": 0.9845697180414091,
+            "support": 630000.0
+          }
+        },
+        "confusion_matrix": [
+          [
+            19235,
+            0,
+            1774
+          ],
+          [
+            0,
+            368102,
+            1815
+          ],
+          [
+            650,
+            5441,
+            232983
+          ]
+        ]
+      },
+      "feature_importance": {
+        "Crop_Growth_Stage": 0.31721360236406326,
+        "Mulching_Used": 0.24389897286891937,
+        "Soil_Moisture": 0.12837490253150463,
+        "Wind_Speed_kmh": 0.08833087049424648,
+        "Temperature_C": 0.07568768505007029,
+        "Moisture_Temp_Ratio": 0.06707367394119501,
+        "Rainfall_mm": 0.0260303420946002,
+        "Sun_Wind_Ratio": 0.018460593186318874,
+        "Rain_Humidity_Product": 0.007297699921764433,
+        "Previous_Irrigation_mm": 0.003250720212236047,
+        "Humidity": 0.0028797128470614552,
+        "Water_Source": 0.0023198008711915463,
+        "Sunlight_Hours": 0.0020852129091508687,
+        "Irrigation_Type": 0.001851340988650918,
+        "Electrical_Conductivity": 0.00183435482904315,
+        "Organic_Carbon": 0.0018273862660862505,
+        "Soil_pH": 0.0017710828687995672,
+        "Field_Area_hectare": 0.0017259931191802025,
+        "Crop_Type": 0.001701655302895233,
+        "Soil_Type": 0.0016903416253626347,
+        "pH_Carbon_Interaction": 0.001606581558007747,
+        "Region": 0.001560442935442552,
+        "Season": 0.0015270618023350835
+      },
+      "params": {
+        "objective": "multi:softprob",
+        "base_score": null,
+        "booster": null,
+        "callbacks": null,
+        "colsample_bylevel": null,
+        "colsample_bynode": null,
+        "colsample_bytree": 0.8,
+        "device": null,
+        "early_stopping_rounds": null,
+        "enable_categorical": false,
+        "eval_metric": null,
+        "feature_types": null,
+        "feature_weights": null,
+        "gamma": null,
+        "grow_policy": null,
+        "importance_type": null,
+        "interaction_constraints": null,
+        "learning_rate": 0.05,
+        "max_bin": null,
+        "max_cat_threshold": null,
+        "max_cat_to_onehot": null,
+        "max_delta_step": null,
+        "max_depth": 6,
+        "max_leaves": null,
+        "min_child_weight": null,
+        "missing": NaN,
+        "monotone_constraints": null,
+        "multi_strategy": null,
+        "n_estimators": 500,
+        "n_jobs": -1,
+        "num_parallel_tree": null,
+        "random_state": 42,
+        "reg_alpha": null,
+        "reg_lambda": null,
+        "sampling_method": null,
+        "scale_pos_weight": null,
+        "subsample": 0.8,
+        "tree_method": null,
+        "validate_parameters": null,
+        "verbosity": 0,
+        "num_class": 3
+      }
+    },
+    "lightgbm": {
+      "fold_scores": [
+        0.96128,
+        0.96253,
+        0.96216,
+        0.96207,
+        0.96232
+      ],
+      "mean_balanced_accuracy": 0.96207,
+      "metrics": {
+        "balanced_accuracy": 0.96207,
+        "classification_report": {
+          "0": {
+            "precision": 0.9660710700662517,
+            "recall": 0.9161787805226331,
+            "f1-score": 0.9404636845576918,
+            "support": 21009.0
+          },
+          "1": {
+            "precision": 0.9857742356195787,
+            "recall": 0.9950745707820944,
+            "f1-score": 0.9904025700771131,
+            "support": 369917.0
+          },
+          "2": {
+            "precision": 0.984864937951316,
+            "recall": 0.9749575445259627,
+            "f1-score": 0.9798861990612578,
+            "support": 239074.0
+          },
+          "accuracy": 0.9848095238095238,
+          "macro avg": {
+            "precision": 0.9789034145457155,
+            "recall": 0.9620702986102301,
+            "f1-score": 0.9702508178986875,
+            "support": 630000.0
+          },
+          "weighted avg": {
+            "precision": 0.9847721193721944,
+            "recall": 0.9848095238095238,
+            "f1-score": 0.9847464479658082,
+            "support": 630000.0
+          }
+        },
+        "confusion_matrix": [
+          [
+            19248,
+            0,
+            1761
+          ],
+          [
+            1,
+            368095,
+            1821
+          ],
+          [
+            675,
+            5312,
+            233087
+          ]
+        ]
+      },
+      "feature_importance": {
+        "Rainfall_mm": 5205.4,
+        "Temperature_C": 4251.2,
+        "Soil_Moisture": 4099.6,
+        "Wind_Speed_kmh": 3355.6,
+        "Previous_Irrigation_mm": 3082.2,
+        "Humidity": 2850.0,
+        "Moisture_Temp_Ratio": 2410.8,
+        "Crop_Growth_Stage": 2164.2,
+        "Rain_Humidity_Product": 2099.6,
+        "Field_Area_hectare": 1940.2,
+        "Sunlight_Hours": 1934.2000000000003,
+        "Soil_pH": 1894.0,
+        "Electrical_Conductivity": 1829.6,
+        "Sun_Wind_Ratio": 1685.0,
+        "Organic_Carbon": 1421.4,
+        "Mulching_Used": 1318.4,
+        "pH_Carbon_Interaction": 1243.8,
+        "Crop_Type": 515.1999999999999,
+        "Water_Source": 400.4,
+        "Irrigation_Type": 397.8,
+        "Soil_Type": 344.0,
+        "Region": 332.8,
+        "Season": 223.8
+      },
+      "params": {
+        "boosting_type": "gbdt",
+        "class_weight": null,
+        "colsample_bytree": 0.8,
+        "importance_type": "split",
+        "learning_rate": 0.05,
+        "max_depth": 6,
+        "min_child_samples": 20,
+        "min_child_weight": 0.001,
+        "min_split_gain": 0.0,
+        "n_estimators": 500,
+        "n_jobs": -1,
+        "num_leaves": 31,
+        "objective": "multiclass",
+        "random_state": 42,
+        "reg_alpha": 0.0,
+        "reg_lambda": 0.0,
+        "subsample": 0.8,
+        "subsample_for_bin": 200000,
+        "subsample_freq": 0,
+        "num_class": 3,
+        "verbose": -1
+      }
+    },
+    "random_forest": {
+      "fold_scores": [
+        0.95381,
+        0.95346,
+        0.95443,
+        0.95402,
+        0.95196
+      ],
+      "mean_balanced_accuracy": 0.95353,
+      "metrics": {
+        "balanced_accuracy": 0.95353,
+        "classification_report": {
+          "0": {
+            "precision": 0.9656150118568925,
+            "recall": 0.891570279404065,
+            "f1-score": 0.927116588709877,
+            "support": 21009.0
+          },
+          "1": {
+            "precision": 0.9862770258299017,
+            "recall": 0.993201177561453,
+            "f1-score": 0.9897269914645267,
+            "support": 369917.0
+          },
+          "2": {
+            "precision": 0.9798687880111555,
+            "recall": 0.9758275680333286,
+            "f1-score": 0.9778440026657613,
+            "support": 239074.0
+          },
+          "accuracy": 0.9832190476190477,
+          "macro avg": {
+            "precision": 0.9772536085659832,
+            "recall": 0.9535330083329489,
+            "f1-score": 0.9648958609467216,
+            "support": 630000.0
+          },
+          "weighted avg": {
+            "precision": 0.9831561824968258,
+            "recall": 0.9832190476190477,
+            "f1-score": 0.983129696836672,
+            "support": 630000.0
+          }
+        },
+        "confusion_matrix": [
+          [
+            18731,
+            0,
+            2278
+          ],
+          [
+            0,
+            367402,
+            2515
+          ],
+          [
+            667,
+            5112,
+            233295
+          ]
+        ]
+      },
+      "feature_importance": {
+        "Crop_Growth_Stage": 0.27886316068744804,
+        "Soil_Moisture": 0.21399676929485179,
+        "Moisture_Temp_Ratio": 0.13923786356527784,
+        "Mulching_Used": 0.11108010377113958,
+        "Wind_Speed_kmh": 0.0844927888744518,
+        "Temperature_C": 0.08075142838462906,
+        "Sun_Wind_Ratio": 0.030569815811219682,
+        "Rainfall_mm": 0.02557578188084117,
+        "Rain_Humidity_Product": 0.01641936411758582,
+        "Previous_Irrigation_mm": 0.005283905372486372,
+        "Humidity": 0.0036477073174876274,
+        "Sunlight_Hours": 0.002709869842374444,
+        "Soil_pH": 0.0012835404712027555,
+        "Electrical_Conductivity": 0.001205408107124035,
+        "Field_Area_hectare": 0.0011254346356098326,
+        "Organic_Carbon": 0.0009544992424644899,
+        "pH_Carbon_Interaction": 0.0009332420972076765,
+        "Water_Source": 0.00043466398374839346,
+        "Irrigation_Type": 0.0004186042692326172,
+        "Crop_Type": 0.00034077069164934035,
+        "Region": 0.0002640836869680655,
+        "Soil_Type": 0.00022285989322256666,
+        "Season": 0.00018833400177702654
+      },
+      "params": {
+        "bootstrap": true,
+        "ccp_alpha": 0.0,
+        "class_weight": null,
+        "criterion": "gini",
+        "max_depth": 12,
+        "max_features": "sqrt",
+        "max_leaf_nodes": null,
+        "max_samples": null,
+        "min_impurity_decrease": 0.0,
+        "min_samples_leaf": 5,
+        "min_samples_split": 2,
+        "min_weight_fraction_leaf": 0.0,
+        "monotonic_cst": null,
+        "n_estimators": 300,
+        "n_jobs": -1,
+        "oob_score": false,
+        "random_state": 42,
+        "verbose": 0,
+        "warm_start": false
+      }
+    },
+    "logistic_regression": {
+      "fold_scores": [
+        0.6142,
+        0.61602,
+        0.61395,
+        0.6118,
+        0.61114
+      ],
+      "mean_balanced_accuracy": 0.61342,
+      "metrics": {
+        "balanced_accuracy": 0.61342,
+        "classification_report": {
+          "0": {
+            "precision": 0.6664878397711016,
+            "recall": 0.35480032367080777,
+            "f1-score": 0.4630820364675551,
+            "support": 21009.0
+          },
+          "1": {
+            "precision": 0.7935556291918079,
+            "recall": 0.8351386932744372,
+            "f1-score": 0.8138163215308383,
+            "support": 369917.0
+          },
+          "2": {
+            "precision": 0.6774110624577915,
+            "recall": 0.6503258405347299,
+            "f1-score": 0.6635921884636643,
+            "support": 239074.0
+          },
+          "accuracy": 0.7489873015873015,
+          "macro avg": {
+            "precision": 0.7124848438069004,
+            "recall": 0.6134216191599916,
+            "f1-score": 0.6468301821540191,
+            "support": 630000.0
+          },
+          "weighted avg": {
+            "precision": 0.7452433858024304,
+            "recall": 0.7489873015873015,
+            "f1-score": 0.74511273266767,
+            "support": 630000.0
+          }
+        },
+        "confusion_matrix": [
+          [
+            7454,
+            438,
+            13117
+          ],
+          [
+            63,
+            308932,
+            60922
+          ],
+          [
+            3667,
+            79931,
+            155476
+          ]
+        ]
+      },
+      "feature_importance": {
+        "Soil_Moisture": 1.1022240380833668,
+        "Temperature_C": 0.7124896874371174,
+        "Mulching_Used": 0.6579524144395117,
+        "Wind_Speed_kmh": 0.5651550875746557,
+        "Rainfall_mm": 0.31180342672908695,
+        "Moisture_Temp_Ratio": 0.13458304390144996,
+        "Water_Source": 0.08281311716471076,
+        "Rain_Humidity_Product": 0.07975395272038961,
+        "Organic_Carbon": 0.07115519869599723,
+        "Sun_Wind_Ratio": 0.057956693511341126,
+        "pH_Carbon_Interaction": 0.053232901340069166,
+        "Electrical_Conductivity": 0.03233818554052468,
+        "Soil_pH": 0.02659802214835391,
+        "Irrigation_Type": 0.02527246857752319,
+        "Soil_Type": 0.024563857387171092,
+        "Humidity": 0.023355495190513526,
+        "Crop_Growth_Stage": 0.019792848019389905,
+        "Region": 0.019623718782879364,
+        "Field_Area_hectare": 0.01786427517005942,
+        "Crop_Type": 0.013568371982180786,
+        "Previous_Irrigation_mm": 0.011692062970026241,
+        "Season": 0.008867321844227886,
+        "Sunlight_Hours": 0.008400781079563732
+      },
+      "params": {
+        "C": 1.0,
+        "class_weight": null,
+        "dual": false,
+        "fit_intercept": true,
+        "intercept_scaling": 1,
+        "l1_ratio": 0.0,
+        "max_iter": 1000,
+        "n_jobs": -1,
+        "penalty": "deprecated",
+        "random_state": 42,
+        "solver": "lbfgs",
+        "tol": 0.0001,
+        "verbose": 0,
+        "warm_start": false
+      }
+    },
+    "ensemble": {
+      "fold_scores": [
+        0.96173,
+        0.96207,
+        0.95353,
+        0.61342
+      ],
+      "mean_balanced_accuracy": 0.96207,
+      "metrics": {
+        "balanced_accuracy": 0.96207,
+        "classification_report": {
+          "0": {
+            "precision": 0.9660710700662517,
+            "recall": 0.9161787805226331,
+            "f1-score": 0.9404636845576918,
+            "support": 21009.0
+          },
+          "1": {
+            "precision": 0.9857742356195787,
+            "recall": 0.9950745707820944,
+            "f1-score": 0.9904025700771131,
+            "support": 369917.0
+          },
+          "2": {
+            "precision": 0.984864937951316,
+            "recall": 0.9749575445259627,
+            "f1-score": 0.9798861990612578,
+            "support": 239074.0
+          },
+          "accuracy": 0.9848095238095238,
+          "macro avg": {
+            "precision": 0.9789034145457155,
+            "recall": 0.9620702986102301,
+            "f1-score": 0.9702508178986875,
+            "support": 630000.0
+          },
+          "weighted avg": {
+            "precision": 0.9847721193721944,
+            "recall": 0.9848095238095238,
+            "f1-score": 0.9847464479658082,
+            "support": 630000.0
+          }
+        },
+        "confusion_matrix": [
+          [
+            19248,
+            0,
+            1761
+          ],
+          [
+            1,
+            368095,
+            1821
+          ],
+          [
+            675,
+            5312,
+            233087
+          ]
+        ]
+      },
+      "feature_importance": {
+        "Rainfall_mm": 1434.7059703199093,
+        "Temperature_C": 1171.8223388815923,
+        "Soil_Moisture": 1130.159940586945,
+        "Wind_Speed_kmh": 924.9686417792382,
+        "Previous_Irrigation_mm": 849.4757547297016,
+        "Humidity": 785.4816513449701,
+        "Moisture_Temp_Ratio": 664.5099724057224,
+        "Crop_Growth_Stage": 596.6325327096594,
+        "Rain_Humidity_Product": 578.6818790927136,
+        "Field_Area_hectare": 534.7337693557904,
+        "Sunlight_Hours": 533.0790049591441,
+        "Soil_pH": 522.0023842889404,
+        "Electrical_Conductivity": 504.25439302059334,
+        "Sun_Wind_Ratio": 464.41893723059206,
+        "Organic_Carbon": 391.7589668746947,
+        "Mulching_Used": 363.5714881731982,
+        "pH_Carbon_Interaction": 342.8082088658193,
+        "Crop_Type": 141.99491472571034,
+        "Water_Source": 110.36776415084763,
+        "Irrigation_Type": 109.64094486272941,
+        "Soil_Type": 94.81314505972749,
+        "Region": 91.72547049146405,
+        "Season": 61.68254776074871
+      },
+      "params": {
+        "method": "balanced_accuracy_weighted_average",
+        "weights": {
+          "xgboost": 0.96173,
+          "lightgbm": 0.96207,
+          "random_forest": 0.95353,
+          "logistic_regression": 0.61342
+        }
+      }
+    }
+  },
+  "best_model": "lightgbm",
+  "best_score": 0.96207,
+  "review": {
+    "verdict": "APPROVE",
+    "issues": [],
+    "warnings": [],
+    "approvals": [
+      "Prediction count matches test set: 270000 rows",
+      "Test ID count matches: 270000",
+      "All predictions use valid labels: {'Low', 'High', 'Medium'}",
+      "Prediction distribution is consistent with training data",
+      "Best model 'lightgbm' achieves good balanced accuracy: 0.9621",
+      "Top 5 features: Rainfall_mm, Temperature_C, Soil_Moisture, Wind_Speed_kmh, Previous_Irrigation_mm",
+      "No missing values in training data"
+    ],
+    "model_scores": {
+      "xgboost": 0.96173,
+      "lightgbm": 0.96207,
+      "random_forest": 0.95353,
+      "logistic_regression": 0.61342,
+      "ensemble": 0.96207
+    },
+    "prediction_distribution": {
+      "Low": 0.592,
+      "Medium": 0.376,
+      "High": 0.0319
+    },
+    "training_distribution": {
+      "Low": 0.5872,
+      "Medium": 0.3795,
+      "High": 0.0333
+    },
+    "distribution_diffs": {
+      "Low": 0.0048,
+      "Medium": 0.0035,
+      "High": 0.0014
+    },
+    "best_model": "lightgbm",
+    "best_score": 0.96207
+  },
+  "elapsed_seconds": 797.4,
+  "multi_run": {
+    "total_runs": 1,
+    "seeds": [
+      42
+    ],
+    "scores": [
+      0.96207
+    ],
+    "best_models": [
+      "lightgbm"
+    ],
+    "mean_score": 0.96207,
+    "min_score": 0.96207,
+    "max_score": 0.96207,
+    "best_run": 1,
+    "best_seed": 42
+  }
+}
