@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   ResponsiveContainer, LineChart, Line, Cell
@@ -8,6 +8,7 @@ import {
   AlertTriangle, XCircle, ChevronDown, ChevronUp, Database,
   Cpu, FlaskConical, ClipboardCheck, TrendingUp, ArrowUpRight, ArrowDownRight
 } from 'lucide-react';
+import RESULTS_DATA from './results.json';
 
 const CLASS_COLORS = { Low: '#22c55e', Medium: '#f59e0b', High: '#ef4444' };
 
@@ -570,41 +571,15 @@ function SummarySection({ data }) {
 // ─── Main App ──────────────────────────────────────────────────────────
 
 export default function App() {
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const data = RESULTS_DATA;
 
-  useEffect(() => {
-    fetch('/results.json')
-      .then(r => {
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        const ct = r.headers.get('content-type') || '';
-        if (!ct.includes('json')) {
-          return r.text().then(t => { throw new Error(`Expected JSON but got ${ct}: ${t.slice(0, 100)}`); });
-        }
-        return r.json();
-      })
-      .then(d => { setData(d); setLoading(false); })
-      .catch(e => { setError(e.message); setLoading(false); });
-  }, []);
-
-  if (loading) return (
-    <div className="min-h-screen bg-white flex items-center justify-center">
-      <div className="text-center">
-        <Droplets className="w-12 h-12 text-brand-600 mx-auto mb-4 animate-pulse" />
-        <p className="text-gray-500">Loading pipeline results...</p>
-      </div>
-    </div>
-  );
-
-  if (error || !data || !data.competition) return (
+  if (!data || !data.competition) return (
     <div className="min-h-screen bg-white flex items-center justify-center">
       <div className="text-center max-w-md">
         <AlertTriangle className="w-12 h-12 text-amber-500 mx-auto mb-4" />
         <h2 className="text-xl font-bold text-gray-800 mb-2">No Pipeline Results Yet</h2>
         <p className="text-gray-500 mb-4">Run the pipeline first to generate results:</p>
-        <CodeBlock code="python3 model_pipeline.py" />
-        {error && <p className="text-red-400 text-sm mt-4">Error: {error}</p>}
+        <CodeBlock code="python3 run_orchestrated.py" />
       </div>
     </div>
   );

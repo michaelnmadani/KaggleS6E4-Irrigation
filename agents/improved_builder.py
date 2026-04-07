@@ -470,6 +470,14 @@ def _build_weighted_ensemble(model_results, X_train, y_train, X_test):
 
 
 def _get_params(model):
+    import math
     params = model.get_params()
-    return {k: str(v) if not isinstance(v, (int, float, str, bool, type(None))) else v
-            for k, v in params.items()}
+    clean = {}
+    for k, v in params.items():
+        if isinstance(v, float) and (math.isnan(v) or math.isinf(v)):
+            clean[k] = None
+        elif not isinstance(v, (int, float, str, bool, type(None))):
+            clean[k] = str(v)
+        else:
+            clean[k] = v
+    return clean

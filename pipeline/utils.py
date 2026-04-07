@@ -49,8 +49,9 @@ def save_results_json(results, path="outputs/results.json"):
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w") as f:
         json.dump(results, f, cls=NumpyEncoder, indent=2)
-    # Also copy to public/ for Vercel deployment
-    public_path = "public/results.json"
-    os.makedirs("public", exist_ok=True)
-    shutil.copy2(path, public_path)
-    print(f"Results saved to {path} and {public_path}")
+    # Also copy to public/ and src/ for Vercel deployment
+    for dest_dir in ["public", "src"]:
+        dest_path = os.path.join(dest_dir, "results.json")
+        os.makedirs(dest_dir, exist_ok=True)
+        shutil.copy2(path, dest_path)
+    print(f"Results saved to {path}, public/results.json, and src/results.json")
