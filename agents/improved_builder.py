@@ -6,7 +6,7 @@ from sklearn.model_selection import StratifiedKFold
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 from sklearn.ensemble import (
     RandomForestClassifier, ExtraTreesClassifier,
-    GradientBoostingClassifier, StackingClassifier
+    StackingClassifier
 )
 from sklearn.linear_model import LogisticRegression
 from xgboost import XGBClassifier
@@ -300,14 +300,6 @@ def _get_improved_models(class_weights):
             class_weight="balanced",
             random_state=RANDOM_STATE,
             n_jobs=-1,
-        ),
-        "gradient_boosting": GradientBoostingClassifier(
-            n_estimators=500,
-            max_depth=6,
-            learning_rate=0.05,
-            subsample=0.8,
-            min_samples_leaf=10,
-            random_state=RANDOM_STATE,
         ),
     }
 
