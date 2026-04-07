@@ -8,6 +8,11 @@ from sklearn.preprocessing import LabelEncoder, StandardScaler
 from sklearn.ensemble import RandomForestClassifier, ExtraTreesClassifier
 from sklearn.linear_model import LogisticRegression
 from xgboost import XGBClassifier
+try:
+    from catboost import CatBoostClassifier
+    HAS_CATBOOST = True
+except ImportError:
+    HAS_CATBOOST = False
 from lightgbm import LGBMClassifier
 from sklearn.metrics import balanced_accuracy_score
 from sklearn.base import clone
