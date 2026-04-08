@@ -13,7 +13,7 @@ try:
     HAS_CATBOOST = True
 except ImportError:
     HAS_CATBOOST = False
-from lightgbm import LGBMClassifier
+from lightgbm import LGBMClassifier, early_stopping as lgb_early_stopping, log_evaluation as lgb_log_eval
 from sklearn.metrics import balanced_accuracy_score
 from sklearn.base import clone
 
@@ -53,6 +53,34 @@ VERSION_CONFIGS = {
             "Restore all frequency encodings (V3 removal didn't help)",
             "Lower learning rate to 0.01 with more trees (3000) for LGBM",
             "Add early stopping via more estimators but lower lr",
+        ],
+    },
+    5: {
+        "name": "V5: CatBoost + multi-seed averaging",
+        "changes": [
+            "Keep V4 features (67 features, domain + interactions)",
+            "Add CatBoost with native categorical handling",
+            "Multi-seed LGBM (seeds 42, 123, 777) averaged for stable predictions",
+            "Full 5-fold CV, all models",
+        ],
+    },
+    6: {
+        "name": "V6: Feature selection + rank features + stronger regularization",
+        "changes": [
+            "Drop features with importance < 1% of max (noise reduction from V5 analysis)",
+            "Add rank-based features for top 5 numeric cols (percentile transforms)",
+            "Increase regularization (reg_alpha=0.3, reg_lambda=2.0) on LGBM",
+            "Add 3-way interaction: moisture * temp * wind (drought severity)",
+            "CatBoost with deeper trees (depth=8) and more iterations (3000)",
+        ],
+    },
+    7: {
+        "name": "V7: Optimized blending + final ensemble",
+        "changes": [
+            "Grid-search optimal blend weights on OOF predictions across LGBM/XGB/CatBoost",
+            "Use softmax temperature scaling for probability calibration",
+            "Multi-seed blending (average 3 seed runs per model architecture)",
+            "Final 5-fold CV with all learnings from V3-V6",
         ],
     },
 }
@@ -99,6 +127,89 @@ def build_versioned_models(train, test, version=3, prev_results=None, fast=False
             best_score = result["mean_balanced_accuracy"]
             best_model_name = name
             best_test_preds = result["test_predictions"]
+
+    # V5+: Multi-seed averaging for LGBM (more stable predictions)
+    if version >= 5 and not fast and "lightgbm" in results:
+        logger.info("Multi-seed LGBM averaging (seeds 42, 123, 777)...")
+        base_result = results["lightgbm"]
+        multi_test_probs = base_result["test_probabilities"].copy()
+        multi_oof_probs = base_result["oof_probabilities"].copy()
+        for extra_seed in [123, 777]:
+            seed_model = clone(models.get("lightgbm", list(models.values())[0]))
+            seed_model.set_params(random_state=extra_seed)
+            seed_result = _cv_predict(seed_model, X_train, y_train, X_test,
+                                      f"lgbm_seed{extra_seed}", sample_weights, n_folds=n_folds)
+            multi_test_probs += seed_result["test_probabilities"]
+            multi_oof_probs += seed_result["oof_probabilities"]
+            logger.info(f"  Seed {extra_seed}: BA = {seed_result['mean_balanced_accuracy']:.5f}")
+        multi_test_probs /= 3
+        multi_oof_probs /= 3
+        multi_preds = multi_test_probs.argmax(axis=1)
+        multi_oof_preds = multi_oof_probs.argmax(axis=1)
+        multi_ba = balanced_accuracy_score(y_train, multi_oof_preds)
+        logger.info(f"  Multi-seed LGBM avg: BA = {multi_ba:.5f}")
+        results["lightgbm_multiseed"] = {
+            "fold_scores": base_result["fold_scores"],
+            "mean_balanced_accuracy": round(multi_ba, 5),
+            "metrics": compute_metrics(y_train, multi_oof_preds, labels=[0, 1, 2]),
+            "test_predictions": multi_preds,
+            "test_probabilities": multi_test_probs,
+            "oof_probabilities": multi_oof_probs,
+            "feature_importance": base_result["feature_importance"],
+            "params": {"method": "multi_seed_avg", "seeds": [42, 123, 777]},
+        }
+        if multi_ba > best_score:
+            best_score = multi_ba
+            best_model_name = "lightgbm_multiseed"
+            best_test_preds = multi_preds
+
+    # V7: Optimized blending via grid search on OOF predictions
+    if version >= 7 and not fast and len([n for n in results if n not in ("stacking_ensemble", "weighted_ensemble", "lightgbm_multiseed")]) >= 2:
+        logger.info("Optimized blending via grid search on OOF...")
+        blend_models = {n: r for n, r in results.items()
+                        if n not in ("stacking_ensemble", "weighted_ensemble", "lightgbm_multiseed")
+                        and r["mean_balanced_accuracy"] > 0.90}
+        blend_names = list(blend_models.keys())
+        best_blend_ba = -1
+        best_blend_weights = None
+        # Grid search over weight combinations (step=0.1)
+        from itertools import product as iproduct
+        n_models = len(blend_names)
+        steps_grid = [round(x * 0.1, 1) for x in range(11)]
+        for combo in iproduct(steps_grid, repeat=n_models):
+            if abs(sum(combo) - 1.0) > 0.01:
+                continue
+            if any(w == 0 for w in combo):
+                continue
+            blended_oof = np.zeros_like(results[blend_names[0]]["oof_probabilities"])
+            for i, n in enumerate(blend_names):
+                blended_oof += results[n]["oof_probabilities"] * combo[i]
+            blend_preds = blended_oof.argmax(axis=1)
+            blend_ba = balanced_accuracy_score(y_train, blend_preds)
+            if blend_ba > best_blend_ba:
+                best_blend_ba = blend_ba
+                best_blend_weights = dict(zip(blend_names, combo))
+        if best_blend_weights:
+            logger.info(f"  Best blend: BA = {best_blend_ba:.5f}, weights = {best_blend_weights}")
+            blend_test = np.zeros_like(results[blend_names[0]]["test_probabilities"])
+            blend_oof_final = np.zeros_like(results[blend_names[0]]["oof_probabilities"])
+            for n, w in best_blend_weights.items():
+                blend_test += results[n]["test_probabilities"] * w
+                blend_oof_final += results[n]["oof_probabilities"] * w
+            results["optimized_blend"] = {
+                "fold_scores": [],
+                "mean_balanced_accuracy": round(best_blend_ba, 5),
+                "metrics": compute_metrics(y_train, blend_oof_final.argmax(axis=1), labels=[0, 1, 2]),
+                "test_predictions": blend_test.argmax(axis=1),
+                "test_probabilities": blend_test,
+                "oof_probabilities": blend_oof_final,
+                "feature_importance": results[blend_names[0]]["feature_importance"],
+                "params": {"method": "optimized_blend", "weights": best_blend_weights},
+            }
+            if best_blend_ba > best_score:
+                best_score = best_blend_ba
+                best_model_name = "optimized_blend"
+                best_test_preds = blend_test.argmax(axis=1)
 
     # Skip ensembles in fast mode (only 1 model)
     if not fast:
@@ -222,9 +333,25 @@ def _preprocess(train, test, version):
         X_train["active_evapotrans"] = X_train["is_active_growth"] * X_train["evapotrans"]
         X_test["active_evapotrans"] = X_test["is_active_growth"] * X_test["evapotrans"]
 
-        steps.append({"step": "3b", "name": "V4 domain features",
+        steps.append({"step": "3b", "name": "V4+ domain features",
                        "description": "evapotranspiration proxy, soil stress, total water input",
                        "code": "evapotrans = Temp * Sunlight / (Humidity + 1)"})
+
+    # ── V6+ features: rank transforms + 3-way interactions ──
+    if version >= 6:
+        # Rank-based features (percentile transforms — captures non-linear relationships)
+        rank_cols = ["Soil_Moisture", "Temperature_C", "Wind_Speed_kmh", "Rainfall_mm", "drought_index"]
+        for col in rank_cols:
+            if col in X_train.columns:
+                X_train[f"{col}_rank"] = X_train[col].rank(pct=True)
+                X_test[f"{col}_rank"] = X_test[col].rank(pct=True)
+
+        # 3-way interaction: drought severity
+        X_train["drought_severity"] = X_train["Soil_Moisture"] * X_train["Temperature_C"] * X_train["Wind_Speed_kmh"]
+        X_test["drought_severity"] = X_test["Soil_Moisture"] * X_test["Temperature_C"] * X_test["Wind_Speed_kmh"]
+
+        steps.append({"step": "3c", "name": "V6 rank + 3-way features",
+                       "description": "Percentile rank transforms, 3-way drought severity interaction"})
 
     # Label encode categoricals
     label_encoders = {}
@@ -309,6 +436,27 @@ def _preprocess(train, test, version):
     steps.append({"step": 9, "name": "Standard scaling",
                    "description": f"StandardScaler on {len(all_num)} features"})
 
+    # V6+: Feature selection — drop low-importance features based on prev results
+    if version >= 6:
+        try:
+            import json
+            with open("outputs/results.json") as f:
+                prev_data = json.load(f)
+            best_m = prev_data.get("best_model", "")
+            fi = prev_data.get("models", {}).get(best_m, {}).get("feature_importance", {})
+            if fi:
+                max_imp = max(fi.values())
+                threshold = max_imp * 0.01  # drop < 1% of max
+                drop_cols = [c for c in X_train.columns if c in fi and fi[c] < threshold]
+                if drop_cols:
+                    logger.info(f"  V6 feature selection: dropping {len(drop_cols)} low-importance features")
+                    X_train = X_train.drop(columns=drop_cols, errors="ignore")
+                    X_test = X_test.drop(columns=drop_cols, errors="ignore")
+                    steps.append({"step": "9b", "name": "Feature selection (V6)",
+                                   "description": f"Dropped {len(drop_cols)} features with importance < 1% of max"})
+        except Exception as e:
+            logger.warning(f"  Could not load prev results for feature selection: {e}")
+
     logger.info(f"  Preprocessing done: {X_train.shape[1]} features")
     return X_train, y_train, X_test, test_ids, label_enc, steps
 
@@ -320,7 +468,54 @@ def _preprocess(train, test, version):
 def _get_models(version, class_weights):
     models = {}
 
-    if version == 4:
+    if version >= 5:
+        # V5+: LGBM (proven best) + XGB + CatBoost
+        # With early stopping, higher lr reaches same optimum in fewer rounds
+        models["lightgbm"] = LGBMClassifier(
+            n_estimators=3000,
+            max_depth=8,
+            learning_rate=0.05,
+            num_leaves=63,
+            min_child_samples=50 if version < 6 else 30,
+            subsample=0.8,
+            colsample_bytree=0.7,
+            reg_alpha=0.1 if version < 6 else 0.3,
+            reg_lambda=1.0 if version < 6 else 2.0,
+            class_weight="balanced",
+            objective="multiclass",
+            num_class=3,
+            random_state=RANDOM_STATE,
+            n_jobs=-1,
+            verbose=-1,
+        )
+        models["xgboost"] = XGBClassifier(
+            n_estimators=2500,
+            max_depth=7,
+            learning_rate=0.05,
+            subsample=0.8,
+            colsample_bytree=0.7,
+            min_child_weight=5,
+            reg_alpha=0.1 if version < 6 else 0.3,
+            reg_lambda=1.0 if version < 6 else 2.0,
+            objective="multi:softprob",
+            num_class=3,
+            early_stopping_rounds=50,
+            random_state=RANDOM_STATE,
+            n_jobs=-1,
+            verbosity=0,
+        )
+        if HAS_CATBOOST:
+            models["catboost"] = CatBoostClassifier(
+                iterations=2000 if version < 6 else 3000,
+                depth=6 if version < 6 else 8,
+                learning_rate=0.05,
+                l2_leaf_reg=3.0,
+                auto_class_weights="Balanced",
+                random_seed=RANDOM_STATE,
+                verbose=0,
+                thread_count=-1,
+            )
+    elif version == 4:
         # V4: V2 hyperparams + domain features, lower lr with more trees
         models["lightgbm_v4"] = LGBMClassifier(
             n_estimators=3000,
@@ -421,19 +616,44 @@ def _cv_predict(model, X_train, y_train, X_test, name, sample_weights=None, n_fo
         X_val, y_val = X_train.iloc[val_idx], y_train[val_idx]
         m = clone(model)
         sw = sample_weights[tr_idx] if sample_weights is not None else None
+
+        # Use early stopping for boosting models (huge speedup + prevents overfitting)
+        model_type = type(m).__name__
         try:
-            m.fit(X_tr, y_tr, sample_weight=sw)
+            if model_type == "LGBMClassifier":
+                m.fit(X_tr, y_tr, sample_weight=sw,
+                      eval_set=[(X_val, y_val)],
+                      callbacks=[lgb_early_stopping(50, verbose=False), lgb_log_eval(-1)])
+            elif model_type == "XGBClassifier":
+                m.fit(X_tr, y_tr, sample_weight=sw,
+                      eval_set=[(X_val, y_val)],
+                      verbose=False)
+                # XGB early stopping via set_params
+            elif model_type == "CatBoostClassifier":
+                # CatBoost already has auto_class_weights='Balanced', skip sample_weight
+                m.fit(X_tr, y_tr,
+                      eval_set=(X_val, y_val),
+                      early_stopping_rounds=50)
+            else:
+                m.fit(X_tr, y_tr, sample_weight=sw)
         except TypeError:
             m.fit(X_tr, y_tr)
 
-        preds = m.predict(X_val)
+        preds = np.asarray(m.predict(X_val)).ravel()  # CatBoost returns (n,1)
         oof_preds[val_idx] = preds
         ba = balanced_accuracy_score(y_val, preds)
         fold_scores.append(round(ba, 5))
 
         if hasattr(m, "predict_proba"):
-            oof_probs[val_idx] = m.predict_proba(X_val)
-            test_probs += m.predict_proba(X_test) / n_folds
+            val_proba = m.predict_proba(X_val)
+            test_proba = m.predict_proba(X_test)
+            # CatBoost can return (n,1) for binary or (n,3) for multiclass
+            if val_proba.ndim == 1:
+                val_proba = val_proba.reshape(-1, 1)
+            if test_proba.ndim == 1:
+                test_proba = test_proba.reshape(-1, 1)
+            oof_probs[val_idx] = val_proba
+            test_probs += test_proba / n_folds
         if hasattr(m, "feature_importances_"):
             feat_imp += m.feature_importances_ / n_folds
 
@@ -456,7 +676,7 @@ def _cv_predict(model, X_train, y_train, X_test, name, sample_weights=None, n_fo
 
 
 def _stacking_ensemble(results, oof_probs, X_train, y_train, X_test, sw, version):
-    base = [n for n in results if n not in ("stacking_ensemble", "weighted_ensemble")]
+    base = [n for n in results if n not in ("stacking_ensemble", "weighted_ensemble", "lightgbm_multiseed", "optimized_blend")]
     meta_tr = np.hstack([oof_probs[n] for n in base])
     meta_te = np.hstack([results[n]["test_probabilities"] for n in base])
 
@@ -507,11 +727,12 @@ def _stacking_ensemble(results, oof_probs, X_train, y_train, X_test, sw, version
 
 
 def _weighted_ensemble(results, X_test):
+    _exclude = ("stacking_ensemble", "weighted_ensemble", "lightgbm_multiseed", "optimized_blend")
     base = {n: r for n, r in results.items()
-            if n not in ("stacking_ensemble", "weighted_ensemble")
+            if n not in _exclude
             and r["mean_balanced_accuracy"] > 0.90}
     if not base:
-        base = {n: r for n, r in results.items() if n not in ("stacking_ensemble", "weighted_ensemble")}
+        base = {n: r for n, r in results.items() if n not in _exclude}
 
     weights = {n: r["mean_balanced_accuracy"] ** 3 for n, r in base.items()}  # cube weights for V3
     total_w = sum(weights.values())
