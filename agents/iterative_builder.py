@@ -65,13 +65,15 @@ VERSION_CONFIGS = {
         ],
     },
     6: {
-        "name": "V6: Feature selection + rank features + stronger regularization",
+        "name": "V6: Lower lr + feature selection + rank features + stronger regularization",
         "changes": [
-            "Drop features with importance < 1% of max (noise reduction from V5 analysis)",
+            "Revert learning rate to 0.01 (V4 proved lr=0.01 > lr=0.05)",
+            "Increase n_estimators: LGBM 5000, XGB 4000, CatBoost 5000 (compensate lower lr)",
+            "Drop features with importance < 1% of max (25 noisy features from V5)",
             "Add rank-based features for top 5 numeric cols (percentile transforms)",
-            "Increase regularization (reg_alpha=0.3, reg_lambda=2.0) on LGBM",
+            "Increase regularization (reg_alpha=0.3, reg_lambda=2.0, l2_leaf_reg=5.0)",
             "Add 3-way interaction: moisture * temp * wind (drought severity)",
-            "CatBoost with deeper trees (depth=8) and more iterations (3000)",
+            "CatBoost depth=8 with l2_leaf_reg=5.0 for better generalization",
         ],
     },
     7: {
@@ -469,12 +471,12 @@ def _get_models(version, class_weights):
     models = {}
 
     if version >= 5:
-        # V5+: LGBM (proven best) + XGB + CatBoost
-        # With early stopping, higher lr reaches same optimum in fewer rounds
+        # V5: lr=0.05; V6+: revert to lr=0.01 (V4 proved lower lr is better)
+        lr = 0.05 if version == 5 else 0.01
         models["lightgbm"] = LGBMClassifier(
-            n_estimators=3000,
+            n_estimators=3000 if version == 5 else 5000,
             max_depth=8,
-            learning_rate=0.05,
+            learning_rate=lr,
             num_leaves=63,
             min_child_samples=50 if version < 6 else 30,
             subsample=0.8,
@@ -489,9 +491,9 @@ def _get_models(version, class_weights):
             verbose=-1,
         )
         models["xgboost"] = XGBClassifier(
-            n_estimators=2500,
+            n_estimators=2500 if version == 5 else 4000,
             max_depth=7,
-            learning_rate=0.05,
+            learning_rate=lr,
             subsample=0.8,
             colsample_bytree=0.7,
             min_child_weight=5,
@@ -506,10 +508,10 @@ def _get_models(version, class_weights):
         )
         if HAS_CATBOOST:
             models["catboost"] = CatBoostClassifier(
-                iterations=2000 if version < 6 else 3000,
-                depth=6 if version < 6 else 8,
-                learning_rate=0.05,
-                l2_leaf_reg=3.0,
+                iterations=2000 if version == 5 else 5000,
+                depth=6 if version == 5 else 8,
+                learning_rate=0.05 if version == 5 else 0.01,
+                l2_leaf_reg=3.0 if version < 6 else 5.0,
                 auto_class_weights="Balanced",
                 random_seed=RANDOM_STATE,
                 verbose=0,
