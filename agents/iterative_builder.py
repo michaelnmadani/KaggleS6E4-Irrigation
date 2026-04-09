@@ -131,7 +131,8 @@ def build_versioned_models(train, test, version=3, prev_results=None, fast=False
             best_test_preds = result["test_predictions"]
 
     # V5+: Multi-seed averaging for LGBM (more stable predictions)
-    if version >= 5 and not fast and "lightgbm" in results:
+    # Skip for V6+ to avoid OOM — multi-seed accumulates too much memory
+    if version == 5 and not fast and "lightgbm" in results:
         logger.info("Multi-seed LGBM averaging (seeds 42, 123, 777)...")
         base_result = results["lightgbm"]
         multi_test_probs = base_result["test_probabilities"].copy()
