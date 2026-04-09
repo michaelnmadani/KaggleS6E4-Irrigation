@@ -77,12 +77,17 @@ VERSION_CONFIGS = {
         ],
     },
     7: {
-        "name": "V7: Optimized blending + final ensemble",
+        "name": "V7: V2 hyperparams + domain features + per-fold target encoding + bug fixes",
         "changes": [
-            "Grid-search optimal blend weights on OOF predictions across LGBM/XGB/CatBoost",
-            "Use softmax temperature scaling for probability calibration",
-            "Multi-seed blending (average 3 seed runs per model architecture)",
-            "Final 5-fold CV with all learnings from V3-V6",
+            "Use V2's winning lr=0.02 with n_estimators=2000 (proven optimal)",
+            "Use V2's moderate regularization: reg_alpha=0.1, reg_lambda=1.0",
+            "Use V2's moderate complexity: num_leaves=63, max_depth=8",
+            "Fix target encoding leakage: per-fold encoding instead of full-train",
+            "Keep proven V3 domain features: drought_index, water_balance, threshold flags, growth stage interactions",
+            "Keep proven V4 domain features: evapotranspiration, soil_stress, total_water_input",
+            "Remove StandardScaler (unnecessary for tree models)",
+            "Remove V6 rank features and 3-way interaction (added noise)",
+            "Fix weighted ensemble to compute actual OOF balanced accuracy",
         ],
     },
 }
@@ -98,7 +103,7 @@ def build_versioned_models(train, test, version=3, prev_results=None, fast=False
     for c in config["changes"]:
         logger.info(f"    • {c}")
 
-    X_train, y_train, X_test, test_ids, label_enc, pipeline_steps = _preprocess(train, test, version)
+    X_train, y_train, X_test, test_ids, label_enc, pipeline_steps, te_metadata = _preprocess(train, test, version)
 
     # Class weights
     class_counts = np.bincount(y_train)
@@ -122,7 +127,7 @@ def build_versioned_models(train, test, version=3, prev_results=None, fast=False
     n_folds = 3 if fast else CV_FOLDS
     for name, model in models.items():
         logger.info(f"Training {name} ({'3-fold' if fast else '5-fold'})...")
-        result = _cv_predict(model, X_train, y_train, X_test, name, sample_weights, n_folds=n_folds)
+        result = _cv_predict(model, X_train, y_train, X_test, name, sample_weights, n_folds=n_folds, te_metadata=te_metadata)
         results[name] = result
         oof_probs_all[name] = result["oof_probabilities"]
         if result["mean_balanced_accuracy"] > best_score:
@@ -141,7 +146,7 @@ def build_versioned_models(train, test, version=3, prev_results=None, fast=False
             seed_model = clone(models.get("lightgbm", list(models.values())[0]))
             seed_model.set_params(random_state=extra_seed)
             seed_result = _cv_predict(seed_model, X_train, y_train, X_test,
-                                      f"lgbm_seed{extra_seed}", sample_weights, n_folds=n_folds)
+                                      f"lgbm_seed{extra_seed}", sample_weights, n_folds=n_folds, te_metadata=te_metadata)
             multi_test_probs += seed_result["test_probabilities"]
             multi_oof_probs += seed_result["oof_probabilities"]
             logger.info(f"  Seed {extra_seed}: BA = {seed_result['mean_balanced_accuracy']:.5f}")
@@ -225,7 +230,7 @@ def build_versioned_models(train, test, version=3, prev_results=None, fast=False
             best_test_preds = stack_result["test_predictions"]
 
         logger.info("Training weighted ensemble...")
-        we_result = _weighted_ensemble(results, X_test)
+        we_result = _weighted_ensemble(results, X_test, y_train=y_train)
         results["weighted_ensemble"] = we_result
         if we_result["mean_balanced_accuracy"] > best_score:
             best_score = we_result["mean_balanced_accuracy"]
@@ -340,8 +345,8 @@ def _preprocess(train, test, version):
                        "description": "evapotranspiration proxy, soil stress, total water input",
                        "code": "evapotrans = Temp * Sunlight / (Humidity + 1)"})
 
-    # ── V6+ features: rank transforms + 3-way interactions ──
-    if version >= 6:
+    # ── V6 only features: rank transforms + 3-way interactions ──
+    if version == 6:
         # Rank-based features (percentile transforms — captures non-linear relationships)
         rank_cols = ["Soil_Moisture", "Temperature_C", "Wind_Speed_kmh", "Rainfall_mm", "drought_index"]
         for col in rank_cols:
@@ -369,16 +374,29 @@ def _preprocess(train, test, version):
                    "description": f"LabelEncoder for {len(cat_cols)} categorical features"})
 
     # Target encoding (smoothed)
-    global_mean = y_train.mean()
-    smoothing = 10
-    for col in cat_cols:
-        temp = pd.DataFrame({"cat": X_train[col], "target": y_train})
-        agg = temp.groupby("cat")["target"].agg(["mean", "count"])
-        sm = (agg["count"] * agg["mean"] + smoothing * global_mean) / (agg["count"] + smoothing)
-        X_train[f"{col}_te"] = X_train[col].map(sm).fillna(global_mean)
-        X_test[f"{col}_te"] = X_test[col].map(sm).fillna(global_mean)
-    steps.append({"step": 5, "name": "Target encoding",
-                   "description": f"Smoothed target encoding (s={smoothing})"})
+    te_metadata = None
+    if version >= 7:
+        # V7+: Per-fold target encoding to prevent leakage
+        # Store metadata; actual encoding happens in _cv_predict()
+        te_metadata = {
+            "cat_cols": cat_cols[:],
+            "global_mean": float(np.mean(y_train)),
+            "smoothing": 10,
+        }
+        steps.append({"step": 5, "name": "Target encoding (per-fold, deferred)",
+                       "description": f"Per-fold target encoding for {len(cat_cols)} categoricals (applied in CV loop)"})
+    else:
+        # V2-V6: Full-train target encoding (has leakage)
+        global_mean = y_train.mean()
+        smoothing = 10
+        for col in cat_cols:
+            temp = pd.DataFrame({"cat": X_train[col], "target": y_train})
+            agg = temp.groupby("cat")["target"].agg(["mean", "count"])
+            sm = (agg["count"] * agg["mean"] + smoothing * global_mean) / (agg["count"] + smoothing)
+            X_train[f"{col}_te"] = X_train[col].map(sm).fillna(global_mean)
+            X_test[f"{col}_te"] = X_test[col].map(sm).fillna(global_mean)
+        steps.append({"step": 5, "name": "Target encoding",
+                       "description": f"Smoothed target encoding (s={smoothing})"})
 
     # Feature interactions (kept from V2)
     pairs = [
@@ -431,16 +449,17 @@ def _preprocess(train, test, version):
     steps.append({"step": 8, "name": "Frequency encoding",
                    "description": f"Frequency encoding for {len(freq_cols)} categoricals"})
 
-    # Standard scaling
-    all_num = X_train.select_dtypes(include=[np.number]).columns.tolist()
-    scaler = StandardScaler()
-    X_train[all_num] = scaler.fit_transform(X_train[all_num])
-    X_test[all_num] = scaler.transform(X_test[all_num])
-    steps.append({"step": 9, "name": "Standard scaling",
-                   "description": f"StandardScaler on {len(all_num)} features"})
+    # Standard scaling — skip for V7+ (tree models don't benefit)
+    if version < 7:
+        all_num = X_train.select_dtypes(include=[np.number]).columns.tolist()
+        scaler = StandardScaler()
+        X_train[all_num] = scaler.fit_transform(X_train[all_num])
+        X_test[all_num] = scaler.transform(X_test[all_num])
+        steps.append({"step": 9, "name": "Standard scaling",
+                       "description": f"StandardScaler on {len(all_num)} features"})
 
-    # V6+: Feature selection — drop low-importance features based on prev results
-    if version >= 6:
+    # V6 only: Feature selection — drop low-importance features based on prev results
+    if version == 6:
         try:
             import json
             with open("outputs/results.json") as f:
@@ -461,7 +480,25 @@ def _preprocess(train, test, version):
             logger.warning(f"  Could not load prev results for feature selection: {e}")
 
     logger.info(f"  Preprocessing done: {X_train.shape[1]} features")
-    return X_train, y_train, X_test, test_ids, label_enc, steps
+    return X_train, y_train, X_test, test_ids, label_enc, steps, te_metadata
+
+
+def _apply_per_fold_te(X_tr, y_tr, X_val, X_te, te_metadata):
+    """Apply per-fold target encoding: fit on train fold, transform val + test."""
+    cat_cols = te_metadata["cat_cols"]
+    global_mean = te_metadata["global_mean"]
+    smoothing = te_metadata["smoothing"]
+
+    for col in cat_cols:
+        te_col = f"{col}_te"
+        temp = pd.DataFrame({"cat": X_tr[col].values, "target": y_tr})
+        agg = temp.groupby("cat")["target"].agg(["mean", "count"])
+        sm = (agg["count"] * agg["mean"] + smoothing * global_mean) / (agg["count"] + smoothing)
+        X_tr[te_col] = X_tr[col].map(sm).fillna(global_mean)
+        X_val[te_col] = X_val[col].map(sm).fillna(global_mean)
+        X_te[te_col] = X_te[col].map(sm).fillna(global_mean)
+
+    return X_tr, X_val, X_te
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -471,7 +508,53 @@ def _preprocess(train, test, version):
 def _get_models(version, class_weights):
     models = {}
 
-    if version >= 5:
+    if version >= 7:
+        # V7: V2's exact winning hyperparameters + domain features
+        models["lightgbm"] = LGBMClassifier(
+            n_estimators=2000,
+            max_depth=8,
+            learning_rate=0.02,
+            num_leaves=63,
+            min_child_samples=50,
+            subsample=0.8,
+            colsample_bytree=0.7,
+            reg_alpha=0.1,
+            reg_lambda=1.0,
+            class_weight="balanced",
+            objective="multiclass",
+            num_class=3,
+            random_state=RANDOM_STATE,
+            n_jobs=-1,
+            verbose=-1,
+        )
+        models["xgboost"] = XGBClassifier(
+            n_estimators=1500,
+            max_depth=7,
+            learning_rate=0.02,
+            subsample=0.8,
+            colsample_bytree=0.7,
+            min_child_weight=5,
+            reg_alpha=0.1,
+            reg_lambda=1.0,
+            objective="multi:softprob",
+            num_class=3,
+            early_stopping_rounds=50,
+            random_state=RANDOM_STATE,
+            n_jobs=-1,
+            verbosity=0,
+        )
+        if HAS_CATBOOST:
+            models["catboost"] = CatBoostClassifier(
+                iterations=2000,
+                depth=6,
+                learning_rate=0.02,
+                l2_leaf_reg=3.0,
+                auto_class_weights="Balanced",
+                random_seed=RANDOM_STATE,
+                verbose=0,
+                thread_count=-1,
+            )
+    elif version >= 5:
         # V5: lr=0.05; V6+: revert to lr=0.01 (V4 proved lower lr is better)
         lr = 0.05 if version == 5 else 0.01
         models["lightgbm"] = LGBMClassifier(
@@ -604,7 +687,7 @@ def _get_models(version, class_weights):
 #  CV + PREDICT
 # ═══════════════════════════════════════════════════════════════════════
 
-def _cv_predict(model, X_train, y_train, X_test, name, sample_weights=None, n_folds=None):
+def _cv_predict(model, X_train, y_train, X_test, name, sample_weights=None, n_folds=None, te_metadata=None):
     if n_folds is None:
         n_folds = CV_FOLDS
     skf = StratifiedKFold(n_splits=n_folds, shuffle=True, random_state=RANDOM_STATE)
@@ -612,11 +695,31 @@ def _cv_predict(model, X_train, y_train, X_test, name, sample_weights=None, n_fo
     oof_probs = np.zeros((len(y_train), 3))
     test_probs = np.zeros((len(X_test), 3))
     fold_scores = []
-    feat_imp = np.zeros(X_train.shape[1])
+    # Feature count may differ if per-fold TE adds columns; track after first fold
+    feat_imp = None
+    feat_names = None
 
     for fold, (tr_idx, val_idx) in enumerate(skf.split(X_train, y_train)):
-        X_tr, y_tr = X_train.iloc[tr_idx], y_train[tr_idx]
-        X_val, y_val = X_train.iloc[val_idx], y_train[val_idx]
+        y_tr = y_train[tr_idx]
+        y_val = y_train[val_idx]
+
+        # Per-fold target encoding: copy data and apply TE per fold
+        if te_metadata is not None:
+            X_tr = X_train.iloc[tr_idx].copy()
+            X_val = X_train.iloc[val_idx].copy()
+            X_te_fold = X_test.copy()
+            _apply_per_fold_te(X_tr, y_tr, X_val, X_te_fold, te_metadata)
+            if fold == 0:
+                logger.info(f"  Per-fold TE: {X_tr.shape[1]} features (incl. {len(te_metadata['cat_cols'])} TE cols)")
+        else:
+            X_tr = X_train.iloc[tr_idx]
+            X_val = X_train.iloc[val_idx]
+            X_te_fold = X_test
+
+        if feat_imp is None:
+            feat_imp = np.zeros(X_tr.shape[1])
+            feat_names = X_tr.columns.tolist()
+
         m = clone(model)
         sw = sample_weights[tr_idx] if sample_weights is not None else None
 
@@ -631,9 +734,7 @@ def _cv_predict(model, X_train, y_train, X_test, name, sample_weights=None, n_fo
                 m.fit(X_tr, y_tr, sample_weight=sw,
                       eval_set=[(X_val, y_val)],
                       verbose=False)
-                # XGB early stopping via set_params
             elif model_type == "CatBoostClassifier":
-                # CatBoost already has auto_class_weights='Balanced', skip sample_weight
                 m.fit(X_tr, y_tr,
                       eval_set=(X_val, y_val),
                       early_stopping_rounds=50)
@@ -642,15 +743,14 @@ def _cv_predict(model, X_train, y_train, X_test, name, sample_weights=None, n_fo
         except TypeError:
             m.fit(X_tr, y_tr)
 
-        preds = np.asarray(m.predict(X_val)).ravel()  # CatBoost returns (n,1)
+        preds = np.asarray(m.predict(X_val)).ravel()
         oof_preds[val_idx] = preds
         ba = balanced_accuracy_score(y_val, preds)
         fold_scores.append(round(ba, 5))
 
         if hasattr(m, "predict_proba"):
             val_proba = m.predict_proba(X_val)
-            test_proba = m.predict_proba(X_test)
-            # CatBoost can return (n,1) for binary or (n,3) for multiclass
+            test_proba = m.predict_proba(X_te_fold)
             if val_proba.ndim == 1:
                 val_proba = val_proba.reshape(-1, 1)
             if test_proba.ndim == 1:
@@ -664,7 +764,11 @@ def _cv_predict(model, X_train, y_train, X_test, name, sample_weights=None, n_fo
 
     mean_ba = balanced_accuracy_score(y_train, oof_preds)
     metrics = compute_metrics(y_train, oof_preds, labels=[0, 1, 2])
-    fi = dict(sorted(zip(X_train.columns.tolist(), feat_imp.tolist()), key=lambda x: x[1], reverse=True))
+    if feat_names is None:
+        feat_names = X_train.columns.tolist()
+    if feat_imp is None:
+        feat_imp = np.zeros(len(feat_names))
+    fi = dict(sorted(zip(feat_names, feat_imp.tolist()), key=lambda x: x[1], reverse=True))
 
     return {
         "fold_scores": fold_scores,
@@ -729,7 +833,7 @@ def _stacking_ensemble(results, oof_probs, X_train, y_train, X_test, sw, version
     }
 
 
-def _weighted_ensemble(results, X_test):
+def _weighted_ensemble(results, X_test, y_train=None):
     _exclude = ("stacking_ensemble", "weighted_ensemble", "lightgbm_multiseed", "optimized_blend")
     base = {n: r for n, r in results.items()
             if n not in _exclude
@@ -737,14 +841,31 @@ def _weighted_ensemble(results, X_test):
     if not base:
         base = {n: r for n, r in results.items() if n not in _exclude}
 
-    weights = {n: r["mean_balanced_accuracy"] ** 3 for n, r in base.items()}  # cube weights for V3
+    weights = {n: r["mean_balanced_accuracy"] ** 3 for n, r in base.items()}
     total_w = sum(weights.values())
 
     test_probs = np.zeros((len(X_test), 3))
+    oof_probs = None
     for n, r in base.items():
-        test_probs += r["test_probabilities"] * (weights[n] / total_w)
+        w = weights[n] / total_w
+        test_probs += r["test_probabilities"] * w
+        if r.get("oof_probabilities") is not None and len(r["oof_probabilities"]) > 0:
+            if oof_probs is None:
+                oof_probs = np.zeros_like(r["oof_probabilities"])
+            oof_probs += r["oof_probabilities"] * w
 
-    best_n = max(base, key=lambda n: base[n]["mean_balanced_accuracy"])
+    # Compute actual ensemble OOF balanced accuracy
+    if oof_probs is not None and y_train is not None:
+        ensemble_oof_preds = oof_probs.argmax(axis=1)
+        ensemble_ba = balanced_accuracy_score(y_train, ensemble_oof_preds)
+        ensemble_metrics = compute_metrics(y_train, ensemble_oof_preds, labels=[0, 1, 2])
+        logger.info(f"  Weighted ensemble actual OOF BA: {ensemble_ba:.5f}")
+    else:
+        best_n = max(base, key=lambda n: base[n]["mean_balanced_accuracy"])
+        ensemble_ba = base[best_n]["mean_balanced_accuracy"]
+        ensemble_metrics = base[best_n]["metrics"]
+        oof_probs = np.zeros((len(X_test), 3))
+
     fi = {}
     for n, r in base.items():
         w = weights[n] / total_w
@@ -754,11 +875,11 @@ def _weighted_ensemble(results, X_test):
 
     return {
         "fold_scores": [round(weights[n], 5) for n in weights],
-        "mean_balanced_accuracy": round(max(r["mean_balanced_accuracy"] for r in base.values()), 5),
-        "metrics": base[best_n]["metrics"],
+        "mean_balanced_accuracy": round(ensemble_ba, 5),
+        "metrics": ensemble_metrics,
         "test_predictions": test_probs.argmax(axis=1),
         "test_probabilities": test_probs,
-        "oof_probabilities": np.zeros((len(X_test), 3)),
+        "oof_probabilities": oof_probs if oof_probs is not None else np.zeros((len(X_test), 3)),
         "feature_importance": fi,
         "params": {"method": "weighted_cube", "weights": {k: round(v/total_w, 4) for k, v in weights.items()}},
     }
