@@ -104,6 +104,18 @@ VERSION_CONFIGS = {
             "Use finer blend grid (step=0.05 instead of 0.1) for optimized_blend",
         ],
     },
+    9: {
+        "name": "V9: Revert hyperparams to V7 + CatBoost tuning + probability calibration",
+        "changes": [
+            "Revert LGBM/XGB to V7 hyperparams (num_leaves=63, min_child_samples=50) — V8 relaxation hurt",
+            "Remove HIGH class weight boost (V8's 1.5x was too aggressive, -0.00137 on LGBM)",
+            "Keep V8 features: dry_hot_active, moisture_deficit_ratio, rainfall_adequacy",
+            "Keep V8 feature drops and Mulching_Used TE exclusion",
+            "Tune CatBoost: depth=7 (from 6), iterations=2500 (strongest model in V8)",
+            "Add post-blend probability calibration: search optimal HIGH class scaling on OOF",
+            "Keep finer blend grid (step=0.05)",
+        ],
+    },
 }
 
 
@@ -123,9 +135,8 @@ def build_versioned_models(train, test, version=3, prev_results=None, fast=False
     class_counts = np.bincount(y_train)
     total = len(y_train)
     class_weights = {i: total / (len(class_counts) * c) for i, c in enumerate(class_counts)}
-    if version >= 8:
-        # Boost HIGH class weight by 1.5x to improve minority recall
-        # High=0 in LabelEncoder (alphabetical: High, Low, Medium)
+    if version == 8:
+        # V8 only: Boost HIGH class weight by 1.5x (V9 reverts — too aggressive)
         class_weights[0] *= 1.5
         logger.info(f"  V8: Boosted HIGH class weight to {class_weights[0]:.2f}")
     sample_weights = np.array([class_weights[y] for y in y_train])
@@ -240,6 +251,52 @@ def build_versioned_models(train, test, version=3, prev_results=None, fast=False
                 best_score = best_blend_ba
                 best_model_name = "optimized_blend"
                 best_test_preds = blend_test.argmax(axis=1)
+
+    # V9+: Post-blend probability calibration for HIGH class
+    if version >= 9 and not fast and "optimized_blend" in results:
+        logger.info("V9: Post-blend HIGH class probability calibration...")
+        cal_oof = results["optimized_blend"]["oof_probabilities"].copy()
+        cal_test = results["optimized_blend"]["test_probabilities"].copy()
+        best_cal_ba = results["optimized_blend"]["mean_balanced_accuracy"]
+        best_cal_factor = 1.0
+        # Search for optimal HIGH class (class 0) scaling factor
+        for factor in [round(0.8 + i * 0.02, 2) for i in range(21)]:  # 0.80 to 1.20
+            scaled_oof = cal_oof.copy()
+            scaled_oof[:, 0] *= factor
+            # Renormalize rows to sum to 1
+            row_sums = scaled_oof.sum(axis=1, keepdims=True)
+            scaled_oof = scaled_oof / row_sums
+            cal_preds = scaled_oof.argmax(axis=1)
+            cal_ba = balanced_accuracy_score(y_train, cal_preds)
+            if cal_ba > best_cal_ba:
+                best_cal_ba = cal_ba
+                best_cal_factor = factor
+        if best_cal_factor != 1.0:
+            # Apply calibration to test predictions too
+            final_oof = cal_oof.copy()
+            final_oof[:, 0] *= best_cal_factor
+            final_oof = final_oof / final_oof.sum(axis=1, keepdims=True)
+            final_test = cal_test.copy()
+            final_test[:, 0] *= best_cal_factor
+            final_test = final_test / final_test.sum(axis=1, keepdims=True)
+            logger.info(f"  Calibrated: BA = {best_cal_ba:.5f}, HIGH scale = {best_cal_factor}")
+            results["calibrated_blend"] = {
+                "fold_scores": [],
+                "mean_balanced_accuracy": round(best_cal_ba, 5),
+                "metrics": compute_metrics(y_train, final_oof.argmax(axis=1), labels=[0, 1, 2]),
+                "test_predictions": final_test.argmax(axis=1),
+                "test_probabilities": final_test,
+                "oof_probabilities": final_oof,
+                "feature_importance": results["optimized_blend"]["feature_importance"],
+                "params": {"method": "calibrated_blend", "high_class_scale": best_cal_factor,
+                           "base_blend_weights": results["optimized_blend"]["params"].get("weights", {})},
+            }
+            if best_cal_ba > best_score:
+                best_score = best_cal_ba
+                best_model_name = "calibrated_blend"
+                best_test_preds = final_test.argmax(axis=1)
+        else:
+            logger.info("  No calibration improvement found (factor=1.0 is optimal)")
 
     # Skip ensembles in fast mode (only 1 model)
     if not fast:
@@ -566,7 +623,53 @@ def _apply_per_fold_te(X_tr, y_tr, X_val, X_te, te_metadata):
 def _get_models(version, class_weights):
     models = {}
 
-    if version >= 8:
+    if version >= 9:
+        # V9: Revert LGBM/XGB to V7 proven params, tune CatBoost
+        models["lightgbm"] = LGBMClassifier(
+            n_estimators=2000,
+            max_depth=8,
+            learning_rate=0.02,
+            num_leaves=63,
+            min_child_samples=50,
+            subsample=0.8,
+            colsample_bytree=0.7,
+            reg_alpha=0.1,
+            reg_lambda=1.0,
+            class_weight="balanced",
+            objective="multiclass",
+            num_class=3,
+            random_state=RANDOM_STATE,
+            n_jobs=-1,
+            verbose=-1,
+        )
+        models["xgboost"] = XGBClassifier(
+            n_estimators=1500,
+            max_depth=7,
+            learning_rate=0.02,
+            subsample=0.8,
+            colsample_bytree=0.7,
+            min_child_weight=5,
+            reg_alpha=0.1,
+            reg_lambda=1.0,
+            objective="multi:softprob",
+            num_class=3,
+            early_stopping_rounds=50,
+            random_state=RANDOM_STATE,
+            n_jobs=-1,
+            verbosity=0,
+        )
+        if HAS_CATBOOST:
+            models["catboost"] = CatBoostClassifier(
+                iterations=2500,
+                depth=7,
+                learning_rate=0.02,
+                l2_leaf_reg=3.0,
+                auto_class_weights="Balanced",
+                random_seed=RANDOM_STATE,
+                verbose=0,
+                thread_count=-1,
+            )
+    elif version >= 8:
         # V8: Relaxed hyperparams for better minority class capture
         models["lightgbm"] = LGBMClassifier(
             n_estimators=2500,
