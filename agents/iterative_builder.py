@@ -90,6 +90,20 @@ VERSION_CONFIGS = {
             "Fix weighted ensemble to compute actual OOF balanced accuracy",
         ],
     },
+    8: {
+        "name": "V8: HIGH class targeting + tuned hyperparams + feature cleanup",
+        "changes": [
+            "Keep V7 foundation: lr=0.02, per-fold TE, V2 regularization",
+            "Increase num_leaves to 80 (more splits for minority class boundaries)",
+            "Reduce min_child_samples to 30 (allow smaller leaf nodes for HIGH class)",
+            "Increase n_estimators: LGBM 2500, XGB 2000, CatBoost 2500",
+            "Add HIGH-class-targeted features: dry_hot_active, moisture_deficit_ratio, rainfall_adequacy",
+            "Drop 3 useless features (importance < 100): wind_high, Mulching_Used_freq, moisture_low",
+            "Exclude Mulching_Used from target encoding (importance=26)",
+            "Increase HIGH class weight by 1.5x in sample_weights",
+            "Use finer blend grid (step=0.05 instead of 0.1) for optimized_blend",
+        ],
+    },
 }
 
 
@@ -109,6 +123,11 @@ def build_versioned_models(train, test, version=3, prev_results=None, fast=False
     class_counts = np.bincount(y_train)
     total = len(y_train)
     class_weights = {i: total / (len(class_counts) * c) for i, c in enumerate(class_counts)}
+    if version >= 8:
+        # Boost HIGH class weight by 1.5x to improve minority recall
+        # High=0 in LabelEncoder (alphabetical: High, Low, Medium)
+        class_weights[0] *= 1.5
+        logger.info(f"  V8: Boosted HIGH class weight to {class_weights[0]:.2f}")
     sample_weights = np.array([class_weights[y] for y in y_train])
     logger.info(f"  Features: {X_train.shape[1]}, Class weights computed")
 
@@ -180,10 +199,13 @@ def build_versioned_models(train, test, version=3, prev_results=None, fast=False
         blend_names = list(blend_models.keys())
         best_blend_ba = -1
         best_blend_weights = None
-        # Grid search over weight combinations (step=0.1)
+        # Grid search over weight combinations
         from itertools import product as iproduct
         n_models = len(blend_names)
-        steps_grid = [round(x * 0.1, 1) for x in range(11)]
+        if version >= 8:
+            steps_grid = [round(x * 0.05, 2) for x in range(21)]  # finer grid: 0.05 step
+        else:
+            steps_grid = [round(x * 0.1, 1) for x in range(11)]  # V7: 0.1 step
         for combo in iproduct(steps_grid, repeat=n_models):
             if abs(sum(combo) - 1.0) > 0.01:
                 continue
@@ -345,6 +367,28 @@ def _preprocess(train, test, version):
                        "description": "evapotranspiration proxy, soil stress, total water input",
                        "code": "evapotrans = Temp * Sunlight / (Humidity + 1)"})
 
+    # ── V8+ features: HIGH class targeting ──
+    if version >= 8:
+        # dry_hot_active: core HIGH irrigation signal (dry soil + hot + active growth)
+        X_train["dry_hot_active"] = ((X_train["Soil_Moisture"] < 25) &
+                                      (X_train["Temperature_C"] > 28) &
+                                      (X_train["is_active_growth"] == 1)).astype(int)
+        X_test["dry_hot_active"] = ((X_test["Soil_Moisture"] < 25) &
+                                     (X_test["Temperature_C"] > 28) &
+                                     (X_test["is_active_growth"] == 1)).astype(int)
+
+        # moisture_deficit_ratio: how far below median moisture, scaled by temperature
+        median_moisture = 37.75
+        X_train["moisture_deficit_ratio"] = (median_moisture - X_train["Soil_Moisture"]) / (median_moisture + 1) * (X_train["Temperature_C"] / 27)
+        X_test["moisture_deficit_ratio"] = (median_moisture - X_test["Soil_Moisture"]) / (median_moisture + 1) * (X_test["Temperature_C"] / 27)
+
+        # rainfall_adequacy: how much rainfall covers the temperature-driven demand
+        X_train["rainfall_adequacy"] = X_train["Rainfall_mm"] / (X_train["Temperature_C"] * 50 + 1)
+        X_test["rainfall_adequacy"] = X_test["Rainfall_mm"] / (X_test["Temperature_C"] * 50 + 1)
+
+        steps.append({"step": "3c", "name": "V8 HIGH-class features",
+                       "description": "dry_hot_active, moisture_deficit_ratio, rainfall_adequacy"})
+
     # ── V6 only features: rank transforms + 3-way interactions ──
     if version == 6:
         # Rank-based features (percentile transforms — captures non-linear relationships)
@@ -378,8 +422,13 @@ def _preprocess(train, test, version):
     if version >= 7:
         # V7+: Per-fold target encoding to prevent leakage
         # Store metadata; actual encoding happens in _cv_predict()
+        te_cat_cols = cat_cols[:]
+        if version >= 8:
+            # V8+: Exclude Mulching_Used from TE (importance=26, too noisy)
+            te_cat_cols = [c for c in te_cat_cols if c != "Mulching_Used"]
+            logger.info(f"  V8: Excluded Mulching_Used from target encoding ({len(te_cat_cols)} TE cols)")
         te_metadata = {
-            "cat_cols": cat_cols[:],
+            "cat_cols": te_cat_cols,
             "global_mean": float(np.mean(y_train)),
             "smoothing": 10,
         }
@@ -449,6 +498,15 @@ def _preprocess(train, test, version):
     steps.append({"step": 8, "name": "Frequency encoding",
                    "description": f"Frequency encoding for {len(freq_cols)} categoricals"})
 
+    # V8+: Drop useless features (low importance in V7)
+    if version >= 8:
+        drop_feats = ["wind_high", "Mulching_Used_freq", "moisture_low"]
+        existing_drops = [c for c in drop_feats if c in X_train.columns]
+        if existing_drops:
+            X_train = X_train.drop(columns=existing_drops)
+            X_test = X_test.drop(columns=existing_drops)
+            logger.info(f"  V8: Dropped {len(existing_drops)} low-importance features: {existing_drops}")
+
     # Standard scaling — skip for V7+ (tree models don't benefit)
     if version < 7:
         all_num = X_train.select_dtypes(include=[np.number]).columns.tolist()
@@ -508,7 +566,53 @@ def _apply_per_fold_te(X_tr, y_tr, X_val, X_te, te_metadata):
 def _get_models(version, class_weights):
     models = {}
 
-    if version >= 7:
+    if version >= 8:
+        # V8: Relaxed hyperparams for better minority class capture
+        models["lightgbm"] = LGBMClassifier(
+            n_estimators=2500,
+            max_depth=8,
+            learning_rate=0.02,
+            num_leaves=80,
+            min_child_samples=30,
+            subsample=0.8,
+            colsample_bytree=0.7,
+            reg_alpha=0.1,
+            reg_lambda=1.0,
+            class_weight="balanced",
+            objective="multiclass",
+            num_class=3,
+            random_state=RANDOM_STATE,
+            n_jobs=-1,
+            verbose=-1,
+        )
+        models["xgboost"] = XGBClassifier(
+            n_estimators=2000,
+            max_depth=7,
+            learning_rate=0.02,
+            subsample=0.8,
+            colsample_bytree=0.7,
+            min_child_weight=5,
+            reg_alpha=0.1,
+            reg_lambda=1.0,
+            objective="multi:softprob",
+            num_class=3,
+            early_stopping_rounds=50,
+            random_state=RANDOM_STATE,
+            n_jobs=-1,
+            verbosity=0,
+        )
+        if HAS_CATBOOST:
+            models["catboost"] = CatBoostClassifier(
+                iterations=2500,
+                depth=6,
+                learning_rate=0.02,
+                l2_leaf_reg=3.0,
+                auto_class_weights="Balanced",
+                random_seed=RANDOM_STATE,
+                verbose=0,
+                thread_count=-1,
+            )
+    elif version >= 7:
         # V7: V2's exact winning hyperparameters + domain features
         models["lightgbm"] = LGBMClassifier(
             n_estimators=2000,
