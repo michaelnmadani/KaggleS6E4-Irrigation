@@ -508,7 +508,7 @@ def _get_models(version, class_weights):
         )
         if HAS_CATBOOST:
             models["catboost"] = CatBoostClassifier(
-                iterations=2000 if version == 5 else 5000,
+                iterations=2000 if version == 5 else 3000,
                 depth=6 if version == 5 else 8,
                 learning_rate=0.05 if version == 5 else 0.01,
                 l2_leaf_reg=3.0 if version < 6 else 5.0,
