@@ -18,7 +18,10 @@ const MODEL_LABELS = {
   xgboost_tuned: 'XGBoost (Tuned)', lightgbm_tuned: 'LightGBM (Tuned)',
   random_forest_tuned: 'Random Forest (Tuned)', extra_trees: 'Extra Trees',
   gradient_boosting: 'Gradient Boosting', stacking_ensemble: 'Stacking Ensemble',
-  weighted_ensemble: 'Weighted Ensemble',
+  weighted_ensemble: 'Weighted Ensemble', catboost: 'CatBoost',
+  lightgbm_multiseed: 'LightGBM (Multi-Seed)', lightgbm_v3: 'LightGBM V3',
+  lightgbm_v4: 'LightGBM V4', xgboost_v3: 'XGBoost V3', xgboost_v4: 'XGBoost V4',
+  random_forest_v3: 'Random Forest V3', random_forest_v4: 'Random Forest V4',
 };
 
 const MODEL_COLORS = {
@@ -27,7 +30,10 @@ const MODEL_COLORS = {
   xgboost_tuned: '#dc2626', lightgbm_tuned: '#16a34a',
   random_forest_tuned: '#2563eb', extra_trees: '#0891b2',
   gradient_boosting: '#d97706', stacking_ensemble: '#7c3aed',
-  weighted_ensemble: '#9333ea',
+  weighted_ensemble: '#9333ea', catboost: '#06b6d4',
+  lightgbm_multiseed: '#059669', lightgbm_v3: '#15803d', lightgbm_v4: '#166534',
+  xgboost_v3: '#b91c1c', xgboost_v4: '#991b1b',
+  random_forest_v3: '#1d4ed8', random_forest_v4: '#1e40af',
 };
 
 // ─── Utility Components ────────────────────────────────────────────────
@@ -409,55 +415,113 @@ function ResultsSection({ data }) {
 
 function ImprovementsSection({ data }) {
   const imp = data.improvement;
-  if (!imp) return null;
+  const versionHistory = data.version_history || [];
+  if (!imp && versionHistory.length === 0) return null;
 
-  const isImproved = imp.score_change > 0;
-  const recommendations = imp.recommendations_applied || [];
-  const analysis = imp.research_analysis || {};
+  const isImproved = imp && imp.score_change > 0;
+  const recommendations = imp?.recommendations_applied || [];
 
-  const versionData = [
-    { version: 'V1 (Baseline)', score: imp.previous_best_score, model: imp.previous_best_model },
-    { version: 'V2 (Improved)', score: imp.improved_best_score, model: imp.improved_best_model },
-  ];
+  // Build version history chart data
+  const versionData = versionHistory.map(v => ({
+    version: `V${v.version}`,
+    score: v.score,
+    model: MODEL_LABELS[v.best_model] || v.best_model,
+  }));
+
+  // Find best version
+  const bestVersion = versionHistory.reduce((best, v) => (!best || v.score > best.score) ? v : best, null);
+  const latestVersion = versionHistory[versionHistory.length - 1];
 
   return (
     <section className="mb-12">
-      <SectionHeader icon={TrendingUp} title="Iterative Improvements" subtitle="Version comparison and changes applied" />
+      <SectionHeader icon={TrendingUp} title="Iterative Improvements" subtitle={`${versionHistory.length} versions trained — tracking score progression`} />
 
-      {/* Score comparison */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <StatCard label="V1 Baseline" value={(imp.previous_best_score || 0).toFixed(5)} sub={MODEL_LABELS[imp.previous_best_model] || imp.previous_best_model} color="blue" />
-        <StatCard label="V2 Improved" value={(imp.improved_best_score || 0).toFixed(5)} sub={MODEL_LABELS[imp.improved_best_model] || imp.improved_best_model} color="brand" />
-        <div className={`rounded-xl border p-4 ${isImproved ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
-          <div className="text-sm font-medium opacity-75">Score Change</div>
-          <div className={`text-2xl font-bold mt-1 flex items-center gap-2 ${isImproved ? 'text-green-700' : 'text-red-700'}`}>
-            {isImproved ? <ArrowUpRight className="w-6 h-6" /> : <ArrowDownRight className="w-6 h-6" />}
-            {isImproved ? '+' : ''}{(imp.score_change || 0).toFixed(5)}
+      {/* Score summary cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <StatCard label="Versions Trained" value={versionHistory.length} sub="Full 5-fold CV each" color="purple" />
+        {bestVersion && (
+          <StatCard label={`Best (V${bestVersion.version})`} value={bestVersion.score.toFixed(5)} sub={MODEL_LABELS[bestVersion.best_model] || bestVersion.best_model} color="brand" />
+        )}
+        {latestVersion && (
+          <StatCard label={`Latest (V${latestVersion.version})`} value={latestVersion.score.toFixed(5)} sub={MODEL_LABELS[latestVersion.best_model] || latestVersion.best_model} color="blue" />
+        )}
+        {imp && (
+          <div className={`rounded-xl border p-4 ${isImproved ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+            <div className="text-sm font-medium opacity-75">Latest Delta</div>
+            <div className={`text-2xl font-bold mt-1 flex items-center gap-2 ${isImproved ? 'text-green-700' : 'text-red-700'}`}>
+              {isImproved ? <ArrowUpRight className="w-6 h-6" /> : <ArrowDownRight className="w-6 h-6" />}
+              {isImproved ? '+' : ''}{(imp.score_change || 0).toFixed(5)}
+            </div>
+            <div className="text-xs mt-1 opacity-60">vs previous version</div>
           </div>
-          <div className="text-xs mt-1 opacity-60">{isImproved ? 'Improvement' : 'Regression'}</div>
+        )}
+      </div>
+
+      {/* Version history chart */}
+      {versionData.length > 0 && (
+        <div className="mb-6">
+          <h3 className="font-semibold text-gray-800 mb-3">Score Progression Across Versions</h3>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={versionData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="version" />
+              <YAxis domain={[0.96, 0.975]} />
+              <Tooltip formatter={(v) => typeof v === 'number' ? v.toFixed(5) : v} />
+              <Bar dataKey="score" name="Balanced Accuracy">
+                {versionData.map((entry, i) => (
+                  <Cell key={i} fill={bestVersion && entry.score === bestVersion.score ? '#22c55e' : '#3b82f6'} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
         </div>
-      </div>
+      )}
 
-      {/* Version chart */}
-      <div className="mb-6">
-        <ResponsiveContainer width="100%" height={200}>
-          <BarChart data={versionData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="version" />
-            <YAxis domain={[0.9, 1]} />
-            <Tooltip formatter={(v) => v.toFixed(5)} />
-            <Bar dataKey="score" name="Balanced Accuracy">
-              {versionData.map((_, i) => <Cell key={i} fill={i === 0 ? '#3b82f6' : '#22c55e'} />)}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
+      {/* Version history table */}
+      {versionHistory.length > 0 && (
+        <div className="mb-6">
+          <h3 className="font-semibold text-gray-800 mb-3">Version Details</h3>
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-sm border border-gray-200 rounded-lg overflow-hidden">
+              <thead className="bg-gray-100">
+                <tr>
+                  <th className="px-4 py-2 text-left font-medium text-gray-600">Version</th>
+                  <th className="px-4 py-2 text-left font-medium text-gray-600">Best Model</th>
+                  <th className="px-4 py-2 text-left font-medium text-gray-600">Score</th>
+                  <th className="px-4 py-2 text-left font-medium text-gray-600">Delta</th>
+                  <th className="px-4 py-2 text-left font-medium text-gray-600">Key Changes</th>
+                </tr>
+              </thead>
+              <tbody>
+                {versionHistory.map((v, i) => {
+                  const prevScore = i > 0 ? versionHistory[i - 1].score : null;
+                  const delta = prevScore != null ? v.score - prevScore : null;
+                  const isBest = bestVersion && v.score === bestVersion.score;
+                  return (
+                    <tr key={v.version} className={isBest ? 'bg-green-50' : i % 2 ? 'bg-gray-50' : ''}>
+                      <td className={`px-4 py-2 font-medium ${isBest ? 'text-green-700' : 'text-gray-800'}`}>
+                        V{v.version} {isBest && <Badge text="Best" variant="success" />}
+                      </td>
+                      <td className="px-4 py-2 text-gray-700">{MODEL_LABELS[v.best_model] || v.best_model}</td>
+                      <td className="px-4 py-2 font-mono font-bold text-gray-800">{v.score.toFixed(5)}</td>
+                      <td className={`px-4 py-2 font-mono ${delta == null ? 'text-gray-400' : delta > 0 ? 'text-green-600' : delta < 0 ? 'text-red-600' : 'text-gray-400'}`}>
+                        {delta == null ? '\u2014' : `${delta > 0 ? '+' : ''}${delta.toFixed(5)}`}
+                      </td>
+                      <td className="px-4 py-2 text-gray-500 text-xs max-w-xs truncate">{(v.changes || []).slice(0, 2).join('; ')}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
-      {/* Changes applied */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {/* Latest changes applied */}
+      {recommendations.length > 0 && (
         <div>
-          <h3 className="font-semibold text-gray-800 mb-3">Changes Applied (V1 → V2)</h3>
-          <div className="space-y-2">
+          <h3 className="font-semibold text-gray-800 mb-3">Latest Changes Applied</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
             {recommendations.map((rec, i) => (
               <div key={i} className="flex items-start gap-2 p-3 bg-gray-50 rounded-lg">
                 <CheckCircle2 className="w-4 h-4 text-brand-600 mt-0.5 shrink-0" />
@@ -466,36 +530,7 @@ function ImprovementsSection({ data }) {
             ))}
           </div>
         </div>
-        <div>
-          <h3 className="font-semibold text-gray-800 mb-3">Research Analysis</h3>
-          {analysis.class_imbalance && (
-            <div className="p-3 bg-gray-50 rounded-lg mb-3">
-              <div className="text-sm font-medium text-gray-700 mb-1">Class Imbalance</div>
-              <div className="space-y-1">
-                {Object.entries(analysis.class_imbalance).map(([cls, pct]) => (
-                  <div key={cls} className="flex justify-between text-sm">
-                    <span className="text-gray-600">{cls}</span>
-                    <span className="font-mono">{(pct * 100).toFixed(1)}%</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-          {analysis.per_class_accuracy && (
-            <div className="p-3 bg-gray-50 rounded-lg">
-              <div className="text-sm font-medium text-gray-700 mb-1">Per-Class Accuracy (V1)</div>
-              <div className="space-y-1">
-                {Object.entries(analysis.per_class_accuracy).map(([cls, acc]) => (
-                  <div key={cls} className="flex justify-between text-sm">
-                    <span className="text-gray-600">{cls}</span>
-                    <span className={`font-mono ${acc < 0.9 ? 'text-red-600 font-bold' : 'text-green-600'}`}>{(acc * 100).toFixed(1)}%</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
+      )}
     </section>
   );
 }
