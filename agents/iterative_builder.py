@@ -636,21 +636,33 @@ def _preprocess(train, test, version):
             logger.info(f"  V8: Excluded Mulching_Used from target encoding ({len(te_cat_cols)} TE cols)")
         smoothing = 20 if version >= 10 else 10
 
-        # V11+: Pairwise categorical interaction columns for TE
+        # V11+: Selective pairwise categorical interaction columns for TE
+        # Use only the most domain-relevant pairs to avoid OOM (28 pairs → 10 key pairs)
         pairwise_cat_cols = []
         if version >= 11:
-            from itertools import combinations
-            for c1, c2 in combinations(cat_cols, 2):
-                pair_name = f"{c1}_x_{c2}"
-                X_train[pair_name] = X_train[c1].astype(str) + "_" + X_train[c2].astype(str)
-                X_test[pair_name] = X_test[c1].astype(str) + "_" + X_test[c2].astype(str)
-                # Label encode the pairwise feature
-                le_pair = LabelEncoder()
-                combined_pair = pd.concat([X_train[pair_name], X_test[pair_name]], axis=0)
-                le_pair.fit(combined_pair)
-                X_train[pair_name] = le_pair.transform(X_train[pair_name])
-                X_test[pair_name] = le_pair.transform(X_test[pair_name])
-                pairwise_cat_cols.append(pair_name)
+            key_pairs = [
+                ("Crop_Type", "Crop_Growth_Stage"),
+                ("Crop_Type", "Season"),
+                ("Region", "Season"),
+                ("Crop_Type", "Irrigation_Type"),
+                ("Soil_Type", "Crop_Type"),
+                ("Region", "Crop_Type"),
+                ("Crop_Growth_Stage", "Season"),
+                ("Irrigation_Type", "Water_Source"),
+                ("Region", "Soil_Type"),
+                ("Crop_Growth_Stage", "Irrigation_Type"),
+            ]
+            for c1, c2 in key_pairs:
+                if c1 in X_train.columns and c2 in X_train.columns:
+                    pair_name = f"{c1}_x_{c2}"
+                    X_train[pair_name] = X_train[c1].astype(str) + "_" + X_train[c2].astype(str)
+                    X_test[pair_name] = X_test[c1].astype(str) + "_" + X_test[c2].astype(str)
+                    le_pair = LabelEncoder()
+                    combined_pair = pd.concat([X_train[pair_name], X_test[pair_name]], axis=0)
+                    le_pair.fit(combined_pair)
+                    X_train[pair_name] = le_pair.transform(X_train[pair_name])
+                    X_test[pair_name] = le_pair.transform(X_test[pair_name])
+                    pairwise_cat_cols.append(pair_name)
             logger.info(f"  V11: Created {len(pairwise_cat_cols)} pairwise categorical features")
 
         te_metadata = {
@@ -790,8 +802,8 @@ def _apply_per_fold_te(X_tr, y_tr, X_val, X_te, te_metadata):
     all_te_cols = list(cat_cols) + list(pairwise_cat_cols)
 
     if multiclass:
-        # Multi-class TE: create P(class=k | category) for each class
-        for col in all_te_cols:
+        # Multi-class TE for base categoricals: P(class=k | category) for each class
+        for col in cat_cols:
             temp = pd.DataFrame({"cat": X_tr[col].values, "target": y_tr})
             for cls in range(n_classes):
                 te_col = f"{col}_te_c{cls}"
@@ -802,6 +814,15 @@ def _apply_per_fold_te(X_tr, y_tr, X_val, X_te, te_metadata):
                 X_tr[te_col] = X_tr[col].map(sm).fillna(global_cls_mean)
                 X_val[te_col] = X_val[col].map(sm).fillna(global_cls_mean)
                 X_te[te_col] = X_te[col].map(sm).fillna(global_cls_mean)
+        # Single-value TE for pairwise cols (to save memory)
+        for col in pairwise_cat_cols:
+            te_col = f"{col}_te"
+            temp = pd.DataFrame({"cat": X_tr[col].values, "target": y_tr})
+            agg = temp.groupby("cat")["target"].agg(["mean", "count"])
+            sm = (agg["count"] * agg["mean"] + smoothing * global_mean) / (agg["count"] + smoothing)
+            X_tr[te_col] = X_tr[col].map(sm).fillna(global_mean)
+            X_val[te_col] = X_val[col].map(sm).fillna(global_mean)
+            X_te[te_col] = X_te[col].map(sm).fillna(global_mean)
     else:
         # Legacy single-value TE
         for col in all_te_cols:
