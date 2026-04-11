@@ -36,4 +36,5 @@ NUMERIC_FEATURES = [
 ]
 
 CV_FOLDS = 5
+CV_FOLDS_V11 = 10  # V11+: 10-fold for more stable OOF estimates
 RANDOM_STATE = 42

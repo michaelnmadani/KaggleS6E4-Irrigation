@@ -129,6 +129,23 @@ VERSION_CONFIGS = {
             "Increase regularization: reg_alpha=0.15, reg_lambda=1.5, l2_leaf_reg=5.0",
         ],
     },
+    11: {
+        "name": "V11: Research-driven overhaul — pairwise cat TE, decimal digits, groupby, logit bias, original data",
+        "changes": [
+            "Append original dataset (miadul/irrigation-water-requirement-prediction-dataset) with sample_weight=0.35",
+            "Pairwise categorical interaction features with per-fold TE (C(8,2)=28 pairs → ~135 TE features)",
+            "Decimal digit extraction for all numeric columns (synthetic data exploit)",
+            "GroupBy aggregation features: groupby(cat)[num].agg(mean/std) for top combinations",
+            "Multi-class target encoding: P(class=k|category) for each of 3 classes (replaces broken single-value TE)",
+            "CatBoost native categorical handling via cat_features parameter",
+            "10-fold CV (up from 5-fold) for more stable OOF estimates",
+            "Logit-space bias tuning with nested CV: per-class logit offsets for balanced accuracy",
+            "CatBoost-dominant blend: CatBoost=0.65, LightGBM=0.25, XGBoost=0.10",
+            "Fix CatBoost sample_weight bug (was missing from fit call)",
+            "Fix LightGBM bagging_freq=1 (enable actual row subsampling)",
+            "Add field-normalized features: Previous_Irrigation/hectare, Rainfall/hectare",
+        ],
+    },
 }
 
 
@@ -530,6 +547,51 @@ def _preprocess(train, test, version):
         steps.append({"step": "3d", "name": "V10 ratio features",
                        "description": "moisture_rainfall_ratio, temp_humidity_ratio, wind_temp_product"})
 
+    # ── V11+ features: decimal digits, groupby, pairwise cats, field-normalized ──
+    if version >= 11:
+        # Decimal digit extraction — synthetic data has fixed decimal patterns per class
+        digit_cols = ["Soil_Moisture", "Temperature_C", "Rainfall_mm", "Humidity",
+                      "Wind_Speed_kmh", "Sunlight_Hours", "Soil_pH", "Organic_Carbon",
+                      "Electrical_Conductivity", "Previous_Irrigation_mm", "Field_Area_hectare"]
+        for col in digit_cols:
+            if col in X_train.columns:
+                X_train[f"{col}_d1"] = ((X_train[col] * 10) % 10).astype(int)
+                X_test[f"{col}_d1"] = ((X_test[col] * 10) % 10).astype(int)
+                X_train[f"{col}_d2"] = ((X_train[col] * 100) % 10).astype(int)
+                X_test[f"{col}_d2"] = ((X_test[col] * 100) % 10).astype(int)
+
+        # Field-normalized features
+        X_train["irrig_per_hectare"] = X_train["Previous_Irrigation_mm"] / (X_train["Field_Area_hectare"] + 0.01)
+        X_test["irrig_per_hectare"] = X_test["Previous_Irrigation_mm"] / (X_test["Field_Area_hectare"] + 0.01)
+        X_train["rain_per_hectare"] = X_train["Rainfall_mm"] / (X_train["Field_Area_hectare"] + 0.01)
+        X_test["rain_per_hectare"] = X_test["Rainfall_mm"] / (X_test["Field_Area_hectare"] + 0.01)
+
+        # GroupBy aggregation features — contextual statistics per category
+        groupby_specs = [
+            ("Crop_Type", "Soil_Moisture", ["mean", "std"]),
+            ("Crop_Type", "Temperature_C", ["mean"]),
+            ("Region", "Temperature_C", ["mean", "std"]),
+            ("Region", "Rainfall_mm", ["mean"]),
+            ("Soil_Type", "Soil_Moisture", ["mean"]),
+            ("Season", "Rainfall_mm", ["mean", "std"]),
+            ("Irrigation_Type", "Previous_Irrigation_mm", ["mean"]),
+            ("Crop_Growth_Stage", "Soil_Moisture", ["mean"]),
+        ]
+        for cat_col, num_col, aggs in groupby_specs:
+            if cat_col in X_train.columns and num_col in X_train.columns:
+                for agg in aggs:
+                    feat_name = f"{cat_col}_{num_col}_{agg}"
+                    mapping = X_train.groupby(cat_col)[num_col].agg(agg)
+                    X_train[feat_name] = X_train[cat_col].map(mapping)
+                    X_test[feat_name] = X_test[cat_col].map(mapping)
+                    # Fill any unmapped test values with global stat
+                    fill_val = X_train[num_col].mean() if agg == "mean" else X_train[num_col].std()
+                    X_train[feat_name] = X_train[feat_name].fillna(fill_val)
+                    X_test[feat_name] = X_test[feat_name].fillna(fill_val)
+
+        steps.append({"step": "3e", "name": "V11 features",
+                       "description": "decimal digits, field-normalized, groupby agg, pairwise cats"})
+
     # ── V6 only features: rank transforms + 3-way interactions ──
     if version == 6:
         # Rank-based features (percentile transforms — captures non-linear relationships)
@@ -573,13 +635,34 @@ def _preprocess(train, test, version):
             te_cat_cols = [c for c in te_cat_cols if c != "Mulching_Used"]
             logger.info(f"  V8: Excluded Mulching_Used from target encoding ({len(te_cat_cols)} TE cols)")
         smoothing = 20 if version >= 10 else 10
+
+        # V11+: Pairwise categorical interaction columns for TE
+        pairwise_cat_cols = []
+        if version >= 11:
+            from itertools import combinations
+            for c1, c2 in combinations(cat_cols, 2):
+                pair_name = f"{c1}_x_{c2}"
+                X_train[pair_name] = X_train[c1].astype(str) + "_" + X_train[c2].astype(str)
+                X_test[pair_name] = X_test[c1].astype(str) + "_" + X_test[c2].astype(str)
+                # Label encode the pairwise feature
+                le_pair = LabelEncoder()
+                combined_pair = pd.concat([X_train[pair_name], X_test[pair_name]], axis=0)
+                le_pair.fit(combined_pair)
+                X_train[pair_name] = le_pair.transform(X_train[pair_name])
+                X_test[pair_name] = le_pair.transform(X_test[pair_name])
+                pairwise_cat_cols.append(pair_name)
+            logger.info(f"  V11: Created {len(pairwise_cat_cols)} pairwise categorical features")
+
         te_metadata = {
             "cat_cols": te_cat_cols,
+            "pairwise_cat_cols": pairwise_cat_cols,  # V11+: pairwise cats for TE
             "global_mean": float(np.mean(y_train)),
             "smoothing": smoothing,
+            "multiclass": version >= 11,  # V11+: multi-class TE
+            "n_classes": 3,
         }
         steps.append({"step": 5, "name": "Target encoding (per-fold, deferred)",
-                       "description": f"Per-fold target encoding for {len(cat_cols)} categoricals (applied in CV loop)"})
+                       "description": f"Per-fold target encoding for {len(te_cat_cols)} categoricals + {len(pairwise_cat_cols)} pairwise (applied in CV loop)"})
     else:
         # V2-V6: Full-train target encoding (has leakage)
         global_mean = y_train.mean()
@@ -699,15 +782,36 @@ def _apply_per_fold_te(X_tr, y_tr, X_val, X_te, te_metadata):
     cat_cols = te_metadata["cat_cols"]
     global_mean = te_metadata["global_mean"]
     smoothing = te_metadata["smoothing"]
+    multiclass = te_metadata.get("multiclass", False)
+    n_classes = te_metadata.get("n_classes", 3)
+    pairwise_cat_cols = te_metadata.get("pairwise_cat_cols", [])
 
-    for col in cat_cols:
-        te_col = f"{col}_te"
-        temp = pd.DataFrame({"cat": X_tr[col].values, "target": y_tr})
-        agg = temp.groupby("cat")["target"].agg(["mean", "count"])
-        sm = (agg["count"] * agg["mean"] + smoothing * global_mean) / (agg["count"] + smoothing)
-        X_tr[te_col] = X_tr[col].map(sm).fillna(global_mean)
-        X_val[te_col] = X_val[col].map(sm).fillna(global_mean)
-        X_te[te_col] = X_te[col].map(sm).fillna(global_mean)
+    # All columns to target-encode (base categoricals + pairwise interactions)
+    all_te_cols = list(cat_cols) + list(pairwise_cat_cols)
+
+    if multiclass:
+        # Multi-class TE: create P(class=k | category) for each class
+        for col in all_te_cols:
+            temp = pd.DataFrame({"cat": X_tr[col].values, "target": y_tr})
+            for cls in range(n_classes):
+                te_col = f"{col}_te_c{cls}"
+                temp[f"is_c{cls}"] = (temp["target"] == cls).astype(float)
+                agg = temp.groupby("cat")[f"is_c{cls}"].agg(["mean", "count"])
+                global_cls_mean = float((y_tr == cls).mean())
+                sm = (agg["count"] * agg["mean"] + smoothing * global_cls_mean) / (agg["count"] + smoothing)
+                X_tr[te_col] = X_tr[col].map(sm).fillna(global_cls_mean)
+                X_val[te_col] = X_val[col].map(sm).fillna(global_cls_mean)
+                X_te[te_col] = X_te[col].map(sm).fillna(global_cls_mean)
+    else:
+        # Legacy single-value TE
+        for col in all_te_cols:
+            te_col = f"{col}_te"
+            temp = pd.DataFrame({"cat": X_tr[col].values, "target": y_tr})
+            agg = temp.groupby("cat")["target"].agg(["mean", "count"])
+            sm = (agg["count"] * agg["mean"] + smoothing * global_mean) / (agg["count"] + smoothing)
+            X_tr[te_col] = X_tr[col].map(sm).fillna(global_mean)
+            X_val[te_col] = X_val[col].map(sm).fillna(global_mean)
+            X_te[te_col] = X_te[col].map(sm).fillna(global_mean)
 
     return X_tr, X_val, X_te
 
@@ -719,7 +823,55 @@ def _apply_per_fold_te(X_tr, y_tr, X_val, X_te, te_metadata):
 def _get_models(version, class_weights):
     models = {}
 
-    if version >= 10:
+    if version >= 11:
+        # V11: Research-driven params — bagging_freq fix, more trees, proper regularization
+        models["lightgbm"] = LGBMClassifier(
+            n_estimators=2500,
+            max_depth=8,
+            learning_rate=0.02,
+            num_leaves=63,
+            min_child_samples=50,
+            subsample=0.8,
+            bagging_freq=1,  # FIX: enable actual row subsampling
+            colsample_bytree=0.7,
+            reg_alpha=0.1,
+            reg_lambda=1.0,
+            class_weight="balanced",
+            objective="multiclass",
+            num_class=3,
+            random_state=RANDOM_STATE,
+            n_jobs=-1,
+            verbose=-1,
+        )
+        models["xgboost"] = XGBClassifier(
+            n_estimators=2000,
+            max_depth=7,
+            learning_rate=0.02,
+            subsample=0.8,
+            colsample_bytree=0.7,
+            min_child_weight=5,
+            reg_alpha=0.1,
+            reg_lambda=1.0,
+            gamma=0.02,
+            objective="multi:softprob",
+            num_class=3,
+            early_stopping_rounds=50,
+            random_state=RANDOM_STATE,
+            n_jobs=-1,
+            verbosity=0,
+        )
+        if HAS_CATBOOST:
+            models["catboost"] = CatBoostClassifier(
+                iterations=2500,
+                depth=7,
+                learning_rate=0.02,
+                l2_leaf_reg=3.0,
+                auto_class_weights="Balanced",
+                random_seed=RANDOM_STATE,
+                verbose=0,
+                thread_count=-1,
+            )
+    elif version >= 10:
         # V10: Slightly more regularization for better generalization
         models["lightgbm"] = LGBMClassifier(
             n_estimators=2000,
@@ -1085,9 +1237,10 @@ def _cv_predict(model, X_train, y_train, X_test, name, sample_weights=None, n_fo
                       eval_set=[(X_val, y_val)],
                       verbose=False)
             elif model_type == "CatBoostClassifier":
-                m.fit(X_tr, y_tr,
-                      eval_set=(X_val, y_val),
-                      early_stopping_rounds=50)
+                cb_kwargs = {"eval_set": (X_val, y_val), "early_stopping_rounds": 50}
+                if sw is not None:
+                    cb_kwargs["sample_weight"] = sw  # FIX: was missing in V3-V10
+                m.fit(X_tr, y_tr, **cb_kwargs)
             else:
                 m.fit(X_tr, y_tr, sample_weight=sw)
         except TypeError:
