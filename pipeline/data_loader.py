@@ -59,12 +59,34 @@ def download_competition_data(force=False):
     return train_path, test_path, sample_path
 
 
-def load_data():
-    """Load train, test, and sample submission DataFrames."""
+def load_data(append_original=False, original_weight=0.35):
+    """Load train, test, and sample submission DataFrames.
+
+    Args:
+        append_original: If True, append the original dataset to training data.
+        original_weight: Sample weight for original data rows (0-1). Competition rows get weight 1.0.
+    """
     train_path, test_path, sample_path = download_competition_data()
     train = pd.read_csv(train_path)
     test = pd.read_csv(test_path)
     sample_sub = pd.read_csv(sample_path)
+
+    if append_original:
+        orig_path = os.path.join(DATA_DIR, "irrigation_prediction.csv")
+        if os.path.exists(orig_path):
+            orig = pd.read_csv(orig_path)
+            # Add id column to match train format
+            max_id = train["id"].max() + 1
+            orig.insert(0, "id", range(max_id, max_id + len(orig)))
+            # Mark original vs competition rows for sample weighting
+            train["_is_original"] = 0
+            orig["_is_original"] = 1
+            train = pd.concat([train, orig], axis=0, ignore_index=True)
+            print(f"Appended {len(orig)} original rows (weight={original_weight}). "
+                  f"Total train: {len(train)}")
+        else:
+            print(f"WARNING: Original data not found at {orig_path}. Skipping append.")
+
     return train, test, sample_sub
 
 

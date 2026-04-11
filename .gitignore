@@ -13,3 +13,4 @@ outputs/submissions/*.csv
 catboost_info/
 outputs/v9_intermediate/
 outputs/v10_intermediate/
+outputs/v11_intermediate/
