@@ -260,9 +260,11 @@ def step4_blend_and_finalize():
         else:
             logger.info("  No calibration improvement found (factor=1.0 is optimal)")
 
-    # Stacking ensemble
+    # Stacking ensemble (only use base models, not blends/calibrated)
     logger.info("Training stacking ensemble...")
-    stack_result = _stacking_ensemble(results, oof_probs_all, X_train, y_train, X_test, sample_weights, VERSION)
+    base_names = ("lightgbm", "xgboost", "catboost")
+    stack_results = {n: results[n] for n in base_names if n in results}
+    stack_result = _stacking_ensemble(stack_results, oof_probs_all, X_train, y_train, X_test, sample_weights, VERSION)
     results["stacking_ensemble"] = stack_result
     if stack_result["mean_balanced_accuracy"] > best_score:
         best_score = stack_result["mean_balanced_accuracy"]

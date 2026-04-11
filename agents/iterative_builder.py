@@ -111,7 +111,7 @@ VERSION_CONFIGS = {
             "Remove HIGH class weight boost (V8's 1.5x was too aggressive, -0.00137 on LGBM)",
             "Keep V8 features: dry_hot_active, moisture_deficit_ratio, rainfall_adequacy",
             "Keep V8 feature drops and Mulching_Used TE exclusion",
-            "Tune CatBoost: depth=7 (from 6), iterations=2500 (strongest model in V8)",
+            "CatBoost: depth=6, iterations=2000 (V7 params — depth=7 was slower AND worse)",
             "Add post-blend probability calibration: search optimal HIGH class scaling on OOF",
             "Keep finer blend grid (step=0.05)",
         ],
@@ -660,8 +660,8 @@ def _get_models(version, class_weights):
         )
         if HAS_CATBOOST:
             models["catboost"] = CatBoostClassifier(
-                iterations=2500,
-                depth=7,
+                iterations=2000,
+                depth=6,
                 learning_rate=0.02,
                 l2_leaf_reg=3.0,
                 auto_class_weights="Balanced",
