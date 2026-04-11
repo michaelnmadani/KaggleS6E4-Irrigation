@@ -1210,7 +1210,8 @@ def _get_models(version, class_weights):
 #  CV + PREDICT
 # ═══════════════════════════════════════════════════════════════════════
 
-def _cv_predict(model, X_train, y_train, X_test, name, sample_weights=None, n_folds=None, te_metadata=None):
+def _cv_predict(model, X_train, y_train, X_test, name, sample_weights=None, n_folds=None, te_metadata=None, fold_range=None):
+    """Run CV prediction. fold_range=(start, end) runs only folds [start, end) for splitting long jobs."""
     if n_folds is None:
         n_folds = CV_FOLDS
     skf = StratifiedKFold(n_splits=n_folds, shuffle=True, random_state=RANDOM_STATE)
@@ -1222,7 +1223,13 @@ def _cv_predict(model, X_train, y_train, X_test, name, sample_weights=None, n_fo
     feat_imp = None
     feat_names = None
 
+    fold_start = fold_range[0] if fold_range else 0
+    fold_end = fold_range[1] if fold_range else n_folds
+
     for fold, (tr_idx, val_idx) in enumerate(skf.split(X_train, y_train)):
+        if fold < fold_start or fold >= fold_end:
+            continue
+
         y_tr = y_train[tr_idx]
         y_val = y_train[val_idx]
 
@@ -1286,8 +1293,26 @@ def _cv_predict(model, X_train, y_train, X_test, name, sample_weights=None, n_fo
 
         logger.info(f"  Fold {fold+1}/{n_folds}: BA = {ba:.5f}")
 
-    mean_ba = balanced_accuracy_score(y_train, oof_preds)
-    metrics = compute_metrics(y_train, oof_preds, labels=[0, 1, 2])
+    # For partial fold runs, scale test_probs by actual folds run
+    n_folds_run = fold_end - fold_start
+    if fold_range and n_folds_run < n_folds:
+        # test_probs was accumulated with /n_folds per fold; rescale to represent partial contribution
+        pass  # Already correct — each fold contributes test_proba / n_folds
+
+    # Compute OOF BA only on folds that were actually run
+    if fold_range:
+        # Partial run — BA on filled indices only
+        filled_mask = oof_probs.sum(axis=1) > 0
+        if filled_mask.any():
+            mean_ba = balanced_accuracy_score(y_train[filled_mask], oof_preds[filled_mask])
+            metrics = compute_metrics(y_train[filled_mask], oof_preds[filled_mask], labels=[0, 1, 2])
+        else:
+            mean_ba = 0.0
+            metrics = {}
+    else:
+        mean_ba = balanced_accuracy_score(y_train, oof_preds)
+        metrics = compute_metrics(y_train, oof_preds, labels=[0, 1, 2])
+
     if feat_names is None:
         feat_names = X_train.columns.tolist()
     if feat_imp is None:
@@ -1303,6 +1328,7 @@ def _cv_predict(model, X_train, y_train, X_test, name, sample_weights=None, n_fo
         "oof_probabilities": oof_probs,
         "feature_importance": fi,
         "params": _safe_params(model),
+        "_fold_range": fold_range,  # Track which folds were run
     }
 
 
