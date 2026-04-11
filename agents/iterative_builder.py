@@ -116,6 +116,19 @@ VERSION_CONFIGS = {
             "Keep finer blend grid (step=0.05)",
         ],
     },
+    10: {
+        "name": "V10: Anti-overfit — no calibration, fixed blend, multi-seed averaging",
+        "changes": [
+            "Remove probability calibration entirely (source of CV-LB gap: 0.96999 CV vs 0.96715 LB)",
+            "Replace grid-searched blend with fixed score-proportional weights",
+            "Multi-seed averaging: LGBM 2 seeds, CatBoost 2 seeds",
+            "Add 3 ratio features: moisture_rainfall_ratio, temp_humidity_ratio, wind_temp_product",
+            "Drop temp_high, no_mulch (redundant with continuous/categorical originals)",
+            "Exclude Soil_Type from TE (low importance across all models)",
+            "Increase TE smoothing from 10 to 20 (reduce leakage)",
+            "Increase regularization: reg_alpha=0.15, reg_lambda=1.5, l2_leaf_reg=5.0",
+        ],
+    },
 }
 
 
@@ -201,8 +214,8 @@ def build_versioned_models(train, test, version=3, prev_results=None, fast=False
             best_model_name = "lightgbm_multiseed"
             best_test_preds = multi_preds
 
-    # V7: Optimized blending via grid search on OOF predictions
-    if version >= 7 and not fast and len([n for n in results if n not in ("stacking_ensemble", "weighted_ensemble", "lightgbm_multiseed")]) >= 2:
+    # V7-9: Optimized blending via grid search on OOF predictions (skip V10+ to avoid overfitting)
+    if 7 <= version <= 9 and not fast and len([n for n in results if n not in ("stacking_ensemble", "weighted_ensemble", "lightgbm_multiseed")]) >= 2:
         logger.info("Optimized blending via grid search on OOF...")
         blend_models = {n: r for n, r in results.items()
                         if n not in ("stacking_ensemble", "weighted_ensemble", "lightgbm_multiseed")
@@ -252,8 +265,8 @@ def build_versioned_models(train, test, version=3, prev_results=None, fast=False
                 best_model_name = "optimized_blend"
                 best_test_preds = blend_test.argmax(axis=1)
 
-    # V9+: Post-blend probability calibration for HIGH class
-    if version >= 9 and not fast and "optimized_blend" in results:
+    # V9 only: Post-blend probability calibration for HIGH class (skip V10+ — caused CV-LB gap)
+    if version == 9 and not fast and "optimized_blend" in results:
         logger.info("V9: Post-blend HIGH class probability calibration...")
         cal_oof = results["optimized_blend"]["oof_probabilities"].copy()
         cal_test = results["optimized_blend"]["test_probabilities"].copy()
@@ -297,6 +310,60 @@ def build_versioned_models(train, test, version=3, prev_results=None, fast=False
                 best_test_preds = final_test.argmax(axis=1)
         else:
             logger.info("  No calibration improvement found (factor=1.0 is optimal)")
+
+    # V10+: Fixed score-proportional blend (no grid search, no OOF tuning)
+    if version >= 10 and not fast:
+        base_model_names = [n for n in results if n in ("lightgbm", "xgboost", "catboost")]
+        if len(base_model_names) >= 2:
+            logger.info("V10: Fixed score-proportional blend (no grid search)...")
+            total_ba = sum(results[n]["mean_balanced_accuracy"] for n in base_model_names)
+            fixed_weights = {n: results[n]["mean_balanced_accuracy"] / total_ba for n in base_model_names}
+            logger.info(f"  Score-proportional weights: {{{', '.join(f'{n}: {w:.4f}' for n, w in fixed_weights.items())}}}")
+            blend_test = np.zeros_like(results[base_model_names[0]]["test_probabilities"])
+            blend_oof = np.zeros_like(results[base_model_names[0]]["oof_probabilities"])
+            for n, w in fixed_weights.items():
+                blend_test += results[n]["test_probabilities"] * w
+                blend_oof += results[n]["oof_probabilities"] * w
+            blend_ba = balanced_accuracy_score(y_train, blend_oof.argmax(axis=1))
+            logger.info(f"  Fixed blend BA: {blend_ba:.5f}")
+            results["fixed_blend"] = {
+                "fold_scores": [],
+                "mean_balanced_accuracy": round(blend_ba, 5),
+                "metrics": compute_metrics(y_train, blend_oof.argmax(axis=1), labels=[0, 1, 2]),
+                "test_predictions": blend_test.argmax(axis=1),
+                "test_probabilities": blend_test,
+                "oof_probabilities": blend_oof,
+                "feature_importance": results[base_model_names[0]]["feature_importance"],
+                "params": {"method": "fixed_score_proportional_blend", "weights": fixed_weights},
+            }
+            if blend_ba > best_score:
+                best_score = blend_ba
+                best_model_name = "fixed_blend"
+                best_test_preds = blend_test.argmax(axis=1)
+
+            # Also compute equal-weight blend for comparison
+            equal_w = 1.0 / len(base_model_names)
+            eq_test = np.zeros_like(blend_test)
+            eq_oof = np.zeros_like(blend_oof)
+            for n in base_model_names:
+                eq_test += results[n]["test_probabilities"] * equal_w
+                eq_oof += results[n]["oof_probabilities"] * equal_w
+            eq_ba = balanced_accuracy_score(y_train, eq_oof.argmax(axis=1))
+            logger.info(f"  Equal blend BA: {eq_ba:.5f}")
+            results["equal_blend"] = {
+                "fold_scores": [],
+                "mean_balanced_accuracy": round(eq_ba, 5),
+                "metrics": compute_metrics(y_train, eq_oof.argmax(axis=1), labels=[0, 1, 2]),
+                "test_predictions": eq_test.argmax(axis=1),
+                "test_probabilities": eq_test,
+                "oof_probabilities": eq_oof,
+                "feature_importance": results[base_model_names[0]]["feature_importance"],
+                "params": {"method": "equal_blend", "weights": {n: equal_w for n in base_model_names}},
+            }
+            if eq_ba > best_score:
+                best_score = eq_ba
+                best_model_name = "equal_blend"
+                best_test_preds = eq_test.argmax(axis=1)
 
     # Skip ensembles in fast mode (only 1 model)
     if not fast:
@@ -446,6 +513,23 @@ def _preprocess(train, test, version):
         steps.append({"step": "3c", "name": "V8 HIGH-class features",
                        "description": "dry_hot_active, moisture_deficit_ratio, rainfall_adequacy"})
 
+    # ── V10+ features: ratio features for better generalization ──
+    if version >= 10:
+        # moisture_rainfall_ratio: strong HIGH class separator (HIGH mean=0.14 vs Low=0.04)
+        X_train["moisture_rainfall_ratio"] = X_train["Soil_Moisture"] / (X_train["Rainfall_mm"] + 1)
+        X_test["moisture_rainfall_ratio"] = X_test["Soil_Moisture"] / (X_test["Rainfall_mm"] + 1)
+
+        # temp_humidity_ratio: HIGH=0.63 vs Low=0.45
+        X_train["temp_humidity_ratio"] = X_train["Temperature_C"] / (X_train["Humidity"] + 1)
+        X_test["temp_humidity_ratio"] = X_test["Temperature_C"] / (X_test["Humidity"] + 1)
+
+        # wind_temp_product: combines two key HIGH-class signals (r=+0.25 with HIGH)
+        X_train["wind_temp_product"] = X_train["Wind_Speed_kmh"] * X_train["Temperature_C"]
+        X_test["wind_temp_product"] = X_test["Wind_Speed_kmh"] * X_test["Temperature_C"]
+
+        steps.append({"step": "3d", "name": "V10 ratio features",
+                       "description": "moisture_rainfall_ratio, temp_humidity_ratio, wind_temp_product"})
+
     # ── V6 only features: rank transforms + 3-way interactions ──
     if version == 6:
         # Rank-based features (percentile transforms — captures non-linear relationships)
@@ -480,14 +564,19 @@ def _preprocess(train, test, version):
         # V7+: Per-fold target encoding to prevent leakage
         # Store metadata; actual encoding happens in _cv_predict()
         te_cat_cols = cat_cols[:]
-        if version >= 8:
+        if version >= 10:
+            # V10+: Exclude Mulching_Used and Soil_Type from TE
+            te_cat_cols = [c for c in te_cat_cols if c not in ["Mulching_Used", "Soil_Type"]]
+            logger.info(f"  V10: Excluded Mulching_Used + Soil_Type from TE ({len(te_cat_cols)} TE cols)")
+        elif version >= 8:
             # V8+: Exclude Mulching_Used from TE (importance=26, too noisy)
             te_cat_cols = [c for c in te_cat_cols if c != "Mulching_Used"]
             logger.info(f"  V8: Excluded Mulching_Used from target encoding ({len(te_cat_cols)} TE cols)")
+        smoothing = 20 if version >= 10 else 10
         te_metadata = {
             "cat_cols": te_cat_cols,
             "global_mean": float(np.mean(y_train)),
-            "smoothing": 10,
+            "smoothing": smoothing,
         }
         steps.append({"step": 5, "name": "Target encoding (per-fold, deferred)",
                        "description": f"Per-fold target encoding for {len(cat_cols)} categoricals (applied in CV loop)"})
@@ -555,8 +644,15 @@ def _preprocess(train, test, version):
     steps.append({"step": 8, "name": "Frequency encoding",
                    "description": f"Frequency encoding for {len(freq_cols)} categoricals"})
 
-    # V8+: Drop useless features (low importance in V7)
-    if version >= 8:
+    # V8+: Drop useless features (low importance)
+    if version >= 10:
+        drop_feats = ["wind_high", "Mulching_Used_freq", "moisture_low", "temp_high", "no_mulch"]
+        existing_drops = [c for c in drop_feats if c in X_train.columns]
+        if existing_drops:
+            X_train = X_train.drop(columns=existing_drops)
+            X_test = X_test.drop(columns=existing_drops)
+            logger.info(f"  V10: Dropped {len(existing_drops)} low-importance features: {existing_drops}")
+    elif version >= 8:
         drop_feats = ["wind_high", "Mulching_Used_freq", "moisture_low"]
         existing_drops = [c for c in drop_feats if c in X_train.columns]
         if existing_drops:
@@ -623,7 +719,54 @@ def _apply_per_fold_te(X_tr, y_tr, X_val, X_te, te_metadata):
 def _get_models(version, class_weights):
     models = {}
 
-    if version >= 9:
+    if version >= 10:
+        # V10: Slightly more regularization for better generalization
+        models["lightgbm"] = LGBMClassifier(
+            n_estimators=2000,
+            max_depth=8,
+            learning_rate=0.02,
+            num_leaves=63,
+            min_child_samples=50,
+            subsample=0.8,
+            colsample_bytree=0.7,
+            reg_alpha=0.15,
+            reg_lambda=1.5,
+            class_weight="balanced",
+            objective="multiclass",
+            num_class=3,
+            random_state=RANDOM_STATE,
+            n_jobs=-1,
+            verbose=-1,
+        )
+        models["xgboost"] = XGBClassifier(
+            n_estimators=1500,
+            max_depth=7,
+            learning_rate=0.02,
+            subsample=0.8,
+            colsample_bytree=0.7,
+            min_child_weight=5,
+            reg_alpha=0.15,
+            reg_lambda=1.5,
+            gamma=0.05,
+            objective="multi:softprob",
+            num_class=3,
+            early_stopping_rounds=50,
+            random_state=RANDOM_STATE,
+            n_jobs=-1,
+            verbosity=0,
+        )
+        if HAS_CATBOOST:
+            models["catboost"] = CatBoostClassifier(
+                iterations=2000,
+                depth=6,
+                learning_rate=0.02,
+                l2_leaf_reg=5.0,
+                auto_class_weights="Balanced",
+                random_seed=RANDOM_STATE,
+                verbose=0,
+                thread_count=-1,
+            )
+    elif version >= 9:
         # V9: Revert LGBM/XGB to V7 proven params, tune CatBoost
         models["lightgbm"] = LGBMClassifier(
             n_estimators=2000,
