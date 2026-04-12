@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
-"""Generic versioned step runner — each step runs 5 folds to stay within sandbox timeout.
+"""Generic versioned step runner — each invocation trains ONE fold (<8 min).
 
-Usage (each step ~40-50 min):
-    python run_steps.py --version 12 --step 1a   # LightGBM seed=42, folds 0-4
-    python run_steps.py --version 12 --step 1b   # LightGBM seed=42, folds 5-9 + merge
-    python run_steps.py --version 12 --step 2a   # LightGBM seed=123, folds 0-4
-    python run_steps.py --version 12 --step 2b   # LightGBM seed=123, folds 5-9 + merge
-    python run_steps.py --version 12 --step 3a   # XGBoost seed=42, folds 0-4
-    python run_steps.py --version 12 --step 3b   # XGBoost seed=42, folds 5-9 + merge
-    python run_steps.py --version 12 --step 4a   # CatBoost seed=42, folds 0-4
-    python run_steps.py --version 12 --step 4b   # CatBoost seed=42, folds 5-9 + merge
-    python run_steps.py --version 12 --step 5a   # CatBoost seed=123, folds 0-4
-    python run_steps.py --version 12 --step 5b   # CatBoost seed=123, folds 5-9 + merge
-    python run_steps.py --version 12 --step 6    # Multi-seed avg + blend + stacker + logit bias + save submissions
+Usage:
+    python run_steps.py --version 12 --step 1 --fold 0     # LightGBM seed=42, fold 0
+    python run_steps.py --version 12 --step 1 --fold 9     # LightGBM seed=42, fold 9
+    python run_steps.py --version 12 --step 1 --merge      # Merge all 10 folds
+    python run_steps.py --version 12 --step 2 --fold 0     # LightGBM seed=123, fold 0
+    ...
+    python run_steps.py --version 12 --step 6              # Blend + stacker + bias + submissions
+
+Steps 1-5 map to model/seed combos:
+    1 = LightGBM  seed=42      4 = CatBoost  seed=42
+    2 = LightGBM  seed=123     5 = CatBoost  seed=123
+    3 = XGBoost   seed=42
 """
 
 import sys, os, json, time, argparse, pickle
@@ -43,12 +43,23 @@ logger = setup_logging()
 _parser = argparse.ArgumentParser(description="Generic versioned step runner")
 _parser.add_argument("--version", type=int, required=True, help="Pipeline version (e.g. 12)")
 _parser.add_argument("--step", type=str, required=True,
-                     choices=["1a", "1b", "2a", "2b", "3a", "3b", "4a", "4b", "5a", "5b", "6"])
+                     choices=["1", "2", "3", "4", "5", "6"])
+_parser.add_argument("--fold", type=int, required=False, help="Fold index 0-9 (for steps 1-5)")
+_parser.add_argument("--merge", action="store_true", help="Merge all fold results (for steps 1-5)")
 _args = _parser.parse_args()
 
 VERSION = _args.version
 INTERMEDIATE_DIR = f"outputs/v{VERSION}_intermediate"
 N_FOLDS = CV_FOLDS_V11  # 10-fold
+
+# Step-to-model mapping
+STEP_MODELS = {
+    "1": ("lightgbm", 42),
+    "2": ("lightgbm", 123),
+    "3": ("xgboost", 42),
+    "4": ("catboost", 42),
+    "5": ("catboost", 123),
+}
 
 
 def _save_intermediate(name, data):
@@ -63,6 +74,9 @@ def _load_intermediate(name):
     path = os.path.join(INTERMEDIATE_DIR, f"{name}.pkl")
     with open(path, "rb") as f:
         return pickle.load(f)
+
+
+import pandas as pd  # needed for _get_shared_data
 
 
 def _get_shared_data():
@@ -100,11 +114,8 @@ def _get_shared_data():
         return shared
 
 
-import pandas as pd  # needed for _get_shared_data
-
-
-def _train_model_partial(model_type, seed, fold_start, fold_end, step_name):
-    """Train a model on a subset of folds (to stay within sandbox timeout)."""
+def _train_single_fold(model_type, seed, fold_idx, step_name):
+    """Train a model on a single fold (<8 min with lr=0.05)."""
     t0 = time.time()
     logger.info(f"=== {step_name} ===")
 
@@ -127,45 +138,54 @@ def _train_model_partial(model_type, seed, fold_start, fold_end, step_name):
     elif "random_state" in params:
         model.set_params(random_state=seed)
 
-    part_name = f"{model_type}_seed{seed}_f{fold_start}_{fold_end}"
-    logger.info(f"Training {model_type} seed={seed} (folds {fold_start}-{fold_end-1} of {N_FOLDS})...")
+    part_name = f"{model_type}_seed{seed}_fold{fold_idx}"
+    logger.info(f"Training {model_type} seed={seed} fold {fold_idx}/{N_FOLDS}...")
     result = _cv_predict(model, X_train, y_train, X_test, part_name, sample_weights,
                          n_folds=N_FOLDS, te_metadata=te_metadata,
-                         fold_range=(fold_start, fold_end))
+                         fold_range=(fold_idx, fold_idx + 1))
 
     _save_intermediate(part_name, result)
 
     elapsed = round(time.time() - t0, 1)
     logger.info(f"  {step_name} done in {elapsed}s ({elapsed/60:.1f} min)")
     for i, s in enumerate(result["fold_scores"]):
-        logger.info(f"    Fold {fold_start + i}: BA = {s:.5f}")
+        logger.info(f"    Fold {fold_idx}: BA = {s:.5f}")
 
 
-def _merge_partial_results(model_type, seed):
-    """Merge two partial fold results into one complete result."""
-    half = N_FOLDS // 2
-    part_a = _load_intermediate(f"{model_type}_seed{seed}_f0_{half}")
-    part_b = _load_intermediate(f"{model_type}_seed{seed}_f{half}_{N_FOLDS}")
-
+def _merge_all_folds(model_type, seed):
+    """Merge 10 individual fold results into one complete result."""
     shared = _load_intermediate("shared_data")
     y_train = shared["y_train"]
 
-    # Merge OOF: each part has zeros where it didn't predict — just add them
-    merged_oof = part_a["oof_probabilities"] + part_b["oof_probabilities"]
-    # Merge test probs: each part contributed folds/n_folds of the prediction — just add
-    merged_test = part_a["test_probabilities"] + part_b["test_probabilities"]
+    merged_oof = None
+    merged_test = None
+    fold_scores = []
+    fi_list = []
+    params = None
 
-    # Merge fold scores
-    fold_scores = part_a["fold_scores"] + part_b["fold_scores"]
+    for fold in range(N_FOLDS):
+        part = _load_intermediate(f"{model_type}_seed{seed}_fold{fold}")
+        if merged_oof is None:
+            merged_oof = part["oof_probabilities"].copy()
+            merged_test = part["test_probabilities"].copy()
+        else:
+            merged_oof += part["oof_probabilities"]
+            merged_test += part["test_probabilities"]
+        fold_scores.extend(part["fold_scores"])
+        fi_list.append(part["feature_importance"])
+        if params is None:
+            params = part["params"]
 
-    # Compute overall BA
+    # Overall BA on merged OOF
     oof_preds = merged_oof.argmax(axis=1)
     mean_ba = balanced_accuracy_score(y_train, oof_preds)
 
-    # Average feature importance
+    # Average feature importance across folds
     fi_merged = {}
-    for feat in part_a["feature_importance"]:
-        fi_merged[feat] = (part_a["feature_importance"].get(feat, 0) + part_b["feature_importance"].get(feat, 0)) / 2
+    for fi in fi_list:
+        for feat, val in fi.items():
+            fi_merged[feat] = fi_merged.get(feat, 0) + val
+    # Each fold already contributed feat_imp / n_folds, so sum = average
     fi_merged = dict(sorted(fi_merged.items(), key=lambda x: x[1], reverse=True))
 
     result_name = f"{model_type}_seed{seed}"
@@ -177,58 +197,13 @@ def _merge_partial_results(model_type, seed):
         "test_probabilities": merged_test,
         "oof_probabilities": merged_oof,
         "feature_importance": fi_merged,
-        "params": part_a["params"],
+        "params": params,
     }
     _save_intermediate(result_name, merged)
     logger.info(f"  Merged {result_name}: BA = {mean_ba:.5f} ({len(fold_scores)} folds)")
+    for i, s in enumerate(fold_scores):
+        logger.info(f"    Fold {i}: BA = {s:.5f}")
     return merged
-
-
-# Step functions: each model split into first half and second half of folds
-def step1a():
-    half = N_FOLDS // 2
-    _train_model_partial("lightgbm", 42, 0, half, f"STEP 1a: LightGBM seed=42 folds 0-{half-1}")
-
-def step1b():
-    half = N_FOLDS // 2
-    _train_model_partial("lightgbm", 42, half, N_FOLDS, f"STEP 1b: LightGBM seed=42 folds {half}-{N_FOLDS-1}")
-    _merge_partial_results("lightgbm", 42)
-
-def step2a():
-    half = N_FOLDS // 2
-    _train_model_partial("lightgbm", 123, 0, half, f"STEP 2a: LightGBM seed=123 folds 0-{half-1}")
-
-def step2b():
-    half = N_FOLDS // 2
-    _train_model_partial("lightgbm", 123, half, N_FOLDS, f"STEP 2b: LightGBM seed=123 folds {half}-{N_FOLDS-1}")
-    _merge_partial_results("lightgbm", 123)
-
-def step3a():
-    half = N_FOLDS // 2
-    _train_model_partial("xgboost", 42, 0, half, f"STEP 3a: XGBoost seed=42 folds 0-{half-1}")
-
-def step3b():
-    half = N_FOLDS // 2
-    _train_model_partial("xgboost", 42, half, N_FOLDS, f"STEP 3b: XGBoost seed=42 folds {half}-{N_FOLDS-1}")
-    _merge_partial_results("xgboost", 42)
-
-def step4a():
-    half = N_FOLDS // 2
-    _train_model_partial("catboost", 42, 0, half, f"STEP 4a: CatBoost seed=42 folds 0-{half-1}")
-
-def step4b():
-    half = N_FOLDS // 2
-    _train_model_partial("catboost", 42, half, N_FOLDS, f"STEP 4b: CatBoost seed=42 folds {half}-{N_FOLDS-1}")
-    _merge_partial_results("catboost", 42)
-
-def step5a():
-    half = N_FOLDS // 2
-    _train_model_partial("catboost", 123, 0, half, f"STEP 5a: CatBoost seed=123 folds 0-{half-1}")
-
-def step5b():
-    half = N_FOLDS // 2
-    _train_model_partial("catboost", 123, half, N_FOLDS, f"STEP 5b: CatBoost seed=123 folds {half}-{N_FOLDS-1}")
-    _merge_partial_results("catboost", 123)
 
 
 def _logit_bias_tuning(oof_probs, y_train, test_probs):
@@ -580,11 +555,21 @@ def step6_blend_and_finalize():
 
 if __name__ == "__main__":
     step = _args.step
-    {
-        "1a": step1a, "1b": step1b,
-        "2a": step2a, "2b": step2b,
-        "3a": step3a, "3b": step3b,
-        "4a": step4a, "4b": step4b,
-        "5a": step5a, "5b": step5b,
-        "6": step6_blend_and_finalize,
-    }[step]()
+
+    if step in STEP_MODELS:
+        model_type, seed = STEP_MODELS[step]
+        if _args.merge:
+            logger.info(f"=== STEP {step} MERGE: {model_type} seed={seed} ===")
+            _merge_all_folds(model_type, seed)
+        elif _args.fold is not None:
+            fold = _args.fold
+            if fold < 0 or fold >= N_FOLDS:
+                print(f"Error: --fold must be 0-{N_FOLDS-1}", file=sys.stderr)
+                sys.exit(1)
+            _train_single_fold(model_type, seed, fold,
+                               f"STEP {step} fold {fold}: {model_type} seed={seed}")
+        else:
+            print("Error: steps 1-5 require --fold N or --merge", file=sys.stderr)
+            sys.exit(1)
+    elif step == "6":
+        step6_blend_and_finalize()
