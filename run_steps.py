@@ -109,12 +109,13 @@ def _train_model_partial(model_type, seed, fold_start, fold_end, step_name):
     logger.info(f"=== {step_name} ===")
 
     shared = _get_shared_data()
-    X_train = shared["X_train"]
+    X_train = shared["X_train"].astype(np.float32)
     y_train = shared["y_train"]
-    X_test = shared["X_test"]
+    X_test = shared["X_test"].astype(np.float32)
     sample_weights = shared["sample_weights"]
     te_metadata = shared["te_metadata"]
     class_weights = shared["class_weights"]
+    logger.info(f"  Data cast to float32: X_train={X_train.memory_usage(deep=True).sum()/1e9:.2f} GB, X_test={X_test.memory_usage(deep=True).sum()/1e9:.2f} GB")
 
     models = _get_models(VERSION, class_weights)
     model = models[model_type]
