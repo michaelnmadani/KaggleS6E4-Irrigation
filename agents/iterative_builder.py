@@ -1293,6 +1293,14 @@ def _cv_predict(model, X_train, y_train, X_test, name, sample_weights=None, n_fo
 
         logger.info(f"  Fold {fold+1}/{n_folds}: BA = {ba:.5f}")
 
+        # Free memory between folds (critical for CatBoost which is memory-hungry)
+        del m, X_tr, X_val, X_te_fold
+        try:
+            del val_proba, test_proba
+        except NameError:
+            pass
+        import gc; gc.collect()
+
     # For partial fold runs, scale test_probs by actual folds run
     n_folds_run = fold_end - fold_start
     if fold_range and n_folds_run < n_folds:
