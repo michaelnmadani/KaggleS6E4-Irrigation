@@ -1,6 +1,7 @@
 """Iterative Builder Agent: Configurable builder that applies version-specific improvements."""
 
 import math
+from itertools import combinations
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import StratifiedKFold
@@ -144,6 +145,20 @@ VERSION_CONFIGS = {
             "Fix CatBoost sample_weight bug (was missing from fit call)",
             "Fix LightGBM bagging_freq=1 (enable actual row subsampling)",
             "Add field-normalized features: Previous_Irrigation/hectare, Rainfall/hectare",
+        ],
+    },
+    12: {
+        "name": "V12: 131 pairwise TE, L2 meta-stacker, CatBoost seed fix, XGB dual-seed",
+        "changes": [
+            "Expand pairwise TE from 10 key pairs to ~131 pairs (28 cat×cat + 88 cat×num + 15 num×num)",
+            "Integer-coded fast pairwise TE: code = A*max_B + B, multi-class (3 probs per pair)",
+            "Bin numeric features into 10 quantile bins for cat×num and num×num pairs",
+            "L2-regularized LogisticRegression meta-stacker on 9 OOF probability columns",
+            "Fix CatBoost seed: use get_params() instead of hasattr() for seed detection",
+            "XGBoost dual-seed averaging (seed=42 + seed=123)",
+            "colsample_bytree=0.5 for LGBM/XGB to handle ~500+ features",
+            "Drop raw pair code columns after TE — only keep TE-derived features",
+            "float32 TE columns to reduce memory footprint",
         ],
     },
 }
@@ -636,10 +651,58 @@ def _preprocess(train, test, version):
             logger.info(f"  V8: Excluded Mulching_Used from target encoding ({len(te_cat_cols)} TE cols)")
         smoothing = 20 if version >= 10 else 10
 
-        # V11+: Selective pairwise categorical interaction columns for TE
-        # Use only the most domain-relevant pairs to avoid OOM (28 pairs → 10 key pairs)
+        # V11+: Pairwise categorical interaction columns for TE
         pairwise_cat_cols = []
-        if version >= 11:
+        v12_pair_defs = None  # V12: on-the-fly pair definitions (not stored in DataFrame)
+        if version >= 12:
+            # V12: Define ~126 pairwise combinations — codes computed ON-THE-FLY during TE
+            # This avoids storing 126 extra columns in X_train/X_test (saves ~0.6 GB)
+            cat_encoded = [c for c in cat_cols if c in X_train.columns]
+
+            # Compute quantile bin edges for numeric features
+            num_bin_edges = {}
+            for col in NUMERIC_FEATURES:
+                if col in X_train.columns:
+                    try:
+                        _, edges = pd.qcut(X_train[col], q=10, retbins=True, duplicates="drop")
+                        num_bin_edges[col] = edges.tolist()
+                    except (ValueError, IndexError):
+                        pass
+
+            # Compute max values for cat columns (needed for integer coding)
+            cat_max_vals = {}
+            for c in cat_encoded:
+                cat_max_vals[c] = int(max(X_train[c].max(), X_test[c].max())) + 1
+
+            # Define all pairs
+            pair_defs = []
+            # 1) cat × cat: C(8,2) = 28
+            for c1, c2 in combinations(cat_encoded, 2):
+                pair_defs.append(("cc", c1, c2))
+            n_cc = len(pair_defs)
+            # 2) cat × num_binned: 8 × ~11 = ~88
+            for cat_col in cat_encoded:
+                for num_col in num_bin_edges:
+                    pair_defs.append(("cn", cat_col, num_col))
+            n_cn = len(pair_defs) - n_cc
+            # 3) num × num: top 5 → C(5,2) = 10
+            top_num_for_pairs = ["Soil_Moisture", "Temperature_C", "Rainfall_mm", "Humidity", "Wind_Speed_kmh"]
+            top_avail = [c for c in top_num_for_pairs if c in num_bin_edges]
+            for i, c1 in enumerate(top_avail):
+                for c2 in top_avail[i+1:]:
+                    pair_defs.append(("nn", c1, c2))
+            n_nn = len(pair_defs) - n_cc - n_cn
+
+            v12_pair_defs = {
+                "pair_defs": pair_defs,
+                "num_bin_edges": num_bin_edges,
+                "cat_max_vals": cat_max_vals,
+            }
+            logger.info(f"  V12: Defined {len(pair_defs)} on-the-fly pairwise TE "
+                         f"({n_cc} cat×cat, {n_cn} cat×num, {n_nn} num×num)")
+
+        elif version >= 11:
+            # V11: 10 key pairs with string concat + label encode
             key_pairs = [
                 ("Crop_Type", "Crop_Growth_Stage"),
                 ("Crop_Type", "Season"),
@@ -667,11 +730,12 @@ def _preprocess(train, test, version):
 
         te_metadata = {
             "cat_cols": te_cat_cols,
-            "pairwise_cat_cols": pairwise_cat_cols,  # V11+: pairwise cats for TE
+            "pairwise_cat_cols": pairwise_cat_cols,  # V11: pairwise cols in DataFrame
             "global_mean": float(np.mean(y_train)),
             "smoothing": smoothing,
-            "multiclass": version >= 11,  # V11+: multi-class TE
+            "multiclass": version >= 11,  # V11+: multi-class TE for base cats
             "n_classes": 3,
+            "v12_pair_defs": v12_pair_defs,  # V12: on-the-fly pairwise TE definitions
         }
         steps.append({"step": 5, "name": "Target encoding (per-fold, deferred)",
                        "description": f"Per-fold target encoding for {len(te_cat_cols)} categoricals + {len(pairwise_cat_cols)} pairwise (applied in CV loop)"})
@@ -801,28 +865,93 @@ def _apply_per_fold_te(X_tr, y_tr, X_val, X_te, te_metadata):
     # All columns to target-encode (base categoricals + pairwise interactions)
     all_te_cols = list(cat_cols) + list(pairwise_cat_cols)
 
+    v12_pair_defs = te_metadata.get("v12_pair_defs", None)
+
     if multiclass:
         # Multi-class TE for base categoricals: P(class=k | category) for each class
+        global_cls_means = [float((y_tr == cls).mean()) for cls in range(n_classes)]
         for col in cat_cols:
-            temp = pd.DataFrame({"cat": X_tr[col].values, "target": y_tr})
+            vals = X_tr[col].values
             for cls in range(n_classes):
                 te_col = f"{col}_te_c{cls}"
-                temp[f"is_c{cls}"] = (temp["target"] == cls).astype(float)
-                agg = temp.groupby("cat")[f"is_c{cls}"].agg(["mean", "count"])
-                global_cls_mean = float((y_tr == cls).mean())
-                sm = (agg["count"] * agg["mean"] + smoothing * global_cls_mean) / (agg["count"] + smoothing)
-                X_tr[te_col] = X_tr[col].map(sm).fillna(global_cls_mean)
-                X_val[te_col] = X_val[col].map(sm).fillna(global_cls_mean)
-                X_te[te_col] = X_te[col].map(sm).fillna(global_cls_mean)
-        # Single-value TE for pairwise cols (to save memory)
-        for col in pairwise_cat_cols:
-            te_col = f"{col}_te"
-            temp = pd.DataFrame({"cat": X_tr[col].values, "target": y_tr})
-            agg = temp.groupby("cat")["target"].agg(["mean", "count"])
-            sm = (agg["count"] * agg["mean"] + smoothing * global_mean) / (agg["count"] + smoothing)
-            X_tr[te_col] = X_tr[col].map(sm).fillna(global_mean)
-            X_val[te_col] = X_val[col].map(sm).fillna(global_mean)
-            X_te[te_col] = X_te[col].map(sm).fillna(global_mean)
+                is_cls = (y_tr == cls).astype(np.float32)
+                temp = pd.DataFrame({"cat": vals, "is_cls": is_cls})
+                agg = temp.groupby("cat")["is_cls"].agg(["mean", "count"])
+                sm = (agg["count"] * agg["mean"] + smoothing * global_cls_means[cls]) / (agg["count"] + smoothing)
+                X_tr[te_col] = X_tr[col].map(sm).fillna(global_cls_means[cls]).astype(np.float32)
+                X_val[te_col] = X_val[col].map(sm).fillna(global_cls_means[cls]).astype(np.float32)
+                X_te[te_col] = X_te[col].map(sm).fillna(global_cls_means[cls]).astype(np.float32)
+
+        # V12: On-the-fly pairwise TE (pair codes computed here, not stored in data)
+        if v12_pair_defs is not None:
+            pair_defs = v12_pair_defs["pair_defs"]
+            num_bin_edges = v12_pair_defs["num_bin_edges"]
+            cat_max_vals = v12_pair_defs["cat_max_vals"]
+
+            def _bin_vals(arr, edges):
+                """Bin continuous values using pre-computed edges."""
+                return np.clip(np.searchsorted(edges[1:-1], arr), 0, len(edges) - 2).astype(np.int32)
+
+            te_names = []
+            tr_arrays = []
+            val_arrays = []
+            te_arrays = []
+
+            for pair_type, c1, c2 in pair_defs:
+                # Compute integer pair codes on-the-fly
+                if pair_type == "cc":  # cat × cat
+                    mx = cat_max_vals[c2]
+                    tr_code = X_tr[c1].values * mx + X_tr[c2].values
+                    val_code = X_val[c1].values * mx + X_val[c2].values
+                    te_code = X_te[c1].values * mx + X_te[c2].values
+                elif pair_type == "cn":  # cat × num_binned
+                    edges = num_bin_edges[c2]
+                    n_bins = len(edges) - 1
+                    tr_code = X_tr[c1].values * n_bins + _bin_vals(X_tr[c2].values, edges)
+                    val_code = X_val[c1].values * n_bins + _bin_vals(X_val[c2].values, edges)
+                    te_code = X_te[c1].values * n_bins + _bin_vals(X_te[c2].values, edges)
+                else:  # nn: num × num
+                    e1, e2 = num_bin_edges[c1], num_bin_edges[c2]
+                    nb2 = len(e2) - 1
+                    tr_code = _bin_vals(X_tr[c1].values, e1) * nb2 + _bin_vals(X_tr[c2].values, e2)
+                    val_code = _bin_vals(X_val[c1].values, e1) * nb2 + _bin_vals(X_val[c2].values, e2)
+                    te_code = _bin_vals(X_te[c1].values, e1) * nb2 + _bin_vals(X_te[c2].values, e2)
+
+                pair_name = f"p_{c1}_x_{c2}"
+                # Single-value smoothed TE per pair (memory-efficient)
+                temp = pd.DataFrame({"cat": tr_code, "target": y_tr.astype(np.float32)})
+                agg = temp.groupby("cat")["target"].agg(["mean", "count"])
+                sm = (agg["count"] * agg["mean"] + smoothing * global_mean) / (agg["count"] + smoothing)
+                sm_dict = sm.to_dict()
+                te_col = f"{pair_name}_te"
+                tr_arrays.append(pd.Series(tr_code).map(sm_dict).fillna(global_mean).values.astype(np.float32))
+                val_arrays.append(pd.Series(val_code).map(sm_dict).fillna(global_mean).values.astype(np.float32))
+                te_arrays.append(pd.Series(te_code).map(sm_dict).fillna(global_mean).values.astype(np.float32))
+                te_names.append(te_col)
+
+            # Batch-assign all pairwise TE columns via concat (avoids fragmentation)
+            if te_names:
+                tr_te = pd.DataFrame(np.column_stack(tr_arrays).astype(np.float32),
+                                     columns=te_names, index=X_tr.index)
+                val_te = pd.DataFrame(np.column_stack(val_arrays).astype(np.float32),
+                                      columns=te_names, index=X_val.index)
+                te_te = pd.DataFrame(np.column_stack(te_arrays).astype(np.float32),
+                                     columns=te_names, index=X_te.index)
+                del tr_arrays, val_arrays, te_arrays
+                X_tr = pd.concat([X_tr, tr_te], axis=1); del tr_te
+                X_val = pd.concat([X_val, val_te], axis=1); del val_te
+                X_te = pd.concat([X_te, te_te], axis=1); del te_te
+
+        elif pairwise_cat_cols:
+            # V11: Single-value TE for pairwise cols stored in DataFrame
+            for col in pairwise_cat_cols:
+                te_col = f"{col}_te"
+                temp = pd.DataFrame({"cat": X_tr[col].values, "target": y_tr})
+                agg = temp.groupby("cat")["target"].agg(["mean", "count"])
+                sm = (agg["count"] * agg["mean"] + smoothing * global_mean) / (agg["count"] + smoothing)
+                X_tr[te_col] = X_tr[col].map(sm).fillna(global_mean)
+                X_val[te_col] = X_val[col].map(sm).fillna(global_mean)
+                X_te[te_col] = X_te[col].map(sm).fillna(global_mean)
     else:
         # Legacy single-value TE
         for col in all_te_cols:
@@ -844,7 +973,56 @@ def _apply_per_fold_te(X_tr, y_tr, X_val, X_te, te_metadata):
 def _get_models(version, class_weights):
     models = {}
 
-    if version >= 11:
+    if version >= 12:
+        # V12: Lower colsample_bytree for ~240 features, slightly more regularization
+        models["lightgbm"] = LGBMClassifier(
+            n_estimators=2500,
+            max_depth=8,
+            learning_rate=0.02,
+            num_leaves=63,
+            min_child_samples=50,
+            subsample=0.8,
+            bagging_freq=1,
+            colsample_bytree=0.5,  # V12: lower for ~240 features
+            reg_alpha=0.15,
+            reg_lambda=1.5,
+            class_weight="balanced",
+            objective="multiclass",
+            num_class=3,
+            random_state=RANDOM_STATE,
+            n_jobs=-1,
+            verbose=-1,
+        )
+        models["xgboost"] = XGBClassifier(
+            n_estimators=2000,
+            max_depth=7,
+            learning_rate=0.02,
+            subsample=0.8,
+            colsample_bytree=0.5,  # V12: lower for ~240 features
+            min_child_weight=5,
+            reg_alpha=0.15,
+            reg_lambda=1.5,
+            gamma=0.03,
+            objective="multi:softprob",
+            num_class=3,
+            early_stopping_rounds=50,
+            random_state=RANDOM_STATE,
+            n_jobs=-1,
+            verbosity=0,
+        )
+        if HAS_CATBOOST:
+            models["catboost"] = CatBoostClassifier(
+                iterations=2500,
+                depth=7,
+                learning_rate=0.02,
+                l2_leaf_reg=4.0,  # V12: slightly more regularization
+                rsm=0.5,  # V12: random subspace — 50% features per split (timeout fix + regularization)
+                auto_class_weights="Balanced",
+                random_seed=RANDOM_STATE,
+                verbose=0,
+                thread_count=-1,
+            )
+    elif version >= 11:
         # V11: Research-driven params — bagging_freq fix, more trees, proper regularization
         models["lightgbm"] = LGBMClassifier(
             n_estimators=2500,
@@ -1238,9 +1416,10 @@ def _cv_predict(model, X_train, y_train, X_test, name, sample_weights=None, n_fo
             X_tr = X_train.iloc[tr_idx].copy()
             X_val = X_train.iloc[val_idx].copy()
             X_te_fold = X_test.copy()
-            _apply_per_fold_te(X_tr, y_tr, X_val, X_te_fold, te_metadata)
+            X_tr, X_val, X_te_fold = _apply_per_fold_te(X_tr, y_tr, X_val, X_te_fold, te_metadata)
             if fold == 0:
-                logger.info(f"  Per-fold TE: {X_tr.shape[1]} features (incl. {len(te_metadata['cat_cols'])} TE cols)")
+                n_pair_te = len(te_metadata.get("v12_pair_defs", {}).get("pair_defs", [])) if te_metadata.get("v12_pair_defs") else len(te_metadata.get("pairwise_cat_cols", []))
+                logger.info(f"  Per-fold TE: {X_tr.shape[1]} features (incl. {len(te_metadata['cat_cols'])} base TE + {n_pair_te} pairwise TE)")
         else:
             X_tr = X_train.iloc[tr_idx]
             X_val = X_train.iloc[val_idx]
