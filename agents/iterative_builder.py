@@ -974,11 +974,11 @@ def _get_models(version, class_weights):
     models = {}
 
     if version >= 12:
-        # V12: Lower colsample_bytree for ~240 features, slightly more regularization
+        # V12: Higher LR (0.05) for <5min/fold, lower colsample for ~240 features
         models["lightgbm"] = LGBMClassifier(
             n_estimators=2500,
             max_depth=8,
-            learning_rate=0.02,
+            learning_rate=0.05,
             num_leaves=63,
             min_child_samples=50,
             subsample=0.8,
@@ -996,7 +996,7 @@ def _get_models(version, class_weights):
         models["xgboost"] = XGBClassifier(
             n_estimators=2000,
             max_depth=7,
-            learning_rate=0.02,
+            learning_rate=0.05,
             subsample=0.8,
             colsample_bytree=0.5,  # V12: lower for ~240 features
             min_child_weight=5,
@@ -1014,9 +1014,9 @@ def _get_models(version, class_weights):
             models["catboost"] = CatBoostClassifier(
                 iterations=2500,
                 depth=7,
-                learning_rate=0.02,
+                learning_rate=0.05,
                 l2_leaf_reg=4.0,  # V12: slightly more regularization
-                rsm=0.5,  # V12: random subspace — 50% features per split (timeout fix + regularization)
+                rsm=0.5,  # V12: random subspace — 50% features per split
                 auto_class_weights="Balanced",
                 random_seed=RANDOM_STATE,
                 verbose=0,
