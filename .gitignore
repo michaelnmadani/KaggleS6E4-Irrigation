@@ -12,3 +12,4 @@ outputs/submissions/*.csv
 .DS_Store
 catboost_info/
 outputs/v*_intermediate/
+logs/
