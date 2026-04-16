@@ -1,0 +1,73 @@
+name: submit
+
+on:
+  workflow_dispatch:
+    inputs:
+      iteration:
+        description: "Iteration name (e.g. 001_baseline)"
+        required: true
+        type: string
+      message:
+        description: "Kaggle submission message"
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  submit:
+    runs-on: ubuntu-latest
+    env:
+      KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+      KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+      COMP_SLUG: ${{ vars.COMP_SLUG }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - run: pip install kaggle
+
+      - name: Submit
+        run: |
+          set -eu
+          ITER="${{ inputs.iteration }}"
+          MSG="${{ inputs.message }}"
+          if [ -z "$MSG" ]; then MSG="iter $ITER"; fi
+          SUB="iterations/$ITER/kernel_output/submission.csv"
+          test -s "$SUB" || { echo "missing $SUB"; exit 1; }
+          kaggle competitions submit -c "$COMP_SLUG" -f "$SUB" -m "$MSG"
+
+      - name: Fetch public LB score
+        id: lb
+        run: |
+          set -eu
+          sleep 30  # give Kaggle a moment to score
+          LINE=$(kaggle competitions submissions -c "$COMP_SLUG" -v | head -2 | tail -1)
+          echo "latest: $LINE"
+          SCORE=$(echo "$LINE" | awk -F, '{print $(NF-1)}')
+          echo "public_lb=$SCORE" >> "$GITHUB_OUTPUT"
+
+      - name: Update leaderboard.json
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -eu
+          ITER="${{ inputs.iteration }}"
+          SCORE="${{ steps.lb.outputs.public_lb }}"
+          python - <<PY
+          import json, pathlib
+          p = pathlib.Path("state/leaderboard.json")
+          lb = json.loads(p.read_text()) if p.exists() else {}
+          lb.setdefault("$ITER", {})["public_lb"] = "$SCORE"
+          p.write_text(json.dumps(lb, indent=2, sort_keys=True))
+          PY
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -b "lb/$ITER"
+          git add state/leaderboard.json
+          git commit -m "lb: iter $ITER public_lb=$SCORE"
+          git push -u origin "lb/$ITER"
+          gh pr create --base main --head "lb/$ITER" \
+            --title "Leaderboard: iter $ITER ($SCORE)" \
+            --body "Public LB score for iter $ITER: \`$SCORE\`. Merge to record." || true

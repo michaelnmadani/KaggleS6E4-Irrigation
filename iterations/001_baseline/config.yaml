@@ -1,0 +1,31 @@
+# Seed iteration: conservative LightGBM baseline.
+# The strategist edits only this file (or creates a new iterations/NNN_slug/config.yaml).
+# Change the `target`, `id_col`, `task`, and `metric` to match your competition.
+
+target: target          # CHANGE to the competition's target column name
+id_col: id              # CHANGE to the competition's id column name
+task: binary            # one of: binary | multiclass | regression
+metric: auc             # one of: auc | logloss | accuracy | rmse | mae
+
+features:
+  - fill_na_median
+  - label_encode
+  - count_encode_categoricals
+
+model: lgbm             # one of: lgbm | xgb | catboost
+
+params:
+  num_boost_round: 3000
+  early_stopping_rounds: 100
+  learning_rate: 0.05
+  num_leaves: 63
+  min_data_in_leaf: 100
+  feature_fraction: 0.8
+  bagging_fraction: 0.8
+  bagging_freq: 5
+  lambda_l2: 1.0
+
+cv:
+  n_splits: 5
+  seed: 42
+  stratified: true

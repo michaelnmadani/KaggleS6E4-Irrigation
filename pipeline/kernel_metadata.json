@@ -1,0 +1,14 @@
+{
+  "id": "REPLACE_WITH_KAGGLE_USERNAME/pipeline-iter-PLACEHOLDER",
+  "title": "pipeline-iter-PLACEHOLDER",
+  "code_file": "notebook.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": true,
+  "enable_gpu": false,
+  "enable_tpu": false,
+  "enable_internet": false,
+  "dataset_sources": [],
+  "competition_sources": ["REPLACE_WITH_COMP_SLUG"],
+  "kernel_sources": []
+}
