@@ -2,10 +2,10 @@
 # The strategist edits only this file (or creates a new iterations/NNN_slug/config.yaml).
 # Change the `target`, `id_col`, `task`, and `metric` to match your competition.
 
-target: target          # CHANGE to the competition's target column name
-id_col: id              # CHANGE to the competition's id column name
-task: binary            # one of: binary | multiclass | regression
-metric: auc             # one of: auc | logloss | accuracy | rmse | mae
+target: target          # S6E4 Irrigation — verify against train.csv after download
+id_col: id              # S6E4 Irrigation — verify against train.csv after download
+task: binary            # assumed binary (irrigation yes/no); flip to multiclass if train.csv says otherwise
+metric: accuracy        # S6E4 evaluation metric
 
 features:
   - fill_na_median

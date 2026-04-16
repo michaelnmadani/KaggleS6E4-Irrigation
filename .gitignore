@@ -3,6 +3,9 @@ __pycache__/
 .venv/
 venv/
 .env
+kaggle.json
+*.pem
+*.key
 build/
 .ipynb_checkpoints/
 .DS_Store

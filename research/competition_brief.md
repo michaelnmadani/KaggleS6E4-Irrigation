@@ -1,23 +1,24 @@
-# Competition brief
+# Competition brief — Predicting Irrigation Need (S6E4)
 
-*Fill in once per competition. Every role reads this.*
+*Every Claude role reads this. Keep current.*
 
-- **Slug:** `<e.g. playground-series-s6e4>`
-- **URL:** `<https://www.kaggle.com/competitions/...>`
-- **Task:** `<binary | multiclass | regression>`
-- **Target column:** `<name>`
-- **Id column:** `<name>`
-- **Evaluation metric:** `<e.g. AUC, logloss, RMSE>` — **this must match `metric:` in every `config.yaml`**
-- **Train rows:** `<N>`
-- **Test rows:** `<N>`
-- **Deadline (UTC):** `<YYYY-MM-DD HH:MM>`
-- **Submission limit per day:** `<N>`
+- **Slug:** `playground-series-s6e4`
+- **URL:** <https://www.kaggle.com/competitions/playground-series-s6e4>
+- **Title:** Predicting Irrigation Need
+- **Task:** `binary` *(assumed — confirm after first data download; flip to `multiclass` if target has >2 classes)*
+- **Target column:** `target` *(Playground default — verify)*
+- **Id column:** `id` *(Playground default — verify)*
+- **Evaluation metric:** `accuracy` — **must match `metric:` in every `config.yaml`**
+- **Train rows:** `<TODO>`
+- **Test rows:** `<TODO>`
+- **Deadline (UTC):** `<TODO: YYYY-MM-DD HH:MM>`
+- **Submission limit per day:** `<TODO: usually 5 for Playground>`
 
 ## Data schema
-`<paste `train.head()` / dtypes here, or 1-line description of each column>`
+`<TODO: after first local `kaggle competitions download -c playground-series-s6e4`, paste `train.head()` or dtypes here>`
 
 ## Notable rules / constraints
-- `<e.g. external data allowed? notebook-only? time limit? GPU required?>`
+- `<TODO: external data allowed? notebook-only? GPU required?>`
 
 ## Known strong approaches (from forum/notebooks)
-- `<update as `research` role finds things — link sources>`
+- `<research role appends here with links>`
