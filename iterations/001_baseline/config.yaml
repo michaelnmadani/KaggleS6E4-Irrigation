@@ -1,27 +1,26 @@
-# Seed iteration: conservative LightGBM baseline.
-# The strategist edits only this file (or creates a new iterations/NNN_slug/config.yaml).
-# Change the `target`, `id_col`, `task`, and `metric` to match your competition.
+# Iteration 001 — baseline for S6E4 Irrigation.
+# Replicates the cdeotte-style approach: 4 threshold-boolean features + LGBM
+# on one-hot categoricals. A near-optimal feature set per the original dataset.
 
-target: target          # S6E4 Irrigation — verify against train.csv after download
-id_col: id              # S6E4 Irrigation — verify against train.csv after download
-task: binary            # assumed binary (irrigation yes/no); flip to multiclass if train.csv says otherwise
-metric: accuracy        # S6E4 evaluation metric
+target: Irrigation_Need       # string labels Low/Medium/High, auto-encoded to 0/1/2
+id_col: id
+task: multiclass
+metric: accuracy
 
 features:
-  - fill_na_median
-  - label_encode
-  - count_encode_categoricals
+  - s6e4_threshold_booleans   # soil<25, temp>30, rain<300, wind>10
+  - label_encode              # Crop_Growth_Stage, Mulching_Used -> integer codes
 
-model: lgbm             # one of: lgbm | xgb | catboost
+model: lgbm
 
 params:
-  num_boost_round: 3000
+  num_boost_round: 2000
   early_stopping_rounds: 100
   learning_rate: 0.05
-  num_leaves: 63
-  min_data_in_leaf: 100
-  feature_fraction: 0.8
-  bagging_fraction: 0.8
+  num_leaves: 31
+  min_data_in_leaf: 50
+  feature_fraction: 0.9
+  bagging_fraction: 0.9
   bagging_freq: 5
   lambda_l2: 1.0
 

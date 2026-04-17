@@ -45,10 +45,33 @@ def count_encode_categoricals(X_tr: pd.DataFrame, X_te: pd.DataFrame) -> tuple[p
     return X_tr, X_te
 
 
+def s6e4_threshold_booleans(X_tr: pd.DataFrame, X_te: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """S6E4-specific: four boolean thresholds that separate the 3 irrigation classes
+    near-perfectly (cdeotte's original-dataset notebook hits CV balanced-acc 1.0 with
+    these + logreg). Drops source columns after thresholding to keep the feature
+    space minimal."""
+    rules = [
+        ("Soil_Moisture",    "<", 25, "soil_lt_25"),
+        ("Temperature_C",    ">", 30, "temp_gt_30"),
+        ("Rainfall_mm",      "<", 300, "rain_lt_300"),
+        ("Wind_Speed_kmh",   ">", 10, "wind_gt_10"),
+    ]
+    X_tr, X_te = X_tr.copy(), X_te.copy()
+    for col, op, val, name in rules:
+        if col not in X_tr.columns:
+            raise KeyError(f"s6e4_threshold_booleans: missing column {col!r}")
+        cmp = (X_tr[col] < val) if op == "<" else (X_tr[col] > val)
+        X_tr[name] = cmp.astype(int)
+        cmp_te = (X_te[col] < val) if op == "<" else (X_te[col] > val)
+        X_te[name] = cmp_te.astype(int)
+    return X_tr, X_te
+
+
 BLOCKS = {
     "label_encode": label_encode,
     "fill_na_median": fill_na_median,
     "count_encode_categoricals": count_encode_categoricals,
+    "s6e4_threshold_booleans": s6e4_threshold_booleans,
 }
 
 

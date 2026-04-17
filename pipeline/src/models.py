@@ -23,6 +23,8 @@ def _lgbm_fit(X_tr, y_tr, X_val, y_val, X_test, params: dict, task: str) -> FitR
         "verbosity": -1,
         "seed": 42,
     }
+    if task == "multiclass":
+        base["num_class"] = int(pd.Series(y_tr).nunique())
     base.update(params)
     dtr = lgb.Dataset(X_tr, label=y_tr)
     dval = lgb.Dataset(X_val, label=y_val, reference=dtr)
@@ -44,6 +46,8 @@ def _xgb_fit(X_tr, y_tr, X_val, y_val, X_test, params: dict, task: str) -> FitRe
         "verbosity": 0,
         "seed": 42,
     }
+    if task == "multiclass":
+        base["num_class"] = int(pd.Series(y_tr).nunique())
     base.update(params)
     num_boost_round = base.pop("num_boost_round", 2000)
     early_stop = base.pop("early_stopping_rounds", 100)

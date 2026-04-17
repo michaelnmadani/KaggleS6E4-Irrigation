@@ -48,8 +48,10 @@ def run(config_path: str, input_dir: str, output_dir: str) -> dict:
     out.mkdir(parents=True, exist_ok=True)
     log_lines: list[str] = [f"config: {config_path}"]
 
-    X, y, X_test, test_ids = data_mod.load(Path(input_dir), cfg["target"], cfg["id_col"])
+    X, y, X_test, test_ids, inverse_label_map = data_mod.load(Path(input_dir), cfg["target"], cfg["id_col"])
     log_lines.append(f"train={X.shape}  test={X_test.shape}")
+    if inverse_label_map is not None:
+        log_lines.append(f"target encoded: {inverse_label_map}")
 
     X, X_test = feat_mod.apply_blocks(X, X_test, cfg.get("features", []))
     log_lines.append(f"features applied: {cfg.get('features', [])} -> {X.shape[1]} cols")
@@ -79,9 +81,27 @@ def run(config_path: str, input_dir: str, output_dir: str) -> dict:
     cv_score = float(metric_fn(y, oof))
     elapsed = time.time() - t0
 
-    # artifacts
-    pd.DataFrame({cfg["id_col"]: np.arange(len(oof)), "pred": oof if oof.ndim == 1 else oof.tolist()}).to_csv(out / "oof.csv", index=False)
-    sub = pd.DataFrame({cfg["id_col"]: test_ids, cfg["target"]: test_preds if test_preds.ndim == 1 else test_preds.tolist()})
+    # OOF — for multiclass, save argmax label plus per-class probs
+    if oof.ndim == 1:
+        oof_df = pd.DataFrame({cfg["id_col"]: np.arange(len(oof)), "pred": oof})
+    else:
+        oof_df = pd.DataFrame(oof, columns=[f"p_class_{i}" for i in range(oof.shape[1])])
+        oof_df.insert(0, cfg["id_col"], np.arange(len(oof)))
+        oof_df["pred"] = oof.argmax(1)
+    oof_df.to_csv(out / "oof.csv", index=False)
+
+    # Submission — for classification metrics that expect hard labels, write labels.
+    # If the target was originally string-encoded, map integer labels back to strings.
+    hard_label_metrics = {"accuracy"}
+    if test_preds.ndim == 1:
+        test_labels = test_preds
+    elif metric_name in hard_label_metrics or task == "multiclass":
+        test_labels = test_preds.argmax(1)
+    else:
+        test_labels = test_preds  # probability output (binary AUC/logloss etc.)
+    if inverse_label_map is not None and np.ndim(test_labels) == 1:
+        test_labels = np.array([inverse_label_map[int(v)] for v in test_labels])
+    sub = pd.DataFrame({cfg["id_col"]: test_ids, cfg["target"]: test_labels})
     sub.to_csv(out / "submission.csv", index=False)
 
     metrics = {
