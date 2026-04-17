@@ -67,7 +67,7 @@ def _md_cell(source: str) -> dict:
 
 def build_notebook(repo: Path, iteration: str, comp_slug: str) -> dict:
     src_dir = repo / "pipeline" / "src"
-    modules = ["data", "features", "models", "train"]
+    modules = ["data", "features", "models", "postprocess", "train"]
 
     cells: list[dict] = [_md_cell(f"# Pipeline iteration: {iteration}\n")]
     for mod in modules:
@@ -152,6 +152,15 @@ def main() -> None:
     meta["id"] = f"{args.kaggle_user}/{kernel_slug}"
     meta["title"] = kernel_slug
     meta["competition_sources"] = [args.comp_slug]
+    # If the iteration config references an extra Kaggle dataset, attach it.
+    try:
+        import yaml as _yaml  # already a dep via pipeline
+        icfg = _yaml.safe_load((iter_dir / "config.yaml").read_text())
+        extra = (icfg or {}).get("extra_dataset") or {}
+        if "slug" in extra:
+            meta["dataset_sources"] = list({*meta.get("dataset_sources", []), extra["slug"]})
+    except Exception as e:
+        print(f"warning: could not parse iteration config for dataset_sources: {e}")
     (stage / "kernel-metadata.json").write_text(json.dumps(meta, indent=2))
 
     print(f"staged self-contained kernel at {stage}")

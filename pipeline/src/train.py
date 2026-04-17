@@ -37,6 +37,7 @@ from sklearn.metrics import (
 from . import data as data_mod
 from . import features as feat_mod
 from . import models as models_mod
+from . import postprocess as post_mod
 
 
 def _hard_labels(p: np.ndarray) -> np.ndarray:
@@ -73,8 +74,14 @@ def run(config_path: str, input_dir: str, output_dir: str) -> dict:
     out.mkdir(parents=True, exist_ok=True)
     log_lines: list[str] = [f"config: {config_path}"]
 
-    X, y, X_test, test_ids, inverse_label_map = data_mod.load(Path(input_dir), cfg["target"], cfg["id_col"])
-    log_lines.append(f"train={X.shape}  test={X_test.shape}")
+    # Resolve extra_dataset mount_dir from Kaggle slug if not explicitly set.
+    extra_cfg = cfg.get("extra_dataset")
+    if extra_cfg and "slug" in extra_cfg and "mount_dir" not in extra_cfg:
+        extra_cfg["mount_dir"] = f"/kaggle/input/{extra_cfg['slug'].split('/')[-1]}"
+    X, y, X_test, test_ids, inverse_label_map, is_original = data_mod.load(
+        Path(input_dir), cfg["target"], cfg["id_col"], extra_dataset=extra_cfg,
+    )
+    log_lines.append(f"train={X.shape}  test={X_test.shape}  external_rows={int(is_original.sum())}")
     if inverse_label_map is not None:
         log_lines.append(f"target encoded: {inverse_label_map}")
 
@@ -134,6 +141,13 @@ def run(config_path: str, input_dir: str, output_dir: str) -> dict:
         n_features_final = X_tr.shape[1]
 
         sw = models_mod.compute_balanced_sample_weights(y_tr) if class_weights_mode == "balanced" else None
+        # Down-weight external rows (miadul etc.) if configured via extra_dataset.weight.
+        extra_weight = (cfg.get("extra_dataset") or {}).get("weight")
+        if extra_weight is not None and is_original.any():
+            is_orig_tr = is_original[tr_idx]
+            if sw is None:
+                sw = np.ones(len(y_tr), dtype=float)
+            sw = sw * np.where(is_orig_tr, float(extra_weight), 1.0)
 
         for m in model_names:
             res = models_mod.fit_one_fold(
@@ -173,6 +187,27 @@ def run(config_path: str, input_dir: str, output_dir: str) -> dict:
     cv_score = float(metric_fn(y, oof))
     plain_acc = float(accuracy_score(y, _hard_labels(oof)))
     bal_acc = float(balanced_accuracy_score(y, _hard_labels(oof)))
+
+    # Post-processing: logit-bias tuning for balanced accuracy.
+    postprocess_info = None
+    if cfg.get("postprocess") == "logit_bias" and oof.ndim == 2:
+        info = post_mod.tune_bias_nested_cv(oof, np.asarray(y), folds)
+        # Apply ALL-FOLDS bias to test probabilities before argmax.
+        if test_preds.ndim == 2:
+            test_preds = post_mod.apply_bias_to_probs(test_preds, info["bias_all_folds"])
+        # Apply ALL-FOLDS bias to OOF too, so downstream uses the biased scores.
+        oof_biased = post_mod.apply_bias_to_probs(oof, info["bias_all_folds"])
+        post_cv = float(balanced_accuracy_score(np.asarray(y), oof_biased.argmax(axis=1)))
+        postprocess_info = {**info, "post_bias_bal_acc_full": post_cv}
+        log_lines.append(
+            f"logit-bias: pre={info['pre_bias_bal_acc']:.5f}  nested={info['post_bias_bal_acc_nested']:.5f} "
+            f"full={post_cv:.5f}  delta_nested={info['delta_nested']:+.5f}  bias={info['bias_all_folds']}"
+        )
+        # Update reported CV + oof to reflect the applied bias.
+        oof = oof_biased
+        cv_score = float(metric_fn(y, oof))
+        plain_acc = float(accuracy_score(y, _hard_labels(oof)))
+        bal_acc = float(balanced_accuracy_score(y, _hard_labels(oof)))
 
     # Per-class recall (multiclass) for reviewer context.
     recalls = None
@@ -219,6 +254,7 @@ def run(config_path: str, input_dir: str, output_dir: str) -> dict:
         "model": cfg["model"],
         "per_model_cv": per_model_cv,
         "blend_weights": blend_weights,
+        "postprocess": postprocess_info,
         "n_features": int(n_features_final),
         "n_train": int(len(X)),
         "n_test": int(len(X_test)),

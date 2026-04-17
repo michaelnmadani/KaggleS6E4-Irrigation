@@ -1,0 +1,43 @@
+# Iteration 005 (website V16) — V15 + nested-CV logit-bias post-processing.
+#
+# Adds a 3-parameter per-class logit-bias vector tuned on OOF probabilities to
+# maximize balanced accuracy. V11's named best model is `logit_bias_tuned`.
+# Decision gate: metrics.json.postprocess.delta_nested is the UNBIASED estimate
+# of the gain. If >+0.003, the submission is sound; if <+0.001, suspect overfit
+# to OOF (see V10's calibration CV-LB widening).
+
+target: Irrigation_Need
+id_col: id
+task: multiclass
+metric: balanced_accuracy
+
+class_weights: balanced
+
+extra_dataset:
+  slug: miadul/irrigation-water-requirement-prediction-dataset
+  file: irrigation_prediction.csv
+  weight: 0.35
+
+features:
+  - fill_na_median
+  - s6e4_threshold_booleans
+  - s6e4_interactions
+  - label_encode
+  - target_encode_multiclass
+
+model: catboost
+
+params:
+  iterations: 2500
+  early_stopping_rounds: 150
+  learning_rate: 0.04
+  depth: 7
+  l2_leaf_reg: 5.0
+  random_seed: 42
+
+cv:
+  n_splits: 10
+  seed: 42
+  stratified: true
+
+postprocess: logit_bias
