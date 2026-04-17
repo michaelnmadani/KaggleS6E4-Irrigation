@@ -1,5 +1,8 @@
 {
   "001_baseline": {
     "public_lb": "0.96152"
+  },
+  "003_three_model_blend": {
+    "public_lb": "0.96486"
   }
 }
