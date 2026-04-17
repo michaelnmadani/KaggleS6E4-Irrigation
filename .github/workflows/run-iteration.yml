@@ -19,7 +19,7 @@ permissions:
 jobs:
   run:
     runs-on: ubuntu-latest
-    timeout-minutes: 330  # 5.5 hrs; kernel polling caps at 5 hrs
+    timeout-minutes: 600  # 10 hrs; kernel polling caps at 9 hrs
     env:
       KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
       KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
@@ -67,7 +67,7 @@ jobs:
           SLUG="pipeline-iter-$(echo '${{ steps.pick.outputs.iteration }}' | tr '_' '-')"
           URL="https://www.kaggle.com/api/v1/kernels/status?userName=${KAGGLE_USERNAME}&kernelSlug=${SLUG}"
           echo "Polling ${KAGGLE_USERNAME}/${SLUG}"
-          for i in $(seq 1 300); do
+          for i in $(seq 1 540); do  # 9 hrs max — matches Kaggle GPU kernel cap
             BODY=$(curl -sS -u "${KAGGLE_USERNAME}:${KAGGLE_KEY}" -H "Accept: application/json" "$URL" || echo '{"status":"poll_error"}')
             STATUS=$(echo "$BODY" | jq -r '.status // "unknown"')
             MSG=$(echo "$BODY"    | jq -r '.failureMessage // ""')
