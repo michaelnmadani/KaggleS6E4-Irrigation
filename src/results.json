@@ -2218,6 +2218,26 @@
       ]
     },
     {
+      "version": 19,
+      "score": 0.95991,
+      "best_model": "realmlp",
+      "source": "autonomous pipeline (Claude Code \u2014 KaggleS6E4-Irrigation, iter 007_realmlp)",
+      "plain_accuracy": 0.98199,
+      "per_class_recall": {"Low": 0.99363, "Medium": 0.96973, "High": 0.91637},
+      "fold_std": 0.00473,
+      "elapsed_sec": 842,
+      "changes": [
+        "Port of mahoganybuttstrings/pg-s6e4-realmlp reference notebook (reference CV 0.97802 / LB 0.97685)",
+        "Ported from-scratch torch RealMLP: PBLD periodic embeddings, 8-head parallel ensemble, 5 AdamW param groups, flat_cos LR schedule, expm4t dropout schedule, cosine label smoothing",
+        "Kernel infra: enable_gpu + pip install torch==2.4.1 (Kaggle base torch 2.10 dropped sm_60; P100 allocation needed older torch)",
+        "FE block s6e4_realmlp_fe: duplicate numerics as _2 (float), factorize 8 cats + 11 nums + C(6,2)=15 pairwise-concat interactions on the 6 generator cols, cast pairwise to Categorical for TE",
+        "DISAPPOINTING: CV 0.95991 (vs reference 0.97802, -0.018) and below V15 (0.96978)",
+        "Likely causes: my custom per-fold TE differs subtly from sklearn TargetEncoder(target_type='multiclass', cv=5); sparse-filter may drop pairs the reference keeps; hyperparams may need more tuning",
+        "Not submitted (per user rule: new score must beat running best 0.96978)",
+        "Runtime 14 min on GPU vs V15's 90 min CPU \u2014 fast reruns. Next: V20 synthesis using proven tree path (CatBoost) PLUS the pairwise-interaction idea from this notebook, rather than debugging the RealMLP port further"
+      ]
+    },
+    {
       "version": 17,
       "score": 0.96203,
       "best_model": "logreg_cdeotte",
