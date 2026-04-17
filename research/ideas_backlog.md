@@ -14,3 +14,6 @@ Format:
 - **V14 (iter 003) — IN FLIGHT**: 3-model blend (LGBM+XGB+CatBoost), score-proportional weights
 - **V15 (researched)**: 10-fold CV + miadul original-dataset augmentation → [research/findings/001](findings/001_v15_candidate_10fold_plus_original_data.md)
 - **V16 (researched)**: Logit-bias post-processing for balanced accuracy → [research/findings/002](findings/002_v16_candidate_logit_bias_tuning.md)
+- **V17 (DONE)**: CV 0.96203 — LogReg on cdeotte's 10 features. Confirms comp test has noise beyond the original-data generator; tree models beat linear here.
+- **V18 (researched)**: Quantile-bin continuous numerics + target-encode the bins → [research/findings/003](findings/003_v18_candidate_binned_te.md)
+- **V19 idea**: swap custom smoothed-TE for `category_encoders.CatBoostEncoder` (per discussion 688866)
