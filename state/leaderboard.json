@@ -1,5 +1,8 @@
 {
   "001_baseline": {
     "public_lb": "0.96152"
+  },
+  "002_weights_te_interactions": {
+    "public_lb": "0.96417"
   }
 }
