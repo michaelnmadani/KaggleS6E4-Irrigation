@@ -2199,6 +2199,24 @@
       ]
     },
     {
+      "version": 15,
+      "score": 0.96978,
+      "best_model": "catboost",
+      "source": "autonomous pipeline (Claude Code \u2014 KaggleS6E4-Irrigation, iter 004_catboost_10fold_extdata)",
+      "plain_accuracy": 0.98404,
+      "per_class_recall": {"Low": 0.99552, "Medium": 0.96980, "High": 0.94401},
+      "fold_std": 0.00206,
+      "elapsed_sec": 5573,
+      "changes": [
+        "CatBoost-solo (best single model per V14 analysis) + 10-fold stratified CV + miadul external-dataset augmentation with sample_weight=0.35",
+        "640k train rows (630k comp + ~10k miadul after test-row dedupe)",
+        "HIGH recall 0.935 \u2192 0.944 (+0.009) \u2014 external data helped the minority class learn cleaner boundaries",
+        "Score matches V14's CatBoost-alone (0.96987) within noise \u2014 miadul augmentation gave negligible lift because Kaggle generated the comp data FROM miadul, so the 'external' rows were largely redundant with train",
+        "10-fold std 0.00206 (V14 5-fold std 0.00081) \u2014 smaller folds are noisier; 10-fold's value here was stability of the OOF estimate for V16's bias-tuning, not direct CV lift",
+        "Roughly matches the CatBoost-solo ceiling on this feature set. Remaining gap to V11 (-0.003) is concentrated in the post-processing V16 handles"
+      ]
+    },
+    {
       "version": 17,
       "score": 0.96203,
       "best_model": "logreg_cdeotte",
