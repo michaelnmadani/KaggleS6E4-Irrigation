@@ -15,7 +15,7 @@ class FitResult:
     test_pred: np.ndarray
 
 
-def _lgbm_fit(X_tr, y_tr, X_val, y_val, X_test, params: dict, task: str) -> FitResult:
+def _lgbm_fit(X_tr, y_tr, X_val, y_val, X_test, params, task, sample_weight=None) -> FitResult:
     import lightgbm as lgb
 
     base = {
@@ -26,7 +26,7 @@ def _lgbm_fit(X_tr, y_tr, X_val, y_val, X_test, params: dict, task: str) -> FitR
     if task == "multiclass":
         base["num_class"] = int(pd.Series(y_tr).nunique())
     base.update(params)
-    dtr = lgb.Dataset(X_tr, label=y_tr)
+    dtr = lgb.Dataset(X_tr, label=y_tr, weight=sample_weight)
     dval = lgb.Dataset(X_val, label=y_val, reference=dtr)
     model = lgb.train(
         base,
@@ -38,7 +38,7 @@ def _lgbm_fit(X_tr, y_tr, X_val, y_val, X_test, params: dict, task: str) -> FitR
     return FitResult(model=model, val_pred=model.predict(X_val), test_pred=model.predict(X_test))
 
 
-def _xgb_fit(X_tr, y_tr, X_val, y_val, X_test, params: dict, task: str) -> FitResult:
+def _xgb_fit(X_tr, y_tr, X_val, y_val, X_test, params, task, sample_weight=None) -> FitResult:
     import xgboost as xgb
 
     base = {
@@ -51,7 +51,7 @@ def _xgb_fit(X_tr, y_tr, X_val, y_val, X_test, params: dict, task: str) -> FitRe
     base.update(params)
     num_boost_round = base.pop("num_boost_round", 2000)
     early_stop = base.pop("early_stopping_rounds", 100)
-    dtr = xgb.DMatrix(X_tr, label=y_tr)
+    dtr = xgb.DMatrix(X_tr, label=y_tr, weight=sample_weight)
     dval = xgb.DMatrix(X_val, label=y_val)
     dtest = xgb.DMatrix(X_test)
     model = xgb.train(
@@ -61,14 +61,14 @@ def _xgb_fit(X_tr, y_tr, X_val, y_val, X_test, params: dict, task: str) -> FitRe
     return FitResult(model=model, val_pred=model.predict(dval), test_pred=model.predict(dtest))
 
 
-def _catboost_fit(X_tr, y_tr, X_val, y_val, X_test, params: dict, task: str) -> FitResult:
+def _catboost_fit(X_tr, y_tr, X_val, y_val, X_test, params, task, sample_weight=None) -> FitResult:
     from catboost import CatBoostClassifier, CatBoostRegressor
 
     base = {"verbose": 0, "random_seed": 42, "iterations": 2000, "early_stopping_rounds": 100}
     base.update(params)
     cls = CatBoostClassifier if task in ("binary", "multiclass") else CatBoostRegressor
     model = cls(**base)
-    model.fit(X_tr, y_tr, eval_set=(X_val, y_val))
+    model.fit(X_tr, y_tr, eval_set=(X_val, y_val), sample_weight=sample_weight)
     if task == "binary":
         val_pred = model.predict_proba(X_val)[:, 1]
         test_pred = model.predict_proba(X_test)[:, 1]
@@ -84,7 +84,17 @@ def _catboost_fit(X_tr, y_tr, X_val, y_val, X_test, params: dict, task: str) -> 
 FITTERS = {"lgbm": _lgbm_fit, "xgb": _xgb_fit, "catboost": _catboost_fit}
 
 
-def fit_one_fold(name: str, X_tr, y_tr, X_val, y_val, X_test, params: dict, task: str) -> FitResult:
+def fit_one_fold(name, X_tr, y_tr, X_val, y_val, X_test, params, task, sample_weight=None) -> FitResult:
     if name not in FITTERS:
         raise KeyError(f"unknown model {name!r}; known: {sorted(FITTERS)}")
-    return FITTERS[name](X_tr, y_tr, X_val, y_val, X_test, params, task)
+    return FITTERS[name](X_tr, y_tr, X_val, y_val, X_test, params, task, sample_weight=sample_weight)
+
+
+def compute_balanced_sample_weights(y_tr) -> np.ndarray:
+    """sklearn-style 'balanced': w_i = N / (n_classes * count(y_i))."""
+    y = np.asarray(y_tr)
+    classes, counts = np.unique(y, return_counts=True)
+    n_classes = len(classes)
+    total = len(y)
+    class_weight = {c: total / (n_classes * cnt) for c, cnt in zip(classes, counts)}
+    return np.array([class_weight[v] for v in y], dtype=float)

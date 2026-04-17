@@ -1,9 +1,12 @@
 """Feature-engineering blocks addressable by name from config.yaml.
 
 Each block takes (X_train, X_test) and returns (X_train, X_test) with new/modified
-columns. Blocks must be pure and deterministic. Register blocks in BLOCKS at bottom.
+columns. Some blocks also accept y_tr for supervised encoders (target encoding).
+Blocks must be pure and deterministic. Register blocks in BLOCKS at bottom.
 """
 from __future__ import annotations
+
+import inspect
 
 import numpy as np
 import pandas as pd
@@ -67,17 +70,74 @@ def s6e4_threshold_booleans(X_tr: pd.DataFrame, X_te: pd.DataFrame) -> tuple[pd.
     return X_tr, X_te
 
 
+def s6e4_interactions(X_tr: pd.DataFrame, X_te: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """S6E4-specific ratio/product/diff features between weather+soil columns.
+    Mirrors the interaction set V10/V11 found useful."""
+    X_tr, X_te = X_tr.copy(), X_te.copy()
+    pairs = [
+        ("Soil_Moisture", "Temperature_C",   "moisture_temp_ratio",   "ratio"),
+        ("Soil_Moisture", "Temperature_C",   "moisture_temp_product", "product"),
+        ("Rainfall_mm",   "Humidity",        "rain_humidity_product", "product"),
+        ("Rainfall_mm",   "Humidity",        "rain_humidity_diff",    "diff"),
+        ("Soil_pH",       "Organic_Carbon",  "ph_carbon_product",     "product"),
+        ("Sunlight_Hours","Wind_Speed_kmh",  "sun_wind_ratio",        "ratio"),
+        ("Rainfall_mm",   "Previous_Irrigation_mm", "rain_prev_diff", "diff"),
+        ("Rainfall_mm",   "Previous_Irrigation_mm", "rain_prev_ratio","ratio"),
+        ("Temperature_C", "Humidity",        "temp_humidity_product", "product"),
+    ]
+    for a, b, name, op in pairs:
+        if a not in X_tr.columns or b not in X_tr.columns:
+            continue
+        for X in (X_tr, X_te):
+            if op == "ratio":
+                X[name] = X[a] / (X[b] + 1)
+            elif op == "product":
+                X[name] = X[a] * X[b]
+            elif op == "diff":
+                X[name] = X[a] - X[b]
+    return X_tr, X_te
+
+
+def target_encode_multiclass(X_tr: pd.DataFrame, X_te: pd.DataFrame, y_tr=None, smoothing: int = 10) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """For each categorical col and each target class k, add a smoothed P(y=k|category).
+    Multiclass-aware TE: captures per-class conditional probabilities (V11's biggest lever)."""
+    if y_tr is None:
+        raise ValueError("target_encode_multiclass requires y_tr")
+    X_tr, X_te = X_tr.copy(), X_te.copy()
+    y = pd.Series(y_tr).reset_index(drop=True)
+    classes = sorted(y.unique().tolist())
+    for col in _categorical_cols(X_tr):
+        for k in classes:
+            tgt = (y == k).astype(int)
+            global_mean = float(tgt.mean())
+            temp = pd.DataFrame({"cat": X_tr[col].reset_index(drop=True), "t": tgt.values})
+            agg = temp.groupby("cat")["t"].agg(["mean", "count"])
+            smooth = (agg["count"] * agg["mean"] + smoothing * global_mean) / (agg["count"] + smoothing)
+            X_tr[f"{col}_te_c{int(k)}"] = X_tr[col].map(smooth).fillna(global_mean).astype(float).values
+            X_te[f"{col}_te_c{int(k)}"] = X_te[col].map(smooth).fillna(global_mean).astype(float).values
+    return X_tr, X_te
+
+
 BLOCKS = {
     "label_encode": label_encode,
     "fill_na_median": fill_na_median,
     "count_encode_categoricals": count_encode_categoricals,
     "s6e4_threshold_booleans": s6e4_threshold_booleans,
+    "s6e4_interactions": s6e4_interactions,
+    "target_encode_multiclass": target_encode_multiclass,
 }
 
 
-def apply_blocks(X_tr: pd.DataFrame, X_te: pd.DataFrame, names: list[str]) -> tuple[pd.DataFrame, pd.DataFrame]:
+def apply_blocks(X_tr: pd.DataFrame, X_te: pd.DataFrame, names: list[str], y_tr=None) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Apply feature blocks in order. Blocks whose signature accepts `y_tr`
+    get the current training target — enables per-fold target encoding when
+    this is called inside a CV loop."""
     for name in names:
         if name not in BLOCKS:
             raise KeyError(f"unknown feature block: {name!r}. known: {sorted(BLOCKS)}")
-        X_tr, X_te = BLOCKS[name](X_tr, X_te)
+        fn = BLOCKS[name]
+        if "y_tr" in inspect.signature(fn).parameters:
+            X_tr, X_te = fn(X_tr, X_te, y_tr=y_tr)
+        else:
+            X_tr, X_te = fn(X_tr, X_te)
     return X_tr, X_te

@@ -8,13 +8,20 @@ Designed to be called from a Kaggle notebook cell:
         output_dir="/kaggle/working")
 
 Writes into output_dir:
-    metrics.json   — CV score, per-fold scores, fit time
-    oof.csv        — out-of-fold predictions (id, pred)
+    metrics.json   — CV score, per-fold scores, plain+balanced accuracy
+    oof.csv        — out-of-fold predictions (id, per-class probs, pred)
     submission.csv — test predictions in competition format
     logs.txt       — human-readable run log
+
+Config knobs (in iteration's config.yaml):
+    features:      — list of block names from features.BLOCKS
+    features_per_fold: (optional) list of SUPERVISED blocks (e.g. target encoding)
+                     that must run inside the CV loop to avoid leakage
+    class_weights: balanced|null  — if "balanced", pass sklearn-style weights to fit
 """
 from __future__ import annotations
 
+import inspect
 import json
 import time
 from pathlib import Path
@@ -23,8 +30,8 @@ import numpy as np
 import pandas as pd
 import yaml
 from sklearn.metrics import (
-    accuracy_score, log_loss, mean_absolute_error, mean_squared_error,
-    roc_auc_score,
+    accuracy_score, balanced_accuracy_score, log_loss,
+    mean_absolute_error, mean_squared_error, roc_auc_score,
 )
 
 from . import data as data_mod
@@ -32,13 +39,31 @@ from . import features as feat_mod
 from . import models as models_mod
 
 
+def _hard_labels(p: np.ndarray) -> np.ndarray:
+    return (p > 0.5).astype(int) if p.ndim == 1 else p.argmax(1)
+
+
 METRICS = {
     "auc": lambda y, p: roc_auc_score(y, p),
     "logloss": lambda y, p: log_loss(y, p),
-    "accuracy": lambda y, p: accuracy_score(y, (p > 0.5).astype(int) if p.ndim == 1 else p.argmax(1)),
+    "accuracy": lambda y, p: accuracy_score(y, _hard_labels(p)),
+    "balanced_accuracy": lambda y, p: balanced_accuracy_score(y, _hard_labels(p)),
     "rmse": lambda y, p: float(np.sqrt(mean_squared_error(y, p))),
     "mae": lambda y, p: mean_absolute_error(y, p),
 }
+
+
+def _split_feature_blocks(names: list[str]) -> tuple[list[str], list[str]]:
+    """Return (global_blocks, per_fold_blocks). Per-fold = supervised = needs y_tr."""
+    glob, per = [], []
+    for n in names:
+        if n not in feat_mod.BLOCKS:
+            raise KeyError(f"unknown feature block: {n!r}")
+        if "y_tr" in inspect.signature(feat_mod.BLOCKS[n]).parameters:
+            per.append(n)
+        else:
+            glob.append(n)
+    return glob, per
 
 
 def run(config_path: str, input_dir: str, output_dir: str) -> dict:
@@ -53,8 +78,13 @@ def run(config_path: str, input_dir: str, output_dir: str) -> dict:
     if inverse_label_map is not None:
         log_lines.append(f"target encoded: {inverse_label_map}")
 
-    X, X_test = feat_mod.apply_blocks(X, X_test, cfg.get("features", []))
-    log_lines.append(f"features applied: {cfg.get('features', [])} -> {X.shape[1]} cols")
+    # Split supervised (per-fold) from unsupervised (global) feature blocks.
+    feat_names = cfg.get("features", [])
+    global_blocks, per_fold_blocks = _split_feature_blocks(feat_names)
+    X, X_test = feat_mod.apply_blocks(X, X_test, global_blocks)
+    log_lines.append(f"global features: {global_blocks} -> {X.shape[1]} cols")
+    if per_fold_blocks:
+        log_lines.append(f"per-fold features: {per_fold_blocks}")
 
     task = cfg["task"]
     metric_name = cfg["metric"]
@@ -62,26 +92,56 @@ def run(config_path: str, input_dir: str, output_dir: str) -> dict:
 
     folds = data_mod.make_folds(y, cfg["cv"]["n_splits"], cfg["cv"]["seed"], cfg["cv"].get("stratified", task != "regression"))
 
-    oof = np.zeros(len(X)) if task != "multiclass" else np.zeros((len(X), int(y.nunique())))
-    test_preds = np.zeros(len(X_test)) if task != "multiclass" else np.zeros((len(X_test), int(y.nunique())))
+    n_classes = int(pd.Series(y).nunique())
+    oof = np.zeros(len(X)) if task != "multiclass" else np.zeros((len(X), n_classes))
+    test_preds = np.zeros(len(X_test)) if task != "multiclass" else np.zeros((len(X_test), n_classes))
     fold_scores: list[float] = []
+    n_features_final = X.shape[1]
+
+    class_weights_mode = cfg.get("class_weights")
 
     for f in range(cfg["cv"]["n_splits"]):
         tr_idx, va_idx = np.where(folds != f)[0], np.where(folds == f)[0]
+        X_tr, y_tr = X.iloc[tr_idx].reset_index(drop=True), y.iloc[tr_idx].reset_index(drop=True)
+        X_va, y_va = X.iloc[va_idx].reset_index(drop=True), y.iloc[va_idx].reset_index(drop=True)
+        X_te_fold = X_test.copy()
+
+        # Apply supervised blocks per-fold to avoid leakage. For each supervised
+        # block we fit on (X_tr, y_tr) and transform X_va + X_te_fold jointly.
+        for name in per_fold_blocks:
+            fn = feat_mod.BLOCKS[name]
+            val_test = pd.concat([X_va, X_te_fold], axis=0, ignore_index=True)
+            X_tr, val_test = fn(X_tr, val_test, y_tr=y_tr)
+            X_va = val_test.iloc[: len(X_va)].reset_index(drop=True)
+            X_te_fold = val_test.iloc[len(X_va) :].reset_index(drop=True)
+        n_features_final = X_tr.shape[1]
+
+        sw = models_mod.compute_balanced_sample_weights(y_tr) if class_weights_mode == "balanced" else None
         res = models_mod.fit_one_fold(
-            cfg["model"], X.iloc[tr_idx], y.iloc[tr_idx], X.iloc[va_idx], y.iloc[va_idx],
-            X_test, cfg.get("params", {}), task,
+            cfg["model"], X_tr, y_tr, X_va, y_va, X_te_fold,
+            cfg.get("params", {}), task, sample_weight=sw,
         )
         oof[va_idx] = res.val_pred
         test_preds += res.test_pred / cfg["cv"]["n_splits"]
-        s = metric_fn(y.iloc[va_idx], res.val_pred)
+        s = metric_fn(y_va, res.val_pred)
         fold_scores.append(float(s))
         log_lines.append(f"fold {f}: {metric_name}={s:.5f}")
 
     cv_score = float(metric_fn(y, oof))
-    elapsed = time.time() - t0
+    plain_acc = float(accuracy_score(y, _hard_labels(oof)))
+    bal_acc = float(balanced_accuracy_score(y, _hard_labels(oof)))
 
-    # OOF — for multiclass, save argmax label plus per-class probs
+    # Per-class recall (multiclass) for reviewer context.
+    recalls = None
+    if task == "multiclass" and inverse_label_map is not None:
+        preds = _hard_labels(oof)
+        recalls = {}
+        y_arr = np.asarray(y)
+        for k in range(n_classes):
+            mask = y_arr == k
+            recalls[inverse_label_map[int(k)]] = float((preds[mask] == k).mean()) if mask.any() else None
+
+    # OOF CSV
     if oof.ndim == 1:
         oof_df = pd.DataFrame({cfg["id_col"]: np.arange(len(oof)), "pred": oof})
     else:
@@ -90,34 +150,36 @@ def run(config_path: str, input_dir: str, output_dir: str) -> dict:
         oof_df["pred"] = oof.argmax(1)
     oof_df.to_csv(out / "oof.csv", index=False)
 
-    # Submission — for classification metrics that expect hard labels, write labels.
-    # If the target was originally string-encoded, map integer labels back to strings.
-    hard_label_metrics = {"accuracy"}
+    # Submission: integer labels for hard-label metrics or multiclass;
+    # map back to string labels if target was originally string.
+    hard_label_metrics = {"accuracy", "balanced_accuracy"}
     if test_preds.ndim == 1:
         test_labels = test_preds
     elif metric_name in hard_label_metrics or task == "multiclass":
         test_labels = test_preds.argmax(1)
     else:
-        test_labels = test_preds  # probability output (binary AUC/logloss etc.)
+        test_labels = test_preds
     if inverse_label_map is not None and np.ndim(test_labels) == 1:
         test_labels = np.array([inverse_label_map[int(v)] for v in test_labels])
-    sub = pd.DataFrame({cfg["id_col"]: test_ids, cfg["target"]: test_labels})
-    sub.to_csv(out / "submission.csv", index=False)
+    pd.DataFrame({cfg["id_col"]: test_ids, cfg["target"]: test_labels}).to_csv(out / "submission.csv", index=False)
 
     metrics = {
         "cv_score": cv_score,
         "metric": metric_name,
+        "plain_accuracy": plain_acc,
+        "balanced_accuracy": bal_acc,
         "fold_scores": fold_scores,
         "fold_mean": float(np.mean(fold_scores)),
         "fold_std": float(np.std(fold_scores)),
-        "elapsed_sec": round(elapsed, 1),
+        "per_class_recall": recalls,
+        "elapsed_sec": round(time.time() - t0, 1),
         "model": cfg["model"],
-        "n_features": int(X.shape[1]),
+        "n_features": int(n_features_final),
         "n_train": int(len(X)),
         "n_test": int(len(X_test)),
     }
     (out / "metrics.json").write_text(json.dumps(metrics, indent=2))
-    log_lines.append(f"CV {metric_name}={cv_score:.5f}  elapsed={elapsed:.1f}s")
+    log_lines.append(f"CV {metric_name}={cv_score:.5f}  plain_acc={plain_acc:.5f}  balanced_acc={bal_acc:.5f}")
     (out / "logs.txt").write_text("\n".join(log_lines))
     return metrics
 
