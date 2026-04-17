@@ -2182,6 +2182,7 @@
       "best_model": "blend_lgbm_xgb_catboost",
       "source": "autonomous pipeline (Claude Code \u2014 KaggleS6E4-Irrigation, iter 003_three_model_blend)",
       "plain_accuracy": 0.98541,
+      "public_lb": 0.96486,
       "per_class_recall": {"Low": 0.99577, "Medium": 0.97384, "High": 0.93474},
       "fold_std": 0.00081,
       "elapsed_sec": 4446,
