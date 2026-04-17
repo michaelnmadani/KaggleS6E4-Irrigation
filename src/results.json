@@ -2162,6 +2162,7 @@
       "best_model": "lightgbm",
       "source": "autonomous pipeline (Claude Code \u2014 KaggleS6E4-Irrigation, iter 002_weights_te_interactions)",
       "plain_accuracy": 0.98538,
+      "public_lb": 0.96417,
       "per_class_recall": {"Low": 0.99562, "Medium": 0.97430, "High": 0.93098},
       "fold_std": 0.00083,
       "elapsed_sec": 1517,
