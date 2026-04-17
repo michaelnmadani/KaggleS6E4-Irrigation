@@ -2175,20 +2175,39 @@
         "HIGH recall: 0.919 \u2192 0.931 (+0.012), delivering the expected balanced-acc lift of +0.0034 vs V12",
         "Still -0.0056 vs V11: V11 also has 10-fold CV, CatBoost-dominant blend across 3 model families, miadul-original-dataset augmentation, and logit-bias tuning \u2014 roadmap for V14+"
       ]
+    },
+    {
+      "version": 14,
+      "score": 0.96812,
+      "best_model": "blend_lgbm_xgb_catboost",
+      "source": "autonomous pipeline (Claude Code \u2014 KaggleS6E4-Irrigation, iter 003_three_model_blend)",
+      "plain_accuracy": 0.98541,
+      "per_class_recall": {"Low": 0.99577, "Medium": 0.97384, "High": 0.93474},
+      "fold_std": 0.00081,
+      "elapsed_sec": 4446,
+      "per_model_cv": {"lgbm": 0.96697, "xgb": 0.96714, "catboost": 0.96987},
+      "blend_weights": {"lgbm": 0.333, "xgb": 0.333, "catboost": 0.334},
+      "changes": [
+        "Three-model CV blend: LGBM + XGB + CatBoost trained on V13's feature set (balanced weights, per-fold multiclass TE, 9 interactions)",
+        "Per-model CV scores: LGBM 0.96697 \u2014 XGB 0.96714 \u2014 CatBoost 0.96987 (strongest single model to date, approaching V11's 0.97256)",
+        "Score-proportional blend weights landed near-equal (0.333/0.333/0.334) because raw CV scores are all within 0.003 of each other",
+        "KEY INSIGHT: equal-weight blend (0.96812) is WORSE than CatBoost alone (0.96987). Blending dragged the strongest model down \u2014 V11's hand-tuned CatBoost=0.65/LGBM=0.25/XGB=0.10 was non-trivially better than uniform averaging",
+        "HIGH recall: 0.931 \u2192 0.935 (+0.004), Low/Medium essentially unchanged",
+        "Runtime 74 min (V13: 25 min) \u2014 still comfortably under Kaggle's 9-hr cap so room for 10-fold in V15",
+        "V15 will address the blend-weight issue: either OOF-optimized weights via scipy or keeping CatBoost as the solo model with V15's original-data augmentation added on top"
+      ]
     }
   ],
   "improvement": {
     "previous_best_model": "lightgbm",
-    "previous_best_score": 0.96360,
-    "improved_best_model": "lightgbm",
-    "improved_best_score": 0.96697,
-    "score_change": 0.00337,
+    "previous_best_score": 0.96697,
+    "improved_best_model": "blend_lgbm_xgb_catboost",
+    "improved_best_score": 0.96812,
+    "score_change": 0.00115,
     "recommendations_applied": [
-      "Class-balanced sample_weights on LightGBM \u2014 targets minority (High) class without hurting Low/Medium",
-      "Per-fold smoothed multiclass target encoding of 6 categorical columns (3 classes \u00d7 6 cols = 18 new features)",
-      "Feature interactions block: 9 ratio/product/diff features between correlated weather & soil columns",
-      "balanced_accuracy now the primary metric in config.yaml so CV optimization matches Kaggle's eval",
-      "Per-fold supervised feature blocks: pipeline now routes y_tr into blocks that need it (target encoding) while keeping unsupervised blocks outside the CV loop for speed"
+      "Three-model CV blend infrastructure \u2014 pipeline's train.py now accepts model: [list] and weights models score-proportionally on OOF",
+      "Proved CatBoost is the strongest single model on this feature set (0.96987 standalone), within 0.003 of V11's 0.97256 benchmark",
+      "Identified blend-weight strategy weakness: score-proportional with near-identical scores collapses to uniform average, which underperforms the best single model \u2014 V15 must use CV-optimized weights or go CatBoost-solo"
     ]
   }
 }
