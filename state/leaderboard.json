@@ -1,5 +1,8 @@
 {
   "001_baseline": {
     "public_lb": "0.96152"
+  },
+  "004_catboost_10fold_extdata": {
+    "public_lb": "0.96644"
   }
 }
