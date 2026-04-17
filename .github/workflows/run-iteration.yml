@@ -34,10 +34,14 @@ jobs:
           if [ -n "${{ inputs.iteration }}" ]; then
             ITER="${{ inputs.iteration }}"
           else
-            # newest iterations/*/config.yaml changed in this push
-            ITER=$(git log -1 --name-only --pretty=format: | grep -E '^iterations/[^/]+/config.yaml$' | head -1 | cut -d/ -f2)
+            # Pick the highest-numbered iteration that has a config.yaml — the
+            # latest experiment to run. Deterministic, doesn't depend on git
+            # log formatting or which commit triggered the workflow.
+            ITER=$(ls -1 iterations/ 2>/dev/null | grep -E '^[0-9]{3}_' | sort -r | head -1)
           fi
-          if [ -z "$ITER" ]; then echo "no iteration to run"; exit 0; fi
+          if [ -z "$ITER" ] || [ ! -f "iterations/$ITER/config.yaml" ]; then
+            echo "no iteration to run (ITER=$ITER)"; exit 0
+          fi
           echo "iteration=$ITER" >> "$GITHUB_OUTPUT"
           echo "Running iteration: $ITER"
 
