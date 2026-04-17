@@ -1,0 +1,79 @@
+[{"stream_name":"stderr","time":7.228766573,"data":"/usr/local/lib/python3.12/dist-packages/nbformat/__init__.py:96: MissingIDFieldWarning: Cell is missing an id field, this will become a hard error in future nbformat versions. You may want to use `normalize()` on your notebooks before validations (available since nbformat 5.1.4). Previous versions of nbformat are fixing this issue transparently, and will stop doing so in the future.\n"}
+,{"stream_name":"stderr","time":7.228833816,"data":"  validate(nb)\n"}
+,{"stream_name":"stderr","time":8.418982132,"data":"0.00s - Debugger warning: It seems that frozen modules are being used, which may\n"}
+,{"stream_name":"stderr","time":8.419014841,"data":"0.00s - make the debugger miss breakpoints. Please pass -Xfrozen_modules=off\n"}
+,{"stream_name":"stderr","time":8.419021036,"data":"0.00s - to python to disable frozen modules.\n"}
+,{"stream_name":"stderr","time":8.419025714,"data":"0.00s - Note: Debugging will proceed. Set PYDEVD_DISABLE_FILE_VALIDATION=1 to disable this validation.\n"}
+,{"stream_name":"stderr","time":9.203045935,"data":"0.00s - Debugger warning: It seems that frozen modules are being used, which may\n"}
+,{"stream_name":"stderr","time":9.20308036,"data":"0.00s - make the debugger miss breakpoints. Please pass -Xfrozen_modules=off\n"}
+,{"stream_name":"stderr","time":9.203086317,"data":"0.00s - to python to disable frozen modules.\n"}
+,{"stream_name":"stderr","time":9.203091323,"data":"0.00s - Note: Debugging will proceed. Set PYDEVD_DISABLE_FILE_VALIDATION=1 to disable this validation.\n"}
+,{"stream_name":"stdout","time":14.13216956,"data":"mounts under /kaggle/input: ['competitions']\n"}
+,{"stream_name":"stdout","time":14.132222195,"data":"  competitions/: ['playground-series-s6e4']\n"}
+,{"stream_name":"stdout","time":14.132227401,"data":"FALLBACK input_dir=/kaggle/input/competitions/playground-series-s6e4\n"}
+,{"stream_name":"stderr","time":18.367546505,"data":"/usr/local/lib/python3.12/dist-packages/sklearn/linear_model/_logistic.py:1247: FutureWarning: 'multi_class' was deprecated in version 1.5 and will be removed in 1.7. From then on, it will always use 'multinomial'. Leave it to its default value to avoid this warning.\n"}
+,{"stream_name":"stderr","time":18.367590909,"data":"  warnings.warn(\n"}
+,{"stream_name":"stderr","time":18.3675983,"data":"\n"}
+,{"stream_name":"stderr","time":18.367604351,"data":"/usr/local/lib/python3.12/dist-packages/sklearn/linear_model/_logistic.py:1247: FutureWarning: 'multi_class' was deprecated in version 1.5 and will be removed in 1.7. From then on, it will always use 'multinomial'. Leave it to its default value to avoid this warning.\n"}
+,{"stream_name":"stderr","time":18.36761153,"data":"  warnings.warn(\n"}
+,{"stream_name":"stderr","time":24.070673733,"data":"/usr/local/lib/python3.12/dist-packages/sklearn/linear_model/_logistic.py:1247: FutureWarning: 'multi_class' was deprecated in version 1.5 and will be removed in 1.7. From then on, it will always use 'multinomial'. Leave it to its default value to avoid this warning.\n"}
+,{"stream_name":"stderr","time":24.070719013,"data":"  warnings.warn(\n"}
+,{"stream_name":"stderr","time":24.070725774,"data":"\n"}
+,{"stream_name":"stderr","time":24.070731664,"data":"/usr/local/lib/python3.12/dist-packages/sklearn/linear_model/_logistic.py:1247: FutureWarning: 'multi_class' was deprecated in version 1.5 and will be removed in 1.7. From then on, it will always use 'multinomial'. Leave it to its default value to avoid this warning.\n"}
+,{"stream_name":"stderr","time":24.070738844,"data":"  warnings.warn(\n"}
+,{"stream_name":"stderr","time":29.280475327,"data":"/usr/local/lib/python3.12/dist-packages/sklearn/linear_model/_logistic.py:1247: FutureWarning: 'multi_class' was deprecated in version 1.5 and will be removed in 1.7. From then on, it will always use 'multinomial'. Leave it to its default value to avoid this warning.\n"}
+,{"stream_name":"stderr","time":29.280573737,"data":"  warnings.warn(\n"}
+,{"stream_name":"stderr","time":29.280582951,"data":"\n"}
+,{"stream_name":"stderr","time":29.280587683,"data":"/usr/local/lib/python3.12/dist-packages/sklearn/linear_model/_logistic.py:1247: FutureWarning: 'multi_class' was deprecated in version 1.5 and will be removed in 1.7. From then on, it will always use 'multinomial'. Leave it to its default value to avoid this warning.\n"}
+,{"stream_name":"stderr","time":29.280593277,"data":"  warnings.warn(\n"}
+,{"stream_name":"stderr","time":34.514912427,"data":"/usr/local/lib/python3.12/dist-packages/sklearn/linear_model/_logistic.py:1247: FutureWarning: 'multi_class' was deprecated in version 1.5 and will be removed in 1.7. From then on, it will always use 'multinomial'. Leave it to its default value to avoid this warning.\n"}
+,{"stream_name":"stderr","time":34.514968216,"data":"  warnings.warn(\n"}
+,{"stream_name":"stderr","time":34.516447445,"data":"\n"}
+,{"stream_name":"stderr","time":34.516473552,"data":"/usr/local/lib/python3.12/dist-packages/sklearn/linear_model/_logistic.py:1247: FutureWarning: 'multi_class' was deprecated in version 1.5 and will be removed in 1.7. From then on, it will always use 'multinomial'. Leave it to its default value to avoid this warning.\n"}
+,{"stream_name":"stderr","time":34.516482357,"data":"  warnings.warn(\n"}
+,{"stream_name":"stderr","time":39.877501502,"data":"/usr/local/lib/python3.12/dist-packages/sklearn/linear_model/_logistic.py:1247: FutureWarning: 'multi_class' was deprecated in version 1.5 and will be removed in 1.7. From then on, it will always use 'multinomial'. Leave it to its default value to avoid this warning.\n"}
+,{"stream_name":"stderr","time":39.877549615,"data":"  warnings.warn(\n"}
+,{"stream_name":"stderr","time":39.877556842,"data":"\n"}
+,{"stream_name":"stderr","time":39.877563092,"data":"/usr/local/lib/python3.12/dist-packages/sklearn/linear_model/_logistic.py:1247: FutureWarning: 'multi_class' was deprecated in version 1.5 and will be removed in 1.7. From then on, it will always use 'multinomial'. Leave it to its default value to avoid this warning.\n"}
+,{"stream_name":"stderr","time":39.877570277,"data":"  warnings.warn(\n"}
+,{"stream_name":"stdout","time":47.899268424,"data":"{\n"}
+,{"stream_name":"stdout","time":47.899302893,"data":"  \"cv_score\": 0.9620313973640292,\n"}
+,{"stream_name":"stdout","time":47.899310161,"data":"  \"metric\": \"balanced_accuracy\",\n"}
+,{"stream_name":"stdout","time":47.899316737,"data":"  \"plain_accuracy\": 0.9811253968253968,\n"}
+,{"stream_name":"stdout","time":47.899323185,"data":"  \"balanced_accuracy\": 0.9620313973640292,\n"}
+,{"stream_name":"stdout","time":47.89937432,"data":"  \"fold_scores\": [\n"}
+,{"stream_name":"stdout","time":47.899383128,"data":"    0.9616628416729261,\n"}
+,{"stream_name":"stdout","time":47.899388878,"data":"    0.9625434772783148,\n"}
+,{"stream_name":"stdout","time":47.899394408,"data":"    0.9637224929672908,\n"}
+,{"stream_name":"stdout","time":47.899400127,"data":"    0.9611121779785435,\n"}
+,{"stream_name":"stdout","time":47.899405784,"data":"    0.9611159916853209\n"}
+,{"stream_name":"stdout","time":47.899409624,"data":"  ],\n"}
+,{"stream_name":"stdout","time":47.899413779,"data":"  \"fold_mean\": 0.9620313963164792,\n"}
+,{"stream_name":"stdout","time":47.899418135,"data":"  \"fold_std\": 0.0009940619005563576,\n"}
+,{"stream_name":"stdout","time":47.89942397,"data":"  \"per_class_recall\": {\n"}
+,{"stream_name":"stdout","time":47.899429771,"data":"    \"High\": 0.9270788709600647,\n"}
+,{"stream_name":"stdout","time":47.899444744,"data":"    \"Low\": 0.995715255043699,\n"}
+,{"stream_name":"stdout","time":47.899449573,"data":"    \"Medium\": 0.9633000660883241\n"}
+,{"stream_name":"stdout","time":47.899454344,"data":"  },\n"}
+,{"stream_name":"stdout","time":47.899458855,"data":"  \"elapsed_sec\": 33.9,\n"}
+,{"stream_name":"stdout","time":47.899463379,"data":"  \"model\": \"logreg\",\n"}
+,{"stream_name":"stdout","time":47.899468006,"data":"  \"per_model_cv\": {\n"}
+,{"stream_name":"stdout","time":47.899472533,"data":"    \"logreg\": 0.9620313973640292\n"}
+,{"stream_name":"stdout","time":47.899477043,"data":"  },\n"}
+,{"stream_name":"stdout","time":47.899481213,"data":"  \"blend_weights\": {\n"}
+,{"stream_name":"stdout","time":47.899485634,"data":"    \"logreg\": 1.0\n"}
+,{"stream_name":"stdout","time":47.899490039,"data":"  },\n"}
+,{"stream_name":"stdout","time":47.899494154,"data":"  \"postprocess\": null,\n"}
+,{"stream_name":"stdout","time":47.899498508,"data":"  \"n_features\": 6,\n"}
+,{"stream_name":"stdout","time":47.899502958,"data":"  \"n_train\": 630000,\n"}
+,{"stream_name":"stdout","time":47.899507625,"data":"  \"n_test\": 270000\n"}
+,{"stream_name":"stdout","time":47.899512267,"data":"}\n"}
+,{"stream_name":"stderr","time":53.379839794,"data":"/usr/local/lib/python3.12/dist-packages/mistune.py:435: SyntaxWarning: invalid escape sequence '\\|'\n"}
+,{"stream_name":"stderr","time":53.379881899,"data":"  cells[i][c] = re.sub('\\\\\\\\\\|', '|', cell)\n"}
+,{"stream_name":"stderr","time":53.585199037,"data":"/usr/local/lib/python3.12/dist-packages/nbconvert/filters/filter_links.py:36: SyntaxWarning: invalid escape sequence '\\_'\n"}
+,{"stream_name":"stderr","time":53.58527217,"data":"  text = re.sub(r'_', '\\_', text) # Escape underscores in display text\n"}
+,{"stream_name":"stderr","time":54.366819655,"data":"[NbConvertApp] Converting notebook __notebook__.ipynb to notebook\n"}
+,{"stream_name":"stderr","time":54.776589916,"data":"[NbConvertApp] Writing 54342 bytes to __notebook__.ipynb\n"}
+,{"stream_name":"stderr","time":57.914123752,"data":"[NbConvertApp] Converting notebook __notebook__.ipynb to html\n"}
+,{"stream_name":"stderr","time":59.167766379,"data":"[NbConvertApp] Writing 463904 bytes to __results__.html\n"}
+]

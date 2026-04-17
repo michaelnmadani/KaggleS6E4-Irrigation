@@ -1,0 +1,32 @@
+{
+  "cv_score": 0.9620313973640292,
+  "metric": "balanced_accuracy",
+  "plain_accuracy": 0.9811253968253968,
+  "balanced_accuracy": 0.9620313973640292,
+  "fold_scores": [
+    0.9616628416729261,
+    0.9625434772783148,
+    0.9637224929672908,
+    0.9611121779785435,
+    0.9611159916853209
+  ],
+  "fold_mean": 0.9620313963164792,
+  "fold_std": 0.0009940619005563576,
+  "per_class_recall": {
+    "High": 0.9270788709600647,
+    "Low": 0.995715255043699,
+    "Medium": 0.9633000660883241
+  },
+  "elapsed_sec": 33.9,
+  "model": "logreg",
+  "per_model_cv": {
+    "logreg": 0.9620313973640292
+  },
+  "blend_weights": {
+    "logreg": 1.0
+  },
+  "postprocess": null,
+  "n_features": 6,
+  "n_train": 630000,
+  "n_test": 270000
+}
