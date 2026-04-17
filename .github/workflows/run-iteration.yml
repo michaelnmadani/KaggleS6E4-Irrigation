@@ -60,14 +60,17 @@ jobs:
         id: poll
         run: |
           set -eu
-          KID="${KAGGLE_USERNAME}/pipeline-iter-$(echo '${{ steps.pick.outputs.iteration }}' | tr '_' '-')"
-          echo "Polling $KID"
+          SLUG="pipeline-iter-$(echo '${{ steps.pick.outputs.iteration }}' | tr '_' '-')"
+          URL="https://www.kaggle.com/api/v1/kernels/status?userName=${KAGGLE_USERNAME}&kernelSlug=${SLUG}"
+          echo "Polling ${KAGGLE_USERNAME}/${SLUG}"
           for i in $(seq 1 300); do
-            STATUS=$(kaggle kernels status "$KID" 2>&1 || true)
-            echo "[$i] $STATUS"
+            BODY=$(curl -sS -u "${KAGGLE_USERNAME}:${KAGGLE_KEY}" -H "Accept: application/json" "$URL" || echo '{"status":"poll_error"}')
+            STATUS=$(echo "$BODY" | jq -r '.status // "unknown"')
+            MSG=$(echo "$BODY"    | jq -r '.failureMessage // ""')
+            echo "[$i] status=$STATUS msg=$MSG"
             case "$STATUS" in
-              *complete*) echo "status=complete" >> "$GITHUB_OUTPUT"; exit 0 ;;
-              *error*|*cancelAcknowledged*|*cancelRequested*) echo "status=error"  >> "$GITHUB_OUTPUT"; exit 0 ;;
+              complete)                                   echo "status=complete" >> "$GITHUB_OUTPUT"; exit 0 ;;
+              error|cancelAcknowledged|cancelRequested)   echo "status=$STATUS"  >> "$GITHUB_OUTPUT"; echo "failure=$MSG" >> "$GITHUB_OUTPUT"; exit 0 ;;
             esac
             sleep 60
           done
