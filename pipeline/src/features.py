@@ -107,14 +107,19 @@ def target_encode_multiclass(X_tr: pd.DataFrame, X_te: pd.DataFrame, y_tr=None, 
     y = pd.Series(y_tr).reset_index(drop=True)
     classes = sorted(y.unique().tolist())
     for col in _categorical_cols(X_tr):
+        # If the source is Categorical, .map can preserve Categorical dtype, which
+        # breaks .fillna(float). Convert to object first for safe mapping.
+        src_tr = pd.Series(X_tr[col].values).astype(object)
+        src_te = pd.Series(X_te[col].values).astype(object)
         for k in classes:
             tgt = (y == k).astype(int)
             global_mean = float(tgt.mean())
-            temp = pd.DataFrame({"cat": X_tr[col].reset_index(drop=True), "t": tgt.values})
+            temp = pd.DataFrame({"cat": src_tr, "t": tgt.values})
             agg = temp.groupby("cat")["t"].agg(["mean", "count"])
             smooth = (agg["count"] * agg["mean"] + smoothing * global_mean) / (agg["count"] + smoothing)
-            X_tr[f"{col}_te_c{int(k)}"] = X_tr[col].map(smooth).fillna(global_mean).astype(float).values
-            X_te[f"{col}_te_c{int(k)}"] = X_te[col].map(smooth).fillna(global_mean).astype(float).values
+            smooth_dict = smooth.to_dict()
+            X_tr[f"{col}_te_c{int(k)}"] = np.asarray(src_tr.map(smooth_dict).astype(float).fillna(global_mean))
+            X_te[f"{col}_te_c{int(k)}"] = np.asarray(src_te.map(smooth_dict).astype(float).fillna(global_mean))
     return X_tr, X_te
 
 
