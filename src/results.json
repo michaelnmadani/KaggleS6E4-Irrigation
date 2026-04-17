@@ -2238,6 +2238,43 @@
       ]
     },
     {
+      "version": 16,
+      "score": 0.96978,
+      "best_model": "catboost",
+      "source": "autonomous pipeline (Claude Code \u2014 KaggleS6E4-Irrigation, iter 005_logit_bias)",
+      "plain_accuracy": 0.98405,
+      "per_class_recall": {"Low": 0.99552, "Medium": 0.96980, "High": 0.94401},
+      "fold_std": 0.00206,
+      "elapsed_sec": 5597,
+      "changes": [
+        "V15 config + postprocess: logit_bias \u2014 nested-CV Nelder-Mead per-class logit offsets on OOF probabilities",
+        "Bias vector converged to [0.0, 0.0, 0.00025] \u2014 essentially zero. delta_nested = 0.00000",
+        "Pre-bias bal-acc 0.96978, post-bias (full-fit) 0.96978 \u2014 identical",
+        "FINDING: logit-bias post-processing gives ZERO lift on an already class_weight-balanced model. V11's 0.97256 gain is NOT from logit-bias alone \u2014 must come from other techniques (multi-model blend, original-data augmentation, TE variants)",
+        "Not submitted (decision gate: delta_nested must be > 0.003 to avoid overfit submissions; 0.0 fails)",
+        "V16 retired: class-weighted CatBoost has left no headroom for symmetric logit adjustments. Future post-processing needs an unbalanced base model OR a different calibration family"
+      ]
+    },
+    {
+      "version": 20,
+      "score": 0.96951,
+      "best_model": "catboost",
+      "source": "autonomous pipeline (Claude Code \u2014 KaggleS6E4-Irrigation, iter 008_catboost_pairwise)",
+      "plain_accuracy": 0.98412,
+      "per_class_recall": {"Low": 0.99544, "Medium": 0.97024, "High": 0.94284},
+      "fold_std": 0.00226,
+      "elapsed_sec": 4183,
+      "changes": [
+        "V15 config + new s6e4_pairwise_only feature block \u2014 15 factorized pairwise-concat interactions on the 6 generator cols (Soil_Moisture, Temperature_C, Rainfall_mm, Wind_Speed_kmh, Crop_Growth_Stage, Mulching_Used)",
+        "Pairwise cast as Categorical so target_encode_multiclass TE's them (15 pairs \u00d7 3 classes = up to 45 TE cols). Originals untouched so CatBoost keeps continuous numeric signal",
+        "Final feature count 41 (V15: 32) \u2014 +9 pairwise + ~18 TE minus pairs filtered for sparsity",
+        "RESULT: CV 0.96951 (-0.00027 vs V15). Pairwise interactions gave NO lift to CatBoost",
+        "FINDING: CatBoost already learns these interactions internally via tree splits. Explicit pairwise-TE features add regularization noise rather than new information. The RealMLP reference notebook's gain from pairwise-TE is specific to DEEP models that can't easily discover interactions from scratch \u2014 tree models derive zero or negative value",
+        "Not submitted (no improvement)",
+        "V21 pivot: use pytabkit's official RealMLP_TD_Classifier (by the RealMLP paper authors) instead of my custom port \u2014 my V19 port scored 0.96 vs reference 0.978 so something's off in my re-implementation"
+      ]
+    },
+    {
       "version": 17,
       "score": 0.96203,
       "best_model": "logreg_cdeotte",
