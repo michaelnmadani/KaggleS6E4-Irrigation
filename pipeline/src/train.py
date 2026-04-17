@@ -93,9 +93,27 @@ def run(config_path: str, input_dir: str, output_dir: str) -> dict:
     folds = data_mod.make_folds(y, cfg["cv"]["n_splits"], cfg["cv"]["seed"], cfg["cv"].get("stratified", task != "regression"))
 
     n_classes = int(pd.Series(y).nunique())
-    oof = np.zeros(len(X)) if task != "multiclass" else np.zeros((len(X), n_classes))
-    test_preds = np.zeros(len(X_test)) if task != "multiclass" else np.zeros((len(X_test), n_classes))
-    fold_scores: list[float] = []
+
+    # Normalize `model` to a list of model names (single model = list of one).
+    model_names = cfg["model"] if isinstance(cfg["model"], list) else [cfg["model"]]
+    # `params` may be flat (shared across models) or a dict keyed by model name.
+    raw_params = cfg.get("params", {})
+    is_per_model_params = (
+        isinstance(raw_params, dict)
+        and len(raw_params) > 0
+        and all(k in models_mod.FITTERS for k in raw_params.keys())
+    )
+
+    def _params_for(m: str) -> dict:
+        if is_per_model_params:
+            return dict(raw_params.get(m, {}))
+        return dict(raw_params)
+
+    shape_oof = (len(X),) if task != "multiclass" else (len(X), n_classes)
+    shape_test = (len(X_test),) if task != "multiclass" else (len(X_test), n_classes)
+    per_model_oof = {m: np.zeros(shape_oof) for m in model_names}
+    per_model_test = {m: np.zeros(shape_test) for m in model_names}
+    per_model_fold_scores: dict[str, list[float]] = {m: [] for m in model_names}
     n_features_final = X.shape[1]
 
     class_weights_mode = cfg.get("class_weights")
@@ -106,8 +124,7 @@ def run(config_path: str, input_dir: str, output_dir: str) -> dict:
         X_va, y_va = X.iloc[va_idx].reset_index(drop=True), y.iloc[va_idx].reset_index(drop=True)
         X_te_fold = X_test.copy()
 
-        # Apply supervised blocks per-fold to avoid leakage. For each supervised
-        # block we fit on (X_tr, y_tr) and transform X_va + X_te_fold jointly.
+        # Apply supervised blocks per-fold to avoid leakage.
         for name in per_fold_blocks:
             fn = feat_mod.BLOCKS[name]
             val_test = pd.concat([X_va, X_te_fold], axis=0, ignore_index=True)
@@ -117,16 +134,42 @@ def run(config_path: str, input_dir: str, output_dir: str) -> dict:
         n_features_final = X_tr.shape[1]
 
         sw = models_mod.compute_balanced_sample_weights(y_tr) if class_weights_mode == "balanced" else None
-        res = models_mod.fit_one_fold(
-            cfg["model"], X_tr, y_tr, X_va, y_va, X_te_fold,
-            cfg.get("params", {}), task, sample_weight=sw,
-        )
-        oof[va_idx] = res.val_pred
-        test_preds += res.test_pred / cfg["cv"]["n_splits"]
-        s = metric_fn(y_va, res.val_pred)
-        fold_scores.append(float(s))
-        log_lines.append(f"fold {f}: {metric_name}={s:.5f}")
 
+        for m in model_names:
+            res = models_mod.fit_one_fold(
+                m, X_tr, y_tr, X_va, y_va, X_te_fold,
+                _params_for(m), task, sample_weight=sw,
+            )
+            per_model_oof[m][va_idx] = res.val_pred
+            per_model_test[m] += res.test_pred / cfg["cv"]["n_splits"]
+            s = metric_fn(y_va, res.val_pred)
+            per_model_fold_scores[m].append(float(s))
+            log_lines.append(f"fold {f} {m}: {metric_name}={s:.5f}")
+
+    # Per-model CV scores (on full OOF).
+    per_model_cv = {m: float(metric_fn(y, per_model_oof[m])) for m in model_names}
+    for m in model_names:
+        log_lines.append(f"model {m}: CV {metric_name}={per_model_cv[m]:.5f}")
+
+    # Blend: score-proportional weights when multiple models, else pass-through.
+    if len(model_names) == 1:
+        oof = per_model_oof[model_names[0]]
+        test_preds = per_model_test[model_names[0]]
+        blend_weights = {model_names[0]: 1.0}
+    else:
+        raw_w = np.array([per_model_cv[m] for m in model_names])
+        raw_w = np.maximum(raw_w, 1e-9)
+        w = raw_w / raw_w.sum()
+        blend_weights = {m: float(wi) for m, wi in zip(model_names, w)}
+        oof = sum(wi * per_model_oof[m] for m, wi in zip(model_names, w))
+        test_preds = sum(wi * per_model_test[m] for m, wi in zip(model_names, w))
+        log_lines.append(f"blend weights: {blend_weights}")
+
+    # Fold scores for the blend (or single model) for compatibility.
+    fold_scores = [
+        float(np.mean([per_model_fold_scores[m][f] for m in model_names]))
+        for f in range(cfg["cv"]["n_splits"])
+    ]
     cv_score = float(metric_fn(y, oof))
     plain_acc = float(accuracy_score(y, _hard_labels(oof)))
     bal_acc = float(balanced_accuracy_score(y, _hard_labels(oof)))
@@ -174,6 +217,8 @@ def run(config_path: str, input_dir: str, output_dir: str) -> dict:
         "per_class_recall": recalls,
         "elapsed_sec": round(time.time() - t0, 1),
         "model": cfg["model"],
+        "per_model_cv": per_model_cv,
+        "blend_weights": blend_weights,
         "n_features": int(n_features_final),
         "n_train": int(len(X)),
         "n_test": int(len(X_test)),

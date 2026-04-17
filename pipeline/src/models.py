@@ -54,10 +54,19 @@ def _xgb_fit(X_tr, y_tr, X_val, y_val, X_test, params, task, sample_weight=None)
     dtr = xgb.DMatrix(X_tr, label=y_tr, weight=sample_weight)
     dval = xgb.DMatrix(X_val, label=y_val)
     dtest = xgb.DMatrix(X_test)
-    model = xgb.train(
-        base, dtr, num_boost_round=num_boost_round,
-        evals=[(dval, "val")], early_stopping_rounds=early_stop, verbose_eval=False,
-    )
+    try:
+        model = xgb.train(
+            base, dtr, num_boost_round=num_boost_round,
+            evals=[(dval, "val")], early_stopping_rounds=early_stop, verbose_eval=False,
+        )
+    except TypeError:
+        # xgboost 2.x removed the early_stopping_rounds kwarg — use callback.
+        from xgboost.callback import EarlyStopping
+        model = xgb.train(
+            base, dtr, num_boost_round=num_boost_round,
+            evals=[(dval, "val")], callbacks=[EarlyStopping(rounds=early_stop, save_best=True)],
+            verbose_eval=False,
+        )
     return FitResult(model=model, val_pred=model.predict(dval), test_pred=model.predict(dtest))
 
 

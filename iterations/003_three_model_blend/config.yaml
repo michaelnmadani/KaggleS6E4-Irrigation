@@ -1,0 +1,59 @@
+# Iteration 003 (website V14) — LGBM + XGB + CatBoost blend.
+#
+# V13 (0.96697 CV / 0.96417 LB) still 0.005-0.008 behind V11 (0.97256).
+# V11's single biggest remaining lever is a three-model blend (V11 went
+# CatBoost=0.65 / LGBM=0.25 / XGB=0.10).
+#
+# V14 keeps V13's feature set + balanced weights, swaps the single LGBM
+# for a LGBM+XGB+CatBoost blend weighted score-proportionally on CV. Runtime
+# roughly triples (~60-80 min) but fits well under Kaggle's 9-hr cap.
+
+target: Irrigation_Need
+id_col: id
+task: multiclass
+metric: balanced_accuracy
+
+class_weights: balanced
+
+features:
+  - fill_na_median
+  - s6e4_threshold_booleans
+  - s6e4_interactions
+  - label_encode
+  - target_encode_multiclass
+
+model: [lgbm, xgb, catboost]
+
+params:
+  lgbm:
+    num_boost_round: 2000
+    early_stopping_rounds: 100
+    learning_rate: 0.04
+    num_leaves: 63
+    min_data_in_leaf: 50
+    feature_fraction: 0.85
+    bagging_fraction: 0.85
+    bagging_freq: 5
+    lambda_l2: 1.5
+  xgb:
+    num_boost_round: 2000
+    early_stopping_rounds: 100
+    learning_rate: 0.05
+    max_depth: 7
+    subsample: 0.85
+    colsample_bytree: 0.85
+    min_child_weight: 5
+    reg_lambda: 1.5
+    tree_method: hist
+  catboost:
+    iterations: 1500
+    early_stopping_rounds: 100
+    learning_rate: 0.05
+    depth: 6
+    l2_leaf_reg: 5.0
+    random_seed: 42
+
+cv:
+  n_splits: 5
+  seed: 42
+  stratified: true

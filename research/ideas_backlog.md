@@ -9,9 +9,8 @@ Format:
 
 ## Current
 
-- [P1] Validate pipeline plumbing end-to-end with `001_baseline` (threshold booleans + LGBM)
-- [P1] If LGBM baseline CV < 1.0, try multinomial LogisticRegression on the same features — cdeotte's notebook shows this hits CV balanced-acc 1.0
-- [P2] If baseline already at 1.0 CV, focus on avoiding submission-format mistakes (id alignment, string-label output) and submitting consistently
-- [P2] Try XGBoost / CatBoost on same features for robustness against public-LB noise
-- [P3] Seed ensemble × 5 for tiebreaking if public LB is close
-- [P3] Explore whether the comp's actual test distribution differs from cdeotte's "original" — if so, raw numeric features may matter more than thresholds
+- **V12 (iter 001) — DONE**: CV 0.96360 · LB 0.96152 · LGBM only on threshold booleans + label encoding
+- **V13 (iter 002) — DONE**: CV 0.96697 · LB 0.96417 · +balanced weights, per-fold multiclass TE, interactions
+- **V14 (iter 003) — IN FLIGHT**: 3-model blend (LGBM+XGB+CatBoost), score-proportional weights
+- **V15 (researched)**: 10-fold CV + miadul original-dataset augmentation → [research/findings/001](findings/001_v15_candidate_10fold_plus_original_data.md)
+- **V16 (researched)**: Logit-bias post-processing for balanced accuracy → [research/findings/002](findings/002_v16_candidate_logit_bias_tuning.md)
