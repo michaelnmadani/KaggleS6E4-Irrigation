@@ -1,0 +1,41 @@
+
+# Iteration 006 (website V17) — cdeotte-exact multinomial LogReg.
+#
+# Per discussion #687460 ("Original Data's Exact Formula"), the competition
+# data is derived from a deterministic multinomial logistic regression on
+# exactly 10 features: 4 threshold booleans + one-hot of Crop_Growth_Stage
+# (4 levels) + one-hot of Mulching_Used (2 levels). This iteration uses
+# EXACTLY that feature set with sklearn LogisticRegression(multi_class=
+# 'multinomial'). If the comp's test set follows the same generator, this
+# should match or beat ensembles built on different feature sets.
+#
+# The LogReg wrapper one-hot-encodes categorical strings internally, so the
+# s6e4_cdeotte_minimal block returns Crop_Growth_Stage + Mulching_Used as
+# string columns; get_dummies expands them inside the wrapper.
+#
+# Expected CV: approaches 1.0 on the original-dataset rows; on the full comp
+# data the ceiling is bounded by any noise injection Kaggle added to the
+# synthetic test set.
+
+target: Irrigation_Need
+id_col: id
+task: multiclass
+metric: balanced_accuracy
+
+class_weights: balanced
+
+features:
+  - s6e4_cdeotte_minimal    # 4 thresholds + 2 raw categoricals = 6 columns
+
+model: logreg
+
+params:
+  C: 1.0
+  max_iter: 2000
+  solver: lbfgs
+  multi_class: multinomial
+
+cv:
+  n_splits: 5
+  seed: 42
+  stratified: true

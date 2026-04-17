@@ -1,0 +1,11 @@
+config: /kaggle/working/iteration_config.yaml
+train=(630000, 19)  test=(270000, 19)  external_rows=0
+target encoded: {0: 'High', 1: 'Low', 2: 'Medium'}
+global features: ['s6e4_cdeotte_minimal'] -> 6 cols
+fold 0 logreg: balanced_accuracy=0.96166
+fold 1 logreg: balanced_accuracy=0.96254
+fold 2 logreg: balanced_accuracy=0.96372
+fold 3 logreg: balanced_accuracy=0.96111
+fold 4 logreg: balanced_accuracy=0.96112
+model logreg: CV balanced_accuracy=0.96203
+CV balanced_accuracy=0.96203  plain_acc=0.98113  balanced_acc=0.96203
