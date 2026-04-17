@@ -41,11 +41,12 @@ def _strip_main_block(src: str) -> str:
 
 def _strip_relative_imports(src: str) -> str:
     """Remove `from . import X as Y` and rewrite `Y.attr` -> `attr`
-    so all modules collapse into one notebook namespace."""
+    so all modules collapse into one notebook namespace. Handles both
+    top-level and indented (function-local) imports."""
     aliases: dict[str, str] = {}
-    for m in re.finditer(r"^from\s+\.\s+import\s+(\w+)\s+as\s+(\w+)\s*$", src, re.MULTILINE):
+    for m in re.finditer(r"^[ \t]*from\s+\.\s+import\s+(\w+)\s+as\s+(\w+)\s*$", src, re.MULTILINE):
         aliases[m.group(2)] = m.group(1)
-    out = re.sub(r"^from\s+\.\s+import\s+\w+(\s+as\s+\w+)?\s*$", "", src, flags=re.MULTILINE)
+    out = re.sub(r"^[ \t]*from\s+\.\s+import\s+\w+(\s+as\s+\w+)?\s*$", "", src, flags=re.MULTILINE)
     for alias in aliases:
         out = re.sub(rf"\b{re.escape(alias)}\.", "", out)
     return _strip_main_block(out)
@@ -70,7 +71,19 @@ def build_notebook(repo: Path, iteration: str, comp_slug: str) -> dict:
     modules = ["data", "features", "models", "postprocess", "train"]
 
     cells: list[dict] = [_md_cell(f"# Pipeline iteration: {iteration}\n")]
-    for mod in modules:
+
+    # If the iteration config specifies pip packages to install, run them first.
+    import yaml as _yaml
+    icfg = _yaml.safe_load((repo / "iterations" / iteration / "config.yaml").read_text()) or {}
+    pip_pkgs = icfg.get("pip_install") or []
+    if pip_pkgs:
+        pkg_args = " ".join(f'"{p}"' for p in pip_pkgs)
+        cells.append(_md_cell("## install\n"))
+        cells.append(_code_cell(f"!pip install -q {pkg_args}\n"))
+
+    # Optionally include extra modules beyond the default set (e.g. realmlp).
+    extra_modules = icfg.get("extra_modules") or []
+    for mod in modules + list(extra_modules):
         code = (src_dir / f"{mod}.py").read_text(encoding="utf-8")
         cells.append(_md_cell(f"## `{mod}.py`\n"))
         cells.append(_code_cell(_strip_relative_imports(code)))
@@ -152,15 +165,24 @@ def main() -> None:
     meta["id"] = f"{args.kaggle_user}/{kernel_slug}"
     meta["title"] = kernel_slug
     meta["competition_sources"] = [args.comp_slug]
-    # If the iteration config references an extra Kaggle dataset, attach it.
+    # Iteration config can set kernel-level flags (GPU, internet, extra datasets).
     try:
-        import yaml as _yaml  # already a dep via pipeline
-        icfg = _yaml.safe_load((iter_dir / "config.yaml").read_text())
-        extra = (icfg or {}).get("extra_dataset") or {}
+        import yaml as _yaml
+        icfg = _yaml.safe_load((iter_dir / "config.yaml").read_text()) or {}
+        kernel_cfg = icfg.get("kernel") or {}
+        if kernel_cfg.get("enable_gpu"):
+            meta["enable_gpu"] = True
+        if kernel_cfg.get("enable_internet"):
+            meta["enable_internet"] = True
+        extra = icfg.get("extra_dataset") or {}
         if "slug" in extra:
             meta["dataset_sources"] = list({*meta.get("dataset_sources", []), extra["slug"]})
+        extra_datasets = icfg.get("extra_datasets") or []
+        for ed in extra_datasets:
+            if isinstance(ed, dict) and "slug" in ed:
+                meta["dataset_sources"] = list({*meta.get("dataset_sources", []), ed["slug"]})
     except Exception as e:
-        print(f"warning: could not parse iteration config for dataset_sources: {e}")
+        print(f"warning: could not parse iteration config: {e}")
     (stage / "kernel-metadata.json").write_text(json.dumps(meta, indent=2))
 
     print(f"staged self-contained kernel at {stage}")

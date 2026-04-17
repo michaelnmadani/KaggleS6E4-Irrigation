@@ -149,6 +149,66 @@ def s6e4_cdeotte_minimal(X_tr: pd.DataFrame, X_te: pd.DataFrame) -> tuple[pd.Dat
     return out["tr"], out["te"]
 
 
+def s6e4_realmlp_fe(X_tr: pd.DataFrame, X_te: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Full feature-engineering block matching the RealMLP reference notebook
+    (mahoganybuttstrings/pg-s6e4-realmlp...). Produces:
+      1. Every numeric column duplicated as `{col}_2` (two views per numeric).
+      2. All categoricals and numerics factorized to integer codes on the
+         train+test union so codes are consistent.
+      3. Pairwise-concat interactions between 6 key columns (Soil_Moisture,
+         Crop_Growth_Stage, Temperature_C, Mulching_Used, Wind_Speed_kmh,
+         Rainfall_mm) = C(6,2) = 15 new int-factorized columns. Sparse combos
+         (nunique > half the rows) are dropped.
+    The set of 6 columns is per the discussion-687460 "exact formula" finding:
+    these are the columns the generator depends on. Pairwise TE on them gives
+    the non-linear lift that single-col TE misses.
+    """
+    X_tr, X_te = X_tr.copy(), X_te.copy()
+    nums = ["Soil_pH", "Soil_Moisture", "Organic_Carbon", "Electrical_Conductivity",
+            "Temperature_C", "Humidity", "Rainfall_mm", "Sunlight_Hours",
+            "Wind_Speed_kmh", "Field_Area_hectare", "Previous_Irrigation_mm"]
+    cats = ["Soil_Type", "Crop_Type", "Crop_Growth_Stage", "Season",
+            "Irrigation_Type", "Water_Source", "Mulching_Used", "Region"]
+    # 1) duplicate numerics
+    for c in nums:
+        if c in X_tr.columns:
+            X_tr[f"{c}_2"] = X_tr[c]
+            X_te[f"{c}_2"] = X_te[c]
+    # 2) factorize ALL cats + nums (+ duplicates) on train+test union
+    for c in cats + nums:
+        if c in X_tr.columns:
+            combined = pd.concat([X_tr[c], X_te[c]], axis=0, ignore_index=True)
+            codes, _ = pd.factorize(combined)
+            X_tr[c] = codes[:len(X_tr)]
+            X_te[c] = codes[len(X_tr):]
+    # _2 duplicates intentionally NOT factorized — they stay as raw floats so
+    # RealMLP's PBLD embedding can learn periodic patterns on the continuous
+    # representation, while the factorized-int version goes through the
+    # categorical embedding path. Matches the reference notebook.
+
+    # 3) pairwise interactions among the 6 key columns
+    from itertools import combinations
+    key_cols = ["Soil_Moisture", "Crop_Growth_Stage", "Temperature_C",
+                "Mulching_Used", "Wind_Speed_kmh", "Rainfall_mm"]
+    n_rows = len(X_tr) + len(X_te)
+    for a, b in combinations(key_cols, 2):
+        if a not in X_tr.columns or b not in X_tr.columns:
+            continue
+        name = f"{a}-{b}"
+        s_tr = X_tr[a].astype(str) + "_" + X_tr[b].astype(str)
+        s_te = X_te[a].astype(str) + "_" + X_te[b].astype(str)
+        combined = pd.concat([s_tr, s_te], axis=0, ignore_index=True)
+        codes, _ = pd.factorize(combined)
+        if pd.Series(codes).nunique() > n_rows // 2:
+            continue  # too sparse
+        # Cast pairwise interactions as "category" dtype — only these get TE'd
+        # by target_encode_multiclass downstream. Keeping originals as int64
+        # matches the reference notebook's behavior (TE applied only to pairwise).
+        X_tr[name] = pd.Categorical(codes[:len(X_tr)])
+        X_te[name] = pd.Categorical(codes[len(X_tr):])
+    return X_tr, X_te
+
+
 BLOCKS = {
     "label_encode": label_encode,
     "fill_na_median": fill_na_median,
@@ -156,6 +216,7 @@ BLOCKS = {
     "s6e4_threshold_booleans": s6e4_threshold_booleans,
     "s6e4_interactions": s6e4_interactions,
     "s6e4_cdeotte_minimal": s6e4_cdeotte_minimal,
+    "s6e4_realmlp_fe": s6e4_realmlp_fe,
     "target_encode_multiclass": target_encode_multiclass,
 }
 

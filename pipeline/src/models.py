@@ -150,7 +150,37 @@ def _logreg_fit(X_tr, y_tr, X_val, y_val, X_test, params, task, sample_weight=No
     return FitResult(model=model, val_pred=val_pred, test_pred=test_pred)
 
 
-FITTERS = {"lgbm": _lgbm_fit, "xgb": _xgb_fit, "catboost": _catboost_fit, "logreg": _logreg_fit}
+def _realmlp_fit(X_tr, y_tr, X_val, y_val, X_test, params, task, sample_weight=None) -> FitResult:
+    """RealMLP (deep-learning MLP with periodic numeric embeddings).
+
+    sample_weight is IGNORED: RealMLP applies class_weight='balanced' internally
+    via the smooth_ce loss, which is equivalent for our per-sample balancing.
+
+    Expects params dict with optional RealMLP hyperparams (see realmlp.REALMLP_DEFAULT_CONFIG).
+    The special key `cat_cols` (list) tells the model which columns to treat as
+    categorical; all others are numeric.
+    """
+    from . import realmlp as rm
+
+    overrides = {k: v for k, v in params.items() if k != "cat_cols"}
+    cat_cols = params.get("cat_cols")
+    if cat_cols is None:
+        # Default: all columns whose dtype is integer or category are treated as categorical.
+        cat_cols = [c for c in X_tr.columns if str(X_tr[c].dtype).startswith("int") or str(X_tr[c].dtype) == "category"]
+    model = rm.RealMLPClassifier(**overrides)
+    model.fit(X_tr, y_tr, X_val, y_val, cat_cols=list(cat_cols), X_test=X_test)
+    val_pred = model.best_val_probs_
+    test_pred = model.predict_proba(X_test)
+    return FitResult(model=model, val_pred=val_pred, test_pred=test_pred)
+
+
+FITTERS = {
+    "lgbm": _lgbm_fit,
+    "xgb": _xgb_fit,
+    "catboost": _catboost_fit,
+    "logreg": _logreg_fit,
+    "realmlp": _realmlp_fit,
+}
 
 
 def fit_one_fold(name, X_tr, y_tr, X_val, y_val, X_test, params, task, sample_weight=None) -> FitResult:
