@@ -90,7 +90,67 @@ def _catboost_fit(X_tr, y_tr, X_val, y_val, X_test, params, task, sample_weight=
     return FitResult(model=model, val_pred=val_pred, test_pred=test_pred)
 
 
-FITTERS = {"lgbm": _lgbm_fit, "xgb": _xgb_fit, "catboost": _catboost_fit}
+def _logreg_fit(X_tr, y_tr, X_val, y_val, X_test, params, task, sample_weight=None) -> FitResult:
+    """Multinomial logistic regression with one-hot categorical expansion.
+
+    Fits `LogisticRegression(multi_class='multinomial')` on the numeric features
+    plus one-hot-encoded categorical features. For S6E4 this replicates the
+    cdeotte reference notebook that hit CV balanced-acc 1.0 on the original
+    dataset (threshold booleans + one-hot categoricals + logreg). The model
+    produces per-class logit equations (3 regressions for a 3-class target).
+    """
+    from sklearn.linear_model import LogisticRegression
+
+    def _prep(df):
+        # Detect remaining string categoricals that LGBM/XGB don't need expanded
+        # but LogReg does. Keep numerics as-is and get_dummies the rest.
+        df = df.copy()
+        cat_cols = df.select_dtypes(include=["object", "category"]).columns.tolist()
+        if cat_cols:
+            df = pd.get_dummies(df, columns=cat_cols, drop_first=False, dtype=float)
+        return df
+
+    base = {
+        "multi_class": "multinomial",
+        "solver": "lbfgs",
+        "max_iter": 1000,
+        "random_state": 42,
+        "n_jobs": -1,
+    }
+    if task in ("binary", "multiclass") and params.get("class_weight") is None and sample_weight is None:
+        # If no explicit weights, match sklearn's "balanced" class_weight convention
+        # for robustness on imbalanced targets. sample_weight (if set) supersedes.
+        pass
+    base.update({k: v for k, v in params.items() if k in {"C", "penalty", "l1_ratio", "max_iter", "solver", "multi_class", "class_weight", "random_state"}})
+
+    # Align columns across train/val/test after one-hot (test may have unseen levels).
+    all_cols = sorted(set(_prep(X_tr).columns) | set(_prep(X_val).columns) | set(_prep(X_test).columns))
+    def _align(df):
+        d = _prep(df)
+        for c in all_cols:
+            if c not in d.columns:
+                d[c] = 0.0
+        return d[all_cols]
+
+    X_tr_p = _align(X_tr)
+    X_val_p = _align(X_val)
+    X_test_p = _align(X_test)
+
+    model = LogisticRegression(**base)
+    model.fit(X_tr_p, y_tr, sample_weight=sample_weight)
+    if task == "binary":
+        val_pred = model.predict_proba(X_val_p)[:, 1]
+        test_pred = model.predict_proba(X_test_p)[:, 1]
+    elif task == "multiclass":
+        val_pred = model.predict_proba(X_val_p)
+        test_pred = model.predict_proba(X_test_p)
+    else:
+        val_pred = model.predict(X_val_p)
+        test_pred = model.predict(X_test_p)
+    return FitResult(model=model, val_pred=val_pred, test_pred=test_pred)
+
+
+FITTERS = {"lgbm": _lgbm_fit, "xgb": _xgb_fit, "catboost": _catboost_fit, "logreg": _logreg_fit}
 
 
 def fit_one_fold(name, X_tr, y_tr, X_val, y_val, X_test, params, task, sample_weight=None) -> FitResult:

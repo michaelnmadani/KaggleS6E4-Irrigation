@@ -1,11 +1,30 @@
 """Load competition data, encode string targets, build CV folds."""
 from __future__ import annotations
 
+import glob
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import KFold, StratifiedKFold
+
+
+def _find_extra_file(extra_dataset: dict) -> Path:
+    """Resolve the extra dataset file path. Tries explicit mount_dir first,
+    then globs under /kaggle/input/ recursively (Kaggle uses both flat and
+    namespaced mount structures, e.g. /kaggle/input/datasets/<owner>/<name>/)."""
+    file_name = extra_dataset["file"]
+    if extra_dataset.get("mount_dir"):
+        p = Path(extra_dataset["mount_dir"]) / file_name
+        if p.is_file():
+            return p
+    candidates = glob.glob(f"/kaggle/input/**/{file_name}", recursive=True)
+    if not candidates:
+        raise FileNotFoundError(
+            f"extra_dataset file {file_name!r} not found under /kaggle/input; "
+            f"tried mount_dir={extra_dataset.get('mount_dir')}"
+        )
+    return Path(candidates[0])
 
 
 def load(input_dir: Path, target: str, id_col: str, extra_dataset: dict | None = None):
@@ -20,8 +39,8 @@ def load(input_dir: Path, target: str, id_col: str, extra_dataset: dict | None =
     is_original = np.zeros(len(train), dtype=bool)
 
     if extra_dataset:
-        ext_dir = Path(extra_dataset["mount_dir"])
-        ext_file = ext_dir / extra_dataset["file"]
+        ext_file = _find_extra_file(extra_dataset)
+        print(f"extra_dataset resolved to {ext_file}")
         ext = pd.read_csv(ext_file)
         # Keep only columns that also exist in the comp train (minus id).
         shared = [c for c in train.columns if c in ext.columns and c != id_col]
