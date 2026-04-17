@@ -1,10 +1,10 @@
 config: /kaggle/working/iteration_config.yaml
 train=(630000, 19)  test=(270000, 19)
 target encoded: {0: 'High', 1: 'Low', 2: 'Medium'}
-features applied: ['s6e4_threshold_booleans', 'label_encode'] -> 23 cols
+global features: ['s6e4_threshold_booleans', 'label_encode'] -> 23 cols
 fold 0: accuracy=0.98571
 fold 1: accuracy=0.98544
 fold 2: accuracy=0.98545
 fold 3: accuracy=0.98570
 fold 4: accuracy=0.98575
-CV accuracy=0.98561  elapsed=766.3s
+CV accuracy=0.98561  plain_acc=0.98561  balanced_acc=0.96360
