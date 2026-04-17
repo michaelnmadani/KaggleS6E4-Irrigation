@@ -214,6 +214,34 @@ def s6e4_realmlp_fe(X_tr: pd.DataFrame, X_te: pd.DataFrame) -> tuple[pd.DataFram
     return X_tr, X_te
 
 
+def s6e4_pairwise_only(X_tr: pd.DataFrame, X_te: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Add ONLY the C(6,2)=15 pairwise-concat interactions on the 6 generator
+    columns, without touching any other features. Unlike s6e4_realmlp_fe which
+    factorizes all columns (destroying continuous signal for tree models), this
+    block preserves originals and just APPENDS 6-15 new factorized pairwise
+    categoricals. Pairs with nunique > n_rows/2 are dropped as too sparse.
+    """
+    X_tr, X_te = X_tr.copy(), X_te.copy()
+    from itertools import combinations
+    key_cols = ["Soil_Moisture", "Crop_Growth_Stage", "Temperature_C",
+                "Mulching_Used", "Wind_Speed_kmh", "Rainfall_mm"]
+    n_rows = len(X_tr) + len(X_te)
+    for a, b in combinations(key_cols, 2):
+        if a not in X_tr.columns or b not in X_tr.columns:
+            continue
+        name = f"{a}-{b}"
+        s_tr = X_tr[a].astype(str) + "_" + X_tr[b].astype(str)
+        s_te = X_te[a].astype(str) + "_" + X_te[b].astype(str)
+        combined = pd.concat([s_tr, s_te], axis=0, ignore_index=True)
+        codes, _ = pd.factorize(combined)
+        if pd.Series(codes).nunique() > n_rows // 2:
+            continue
+        # Cast as Categorical so target_encode_multiclass picks it up.
+        X_tr[name] = pd.Categorical(codes[:len(X_tr)])
+        X_te[name] = pd.Categorical(codes[len(X_tr):])
+    return X_tr, X_te
+
+
 BLOCKS = {
     "label_encode": label_encode,
     "fill_na_median": fill_na_median,
@@ -222,6 +250,7 @@ BLOCKS = {
     "s6e4_interactions": s6e4_interactions,
     "s6e4_cdeotte_minimal": s6e4_cdeotte_minimal,
     "s6e4_realmlp_fe": s6e4_realmlp_fe,
+    "s6e4_pairwise_only": s6e4_pairwise_only,
     "target_encode_multiclass": target_encode_multiclass,
 }
 
