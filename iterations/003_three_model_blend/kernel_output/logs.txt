@@ -1,0 +1,25 @@
+config: /kaggle/working/iteration_config.yaml
+train=(630000, 19)  test=(270000, 19)
+target encoded: {0: 'High', 1: 'Low', 2: 'Medium'}
+global features: ['fill_na_median', 's6e4_threshold_booleans', 's6e4_interactions', 'label_encode'] -> 32 cols
+per-fold features: ['target_encode_multiclass']
+fold 0 lgbm: balanced_accuracy=0.96596
+fold 0 xgb: balanced_accuracy=0.96623
+fold 0 catboost: balanced_accuracy=0.96857
+fold 1 lgbm: balanced_accuracy=0.96728
+fold 1 xgb: balanced_accuracy=0.96805
+fold 1 catboost: balanced_accuracy=0.97007
+fold 2 lgbm: balanced_accuracy=0.96837
+fold 2 xgb: balanced_accuracy=0.96824
+fold 2 catboost: balanced_accuracy=0.97108
+fold 3 lgbm: balanced_accuracy=0.96634
+fold 3 xgb: balanced_accuracy=0.96625
+fold 3 catboost: balanced_accuracy=0.96953
+fold 4 lgbm: balanced_accuracy=0.96690
+fold 4 xgb: balanced_accuracy=0.96690
+fold 4 catboost: balanced_accuracy=0.97008
+model lgbm: CV balanced_accuracy=0.96697
+model xgb: CV balanced_accuracy=0.96714
+model catboost: CV balanced_accuracy=0.96987
+blend weights: {'lgbm': 0.33298133485571707, 'xgb': 0.3330389248293254, 'catboost': 0.3339797403149575}
+CV balanced_accuracy=0.96812  plain_acc=0.98541  balanced_acc=0.96812
