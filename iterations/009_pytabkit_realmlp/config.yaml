@@ -1,0 +1,46 @@
+# Iteration 009 (website V21) — official pytabkit RealMLP_TD_Classifier.
+#
+# V19 custom torch port hit CV 0.96 while the reference notebook hit 0.978 with
+# the same architecture + same FE. The gap is likely in implementation details
+# (sklearn vs custom TE, sparse-filter behavior, AdamW setup). Rather than
+# debug the port further, V21 uses the official pytabkit library by the RealMLP
+# paper authors \u2014 a battle-tested implementation with TD (tuned defaults).
+#
+# Expected CV: 0.975-0.978 if the FE matches the reference closely enough.
+
+target: Irrigation_Need
+id_col: id
+task: multiclass
+metric: balanced_accuracy
+
+class_weights: balanced          # pytabkit computes its own class weights too; harmless
+
+extra_dataset:
+  slug: miadul/irrigation-water-requirement-prediction-dataset
+  file: irrigation_prediction.csv
+  weight: 1.0
+
+kernel:
+  enable_gpu: true
+  enable_internet: true
+
+pip_install:
+  - torch==2.4.1 torchvision==0.19.1 --index-url https://download.pytorch.org/whl/cu121
+  - pytabkit
+  - scikit-learn==1.5.2
+
+features:
+  - s6e4_realmlp_fe              # same FE as V19: dup nums, factorize cats+nums, 15 pairwise
+  - target_encode_multiclass     # per-fold multiclass TE on the Categorical pairwise cols
+
+model: pytabkit_realmlp
+
+params:
+  device: cuda
+  n_cv: 1                        # single model per fold (we wrap in outer 5-fold)
+  random_state: 42
+
+cv:
+  n_splits: 5
+  seed: 42
+  stratified: true

@@ -174,12 +174,40 @@ def _realmlp_fit(X_tr, y_tr, X_val, y_val, X_test, params, task, sample_weight=N
     return FitResult(model=model, val_pred=val_pred, test_pred=test_pred)
 
 
+def _pytabkit_realmlp_fit(X_tr, y_tr, X_val, y_val, X_test, params, task, sample_weight=None) -> FitResult:
+    """Official pytabkit RealMLP_TD_Classifier by the RealMLP paper authors.
+    Use this instead of our custom torch port when we want to match published
+    benchmarks (my custom port scored ~0.018 below reference for unclear reasons).
+
+    Requires: pip install pytabkit (installs torch-based RealMLP + utilities).
+    """
+    from pytabkit import RealMLP_TD_Classifier
+
+    cat_cols = params.get("cat_col_names") or params.get("cat_cols")
+    if cat_cols is None:
+        cat_cols = [c for c in X_tr.columns
+                    if str(X_tr[c].dtype).startswith("int") or str(X_tr[c].dtype) == "category"]
+    overrides = {k: v for k, v in params.items() if k not in ("cat_col_names", "cat_cols")}
+
+    model = RealMLP_TD_Classifier(**overrides)
+    model.fit(X_tr, y_tr, X_val=X_val, y_val=y_val, cat_col_names=list(cat_cols))
+
+    if task == "binary":
+        val_pred = model.predict_proba(X_val)[:, 1]
+        test_pred = model.predict_proba(X_test)[:, 1]
+    else:
+        val_pred = model.predict_proba(X_val)
+        test_pred = model.predict_proba(X_test)
+    return FitResult(model=model, val_pred=val_pred, test_pred=test_pred)
+
+
 FITTERS = {
     "lgbm": _lgbm_fit,
     "xgb": _xgb_fit,
     "catboost": _catboost_fit,
     "logreg": _logreg_fit,
     "realmlp": _realmlp_fit,
+    "pytabkit_realmlp": _pytabkit_realmlp_fit,
 }
 
 
