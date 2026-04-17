@@ -2197,14 +2197,32 @@
         "Runtime 74 min (V13: 25 min) \u2014 still comfortably under Kaggle's 9-hr cap so room for 10-fold in V15",
         "V15 will address the blend-weight issue: either OOF-optimized weights via scipy or keeping CatBoost as the solo model with V15's original-data augmentation added on top"
       ]
+    },
+    {
+      "version": 17,
+      "score": 0.96203,
+      "best_model": "logreg_cdeotte",
+      "source": "autonomous pipeline (Claude Code \u2014 KaggleS6E4-Irrigation, iter 006_logreg_cdeotte)",
+      "plain_accuracy": 0.98113,
+      "per_class_recall": {"Low": 0.99572, "Medium": 0.96330, "High": 0.92708},
+      "fold_std": 0.00099,
+      "elapsed_sec": 34,
+      "changes": [
+        "Pure-linear baseline: multinomial LogReg on exactly cdeotte's 10 features (4 threshold booleans + 1-hot Crop_Growth_Stage + 1-hot Mulching_Used), per discussion 687460 'Original Data's Exact Formula'",
+        "34-second kernel runtime vs V14's 74 min \u2014 LogReg on 10 features is ~130\u00d7 faster than CatBoost+10-fold",
+        "HIGH recall 0.927 (V13 0.931, V14 0.935), slightly below tree-based models",
+        "KEY LEARNING: score 0.96203 is LOWER than V12/V13/V14 \u2014 comp's synthetic test set isn't a pure cdeotte generator. Has noise/perturbation beyond the original formula, and tree models fit it better than linear",
+        "cdeotte's formula nails the 10k original-dataset rows (CV=1.0 there) but the 630k comp rows include added variance \u2014 linear model can't represent it",
+        "Takeaway for V15+: keep the tree-based path. LogReg is a useful diagnostic but not a winning solo model here. Could contribute as a weak learner in a diverse blend \u2014 V11 didn't use it, V18+ could"
+      ]
     }
   ],
   "improvement": {
-    "previous_best_model": "lightgbm",
-    "previous_best_score": 0.96697,
-    "improved_best_model": "blend_lgbm_xgb_catboost",
-    "improved_best_score": 0.96812,
-    "score_change": 0.00115,
+    "previous_best_model": "blend_lgbm_xgb_catboost",
+    "previous_best_score": 0.96812,
+    "improved_best_model": "logreg_cdeotte",
+    "improved_best_score": 0.96203,
+    "score_change": -0.00609,
     "recommendations_applied": [
       "Three-model CV blend infrastructure \u2014 pipeline's train.py now accepts model: [list] and weights models score-proportionally on OOF",
       "Proved CatBoost is the strongest single model on this feature set (0.96987 standalone), within 0.003 of V11's 0.97256 benchmark",
