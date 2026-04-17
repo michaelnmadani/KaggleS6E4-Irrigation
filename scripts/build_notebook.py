@@ -77,9 +77,13 @@ def build_notebook(repo: Path, iteration: str, comp_slug: str) -> dict:
     icfg = _yaml.safe_load((repo / "iterations" / iteration / "config.yaml").read_text()) or {}
     pip_pkgs = icfg.get("pip_install") or []
     if pip_pkgs:
-        pkg_args = " ".join(f'"{p}"' for p in pip_pkgs)
         cells.append(_md_cell("## install\n"))
-        cells.append(_code_cell(f"!pip install -q {pkg_args}\n"))
+        install_lines = ["!nvidia-smi || true"]  # diagnostic: what GPU did we get
+        for entry in pip_pkgs:
+            # Each entry is passed as-is (supports --index-url, spaces, etc.).
+            install_lines.append(f"!pip install -q {entry}")
+        install_lines.append("import torch; print('torch:', torch.__version__, 'cuda:', torch.cuda.is_available(), 'device:', torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'none')")
+        cells.append(_code_cell("\n".join(install_lines) + "\n"))
 
     # Optionally include extra modules beyond the default set (e.g. realmlp).
     extra_modules = icfg.get("extra_modules") or []
