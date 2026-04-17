@@ -2204,6 +2204,7 @@
       "best_model": "catboost",
       "source": "autonomous pipeline (Claude Code \u2014 KaggleS6E4-Irrigation, iter 004_catboost_10fold_extdata)",
       "plain_accuracy": 0.98404,
+      "public_lb": 0.96644,
       "per_class_recall": {"Low": 0.99552, "Medium": 0.96980, "High": 0.94401},
       "fold_std": 0.00206,
       "elapsed_sec": 5573,
