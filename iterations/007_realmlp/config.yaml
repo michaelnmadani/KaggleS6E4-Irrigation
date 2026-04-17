@@ -27,6 +27,9 @@ kernel:
   enable_internet: true   # needed to pip install deps (sklearn 1.5.2)
 
 pip_install:
+  # Kaggle's base torch 2.10 dropped sm_60 (P100) support. Force 2.4.1 which
+  # still ships kernels for sm_60-sm_90, covering both T4 and P100 allocations.
+  - torch==2.4.1 torchvision==0.19.1 --index-url https://download.pytorch.org/whl/cu121
   - scikit-learn==1.5.2
 
 extra_modules:
