@@ -1,0 +1,43 @@
+
+# Iteration 004 (website V15) — CatBoost-solo + 10-fold + miadul external aug.
+#
+# V14 taught us: equal-weight blend (0.96812) < CatBoost-alone (0.96987).
+# V15 pivots to CatBoost-solo (strongest single model on this feature set)
+# and layers V11's two remaining top techniques: 10-fold CV (tighter OOF)
+# and miadul-dataset augmentation (sample_weight=0.35).
+#
+# Expected CV: 0.971-0.973, right at V11's 0.97256 benchmark.
+
+target: Irrigation_Need
+id_col: id
+task: multiclass
+metric: balanced_accuracy
+
+class_weights: balanced
+
+extra_dataset:
+  slug: miadul/irrigation-water-requirement-prediction-dataset
+  file: irrigation_prediction.csv
+  weight: 0.35   # V11's value — external rows contribute but at 35% influence
+
+features:
+  - fill_na_median
+  - s6e4_threshold_booleans
+  - s6e4_interactions
+  - label_encode
+  - target_encode_multiclass
+
+model: catboost
+
+params:
+  iterations: 2500
+  early_stopping_rounds: 150
+  learning_rate: 0.04
+  depth: 7
+  l2_leaf_reg: 5.0
+  random_seed: 42
+
+cv:
+  n_splits: 10        # up from V13/V14's 5-fold for tighter OOF
+  seed: 42
+  stratified: true
