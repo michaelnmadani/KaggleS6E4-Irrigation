@@ -118,12 +118,44 @@ def target_encode_multiclass(X_tr: pd.DataFrame, X_te: pd.DataFrame, y_tr=None, 
     return X_tr, X_te
 
 
+def s6e4_cdeotte_minimal(X_tr: pd.DataFrame, X_te: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Exactly cdeotte's 10-feature set that perfectly separates the original
+    dataset into 3 classes: 4 threshold booleans + Crop_Growth_Stage (4 one-hot
+    dummies) + Mulching_Used (2 one-hot dummies) = 10 features, nothing else.
+
+    Use with model: logreg — the LogReg wrapper one-hots categoricals itself,
+    so we keep those cols as strings. The Kaggle discussion #687460 notes this
+    is the exact data generator.
+    """
+    rules = [
+        ("Soil_Moisture",  "<", 25,  "soil_lt_25"),
+        ("Temperature_C",  ">", 30,  "temp_gt_30"),
+        ("Rainfall_mm",    "<", 300, "rain_lt_300"),
+        ("Wind_Speed_kmh", ">", 10,  "wind_gt_10"),
+    ]
+    keep_cats = ["Crop_Growth_Stage", "Mulching_Used"]
+    out = {}
+    for name, X in (("tr", X_tr), ("te", X_te)):
+        d = {}
+        for col, op, val, new in rules:
+            if col not in X.columns:
+                raise KeyError(f"s6e4_cdeotte_minimal: missing {col!r}")
+            d[new] = ((X[col] < val) if op == "<" else (X[col] > val)).astype(int).values
+        for c in keep_cats:
+            if c not in X.columns:
+                raise KeyError(f"s6e4_cdeotte_minimal: missing {c!r}")
+            d[c] = X[c].values
+        out[name] = pd.DataFrame(d, index=X.index)
+    return out["tr"], out["te"]
+
+
 BLOCKS = {
     "label_encode": label_encode,
     "fill_na_median": fill_na_median,
     "count_encode_categoricals": count_encode_categoricals,
     "s6e4_threshold_booleans": s6e4_threshold_booleans,
     "s6e4_interactions": s6e4_interactions,
+    "s6e4_cdeotte_minimal": s6e4_cdeotte_minimal,
     "target_encode_multiclass": target_encode_multiclass,
 }
 
