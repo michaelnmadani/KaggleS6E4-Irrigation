@@ -20,6 +20,25 @@ import sys
 from pathlib import Path
 
 
+def _strip_main_block(src: str) -> str:
+    """Remove `if __name__ == "__main__":` block — Jupyter's __name__ is
+    '__main__' too, so a module's CLI entry point would fire inside the
+    notebook and argparse would parse Jupyter's sys.argv, crashing."""
+    lines = src.splitlines(keepends=True)
+    out: list[str] = []
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        if re.match(r'^if\s+__name__\s*==\s*[\'"]__main__[\'"]\s*:\s*$', line.rstrip()):
+            i += 1
+            while i < len(lines) and (lines[i].strip() == "" or lines[i].startswith((" ", "\t"))):
+                i += 1
+            continue
+        out.append(line)
+        i += 1
+    return "".join(out)
+
+
 def _strip_relative_imports(src: str) -> str:
     """Remove `from . import X as Y` and rewrite `Y.attr` -> `attr`
     so all modules collapse into one notebook namespace."""
@@ -29,7 +48,7 @@ def _strip_relative_imports(src: str) -> str:
     out = re.sub(r"^from\s+\.\s+import\s+\w+(\s+as\s+\w+)?\s*$", "", src, flags=re.MULTILINE)
     for alias in aliases:
         out = re.sub(rf"\b{re.escape(alias)}\.", "", out)
-    return out
+    return _strip_main_block(out)
 
 
 def _code_cell(source: str) -> dict:
