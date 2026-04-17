@@ -2137,27 +2137,34 @@
         "Fix LightGBM bagging_freq=1 (enable actual row subsampling)",
         "Add field-normalized features: Previous_Irrigation/hectare, Rainfall/hectare"
       ]
+    },
+    {
+      "version": 12,
+      "score": 0.96360,
+      "best_model": "lightgbm",
+      "source": "autonomous pipeline (Claude Code \u2014 KaggleS6E4-Irrigation)",
+      "plain_accuracy": 0.98561,
+      "per_class_recall": {"Low": 0.99579, "Medium": 0.97568, "High": 0.91932},
+      "changes": [
+        "Baseline re-run via new autonomous pipeline \u2014 intentionally minimal to validate end-to-end (repo \u2192 Kaggle \u2192 PR) plumbing",
+        "Features: s6e4_threshold_booleans only (soil<25, temp>30, rain<300, wind>10) + label_encode of 6 original categoricals",
+        "Model: single LightGBM (num_leaves=31, lr=0.05, 2000 rounds early-stopped) \u2014 NO TE, NO ratios, NO ensembling, NO original-data augmentation",
+        "Training metric was plain accuracy (0.98561); balanced_accuracy (0.96360) computed post-hoc from OOF vs y_true",
+        "Regression vs V11 (-0.00896) is driven almost entirely by High-class recall collapsing to 91.9% \u2014 V8+ class-weight and V11 logit-bias tricks are specifically what closes that gap",
+        "Confirms: on this data, the minority-class engineering from V8\u2013V11 is worth ~1% balanced-acc; threshold rules alone are insufficient"
+      ]
     }
   ],
   "improvement": {
-    "previous_best_model": "lightgbm",
-    "previous_best_score": 0.96921,
-    "improved_best_model": "logit_bias_tuned",
-    "improved_best_score": 0.97256,
-    "score_change": 0.00335,
+    "previous_best_model": "logit_bias_tuned",
+    "previous_best_score": 0.97256,
+    "improved_best_model": "lightgbm",
+    "improved_best_score": 0.96360,
+    "score_change": -0.00896,
     "recommendations_applied": [
-      "Append original dataset (miadul/irrigation-water-requirement-prediction-dataset) with sample_weight=0.35",
-      "Pairwise categorical interaction features with per-fold TE (C(8,2)=28 pairs \u2192 ~135 TE features)",
-      "Decimal digit extraction for all numeric columns (synthetic data exploit)",
-      "GroupBy aggregation features: groupby(cat)[num].agg(mean/std) for top combinations",
-      "Multi-class target encoding: P(class=k|category) for each of 3 classes (replaces broken single-value TE)",
-      "CatBoost native categorical handling via cat_features parameter",
-      "10-fold CV (up from 5-fold) for more stable OOF estimates",
-      "Logit-space bias tuning with nested CV: per-class logit offsets for balanced accuracy",
-      "CatBoost-dominant blend: CatBoost=0.65, LightGBM=0.25, XGBoost=0.10",
-      "Fix CatBoost sample_weight bug (was missing from fit call)",
-      "Fix LightGBM bagging_freq=1 (enable actual row subsampling)",
-      "Add field-normalized features: Previous_Irrigation/hectare, Rainfall/hectare"
+      "Baseline re-run on new autonomous pipeline to validate plumbing before iterating",
+      "Deliberately minimal feature set (4 threshold booleans + label_encode) to isolate the pipeline from feature-engineering wins",
+      "Next: add V11's HIGH-class techniques back \u2014 class-weighted sample_weights, per-fold target encoding, logit-bias tuning"
     ]
   }
 }
