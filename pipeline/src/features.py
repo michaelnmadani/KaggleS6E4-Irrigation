@@ -242,6 +242,90 @@ def s6e4_pairwise_only(X_tr: pd.DataFrame, X_te: pd.DataFrame) -> tuple[pd.DataF
     return X_tr, X_te
 
 
+# --- V23 FE ports from V11 ----------------------------------------------------
+
+_V11_NUMERIC_SOURCES = [
+    "Soil_pH", "Soil_Moisture", "Organic_Carbon", "Electrical_Conductivity",
+    "Temperature_C", "Humidity", "Rainfall_mm", "Sunlight_Hours",
+    "Wind_Speed_kmh", "Field_Area_hectare", "Previous_Irrigation_mm",
+]
+
+
+def s6e4_decimal_digits(X_tr: pd.DataFrame, X_te: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """V11 synthetic-data fingerprint: the last significant decimal digits of
+    each numeric col leak signal about the generator. Extract first + second
+    decimal digits as integer features."""
+    X_tr, X_te = X_tr.copy(), X_te.copy()
+    for col in _V11_NUMERIC_SOURCES:
+        if col not in X_tr.columns:
+            continue
+        for scale, lbl in [(10, "d1"), (100, "d2")]:
+            for X in (X_tr, X_te):
+                v = X[col].astype(float).fillna(0.0).values
+                X[f"{col}_{lbl}"] = (np.round(v * scale).astype(np.int64) % 10).astype(np.int16)
+    return X_tr, X_te
+
+
+def s6e4_field_normalized(X_tr: pd.DataFrame, X_te: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """V11 per-hectare ratios. Area-normalizes rainfall/prev-irrigation so field
+    size doesn't confound the class signal."""
+    X_tr, X_te = X_tr.copy(), X_te.copy()
+    if "Field_Area_hectare" not in X_tr.columns:
+        return X_tr, X_te
+    for num in ("Rainfall_mm", "Previous_Irrigation_mm", "Soil_Moisture"):
+        if num not in X_tr.columns:
+            continue
+        for X in (X_tr, X_te):
+            denom = X["Field_Area_hectare"].astype(float).replace(0, np.nan) + 1e-6
+            X[f"{num}_per_ha"] = (X[num].astype(float) / denom).fillna(X[num].astype(float).median())
+    return X_tr, X_te
+
+
+def s6e4_groupby_aggs(X_tr: pd.DataFrame, X_te: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """V11 groupby aggregations: for each (categorical, continuous) pair below,
+    compute mean/std of the continuous within each category level on the union
+    of train+test, then map back. Unsupervised so no leakage."""
+    X_tr, X_te = X_tr.copy(), X_te.copy()
+    cats = [c for c in ("Crop_Type", "Soil_Type", "Region", "Season",
+                        "Crop_Growth_Stage", "Mulching_Used") if c in X_tr.columns]
+    nums = [n for n in ("Soil_Moisture", "Temperature_C", "Rainfall_mm",
+                        "Wind_Speed_kmh", "Previous_Irrigation_mm") if n in X_tr.columns]
+    if not cats or not nums:
+        return X_tr, X_te
+    full = pd.concat([X_tr[cats + nums], X_te[cats + nums]], axis=0, ignore_index=True)
+    for c in cats:
+        for n in nums:
+            agg = full.groupby(c)[n].agg(["mean", "std"])
+            mean_map = agg["mean"].to_dict()
+            std_map = agg["std"].fillna(0).to_dict()
+            for X in (X_tr, X_te):
+                X[f"{c}_{n}_gmean"] = X[c].map(mean_map).astype(float)
+                X[f"{c}_{n}_gstd"] = X[c].map(std_map).astype(float).fillna(0.0)
+    return X_tr, X_te
+
+
+def s6e4_quantile_bins(X_tr: pd.DataFrame, X_te: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """V18 candidate: quantile-bin each continuous numeric into deciles, cast as
+    Categorical so a downstream target_encode_multiclass block picks them up and
+    learns per-bin P(y=k|bin). Bin edges computed on train only."""
+    X_tr, X_te = X_tr.copy(), X_te.copy()
+    for col in ("Soil_Moisture", "Temperature_C", "Humidity", "Rainfall_mm",
+                "Wind_Speed_kmh", "Sunlight_Hours", "Previous_Irrigation_mm"):
+        if col not in X_tr.columns:
+            continue
+        src = X_tr[col].astype(float)
+        edges = np.unique(np.quantile(src.dropna().values, np.linspace(0, 1, 11)))
+        if len(edges) < 3:
+            continue
+        b_tr = np.clip(np.digitize(src.fillna(src.median()).values, edges[1:-1]), 0, 9).astype(np.int16)
+        b_te = np.clip(
+            np.digitize(X_te[col].astype(float).fillna(src.median()).values, edges[1:-1]), 0, 9
+        ).astype(np.int16)
+        X_tr[f"{col}_q10"] = pd.Categorical(b_tr, categories=list(range(10)))
+        X_te[f"{col}_q10"] = pd.Categorical(b_te, categories=list(range(10)))
+    return X_tr, X_te
+
+
 BLOCKS = {
     "label_encode": label_encode,
     "fill_na_median": fill_na_median,
@@ -251,6 +335,10 @@ BLOCKS = {
     "s6e4_cdeotte_minimal": s6e4_cdeotte_minimal,
     "s6e4_realmlp_fe": s6e4_realmlp_fe,
     "s6e4_pairwise_only": s6e4_pairwise_only,
+    "s6e4_decimal_digits": s6e4_decimal_digits,
+    "s6e4_field_normalized": s6e4_field_normalized,
+    "s6e4_groupby_aggs": s6e4_groupby_aggs,
+    "s6e4_quantile_bins": s6e4_quantile_bins,
     "target_encode_multiclass": target_encode_multiclass,
 }
 
