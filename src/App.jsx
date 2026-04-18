@@ -465,7 +465,7 @@ function ImprovementsSection({ data }) {
             <BarChart data={versionData}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="version" />
-              <YAxis domain={[0.96, 0.975]} />
+              <YAxis domain={[0.955, 0.975]} />
               <Tooltip formatter={(v) => typeof v === 'number' ? v.toFixed(5) : v} />
               <Bar dataKey="score" name="Balanced Accuracy">
                 {versionData.map((entry, i) => (
