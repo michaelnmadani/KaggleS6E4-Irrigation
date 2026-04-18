@@ -98,15 +98,32 @@ def s6e4_interactions(X_tr: pd.DataFrame, X_te: pd.DataFrame) -> tuple[pd.DataFr
     return X_tr, X_te
 
 
-def target_encode_multiclass(X_tr: pd.DataFrame, X_te: pd.DataFrame, y_tr=None, smoothing: int = 10) -> tuple[pd.DataFrame, pd.DataFrame]:
+def target_encode_multiclass(X_tr: pd.DataFrame, X_te: pd.DataFrame, y_tr=None, smoothing: int = 10, max_nunique: int = 20) -> tuple[pd.DataFrame, pd.DataFrame]:
     """For each categorical col and each target class k, add a smoothed P(y=k|category).
-    Multiclass-aware TE: captures per-class conditional probabilities (V11's biggest lever)."""
+
+    Column detection: object/category dtype, OR integer dtype with <= max_nunique
+    unique values. The integer-dtype fallback catches columns that a prior
+    label_encode block converted to int codes (pre-V24 this was a silent no-op)."""
     if y_tr is None:
         raise ValueError("target_encode_multiclass requires y_tr")
     X_tr, X_te = X_tr.copy(), X_te.copy()
     y = pd.Series(y_tr).reset_index(drop=True)
     classes = sorted(y.unique().tolist())
-    for col in _categorical_cols(X_tr):
+
+    cat_like = set(_categorical_cols(X_tr))
+    # Include int cols that look like label-encoded categoricals (low cardinality).
+    for col in X_tr.columns:
+        if col in cat_like:
+            continue
+        dt = X_tr[col].dtype
+        if pd.api.types.is_integer_dtype(dt) or str(dt).startswith(("int", "uint")):
+            try:
+                if X_tr[col].nunique(dropna=True) <= max_nunique:
+                    cat_like.add(col)
+            except Exception:
+                pass
+
+    for col in cat_like:
         # If the source is Categorical, .map can preserve Categorical dtype, which
         # breaks .fillna(float). Convert to object first for safe mapping.
         src_tr = pd.Series(X_tr[col].values).astype(object)

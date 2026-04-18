@@ -216,6 +216,40 @@ def run(config_path: str, input_dir: str, output_dir: str) -> dict:
         plain_acc = float(accuracy_score(y, _hard_labels(oof)))
         bal_acc = float(balanced_accuracy_score(y, _hard_labels(oof)))
 
+    # Post-processing: meta-stacker (V24). Requires >=2 base models.
+    if cfg.get("postprocess") == "meta_stacker" and len(model_names) >= 2 and oof.ndim == 2:
+        stack_info = post_mod.stack_meta_learner(
+            per_model_oof, per_model_test, np.asarray(y), folds, metric_fn,
+        )
+        pre_score = cv_score
+        meta_score = stack_info["score"]
+        log_lines.append(
+            f"meta-stacker: pre={pre_score:.5f}  meta={meta_score:.5f}  "
+            f"delta={meta_score - pre_score:+.5f}  "
+            f"per_learner={stack_info['per_learner_score']}  "
+            f"weights={stack_info['weights']}  "
+            f"pruned={stack_info['n_pruned']}/{stack_info['n_meta_features_pre_prune']}"
+        )
+        if meta_score > pre_score:
+            oof = stack_info["oof"]
+            test_preds = stack_info["test"]
+            cv_score = float(metric_fn(y, oof))
+            plain_acc = float(accuracy_score(y, _hard_labels(oof)))
+            bal_acc = float(balanced_accuracy_score(y, _hard_labels(oof)))
+            log_lines.append(f"meta-stacker applied (CV: {pre_score:.5f} -> {cv_score:.5f})")
+        else:
+            log_lines.append("meta-stacker skipped (did not improve over base blend)")
+        postprocess_info = {
+            "kind": "meta_stacker",
+            "pre_score": pre_score,
+            "meta_score": meta_score,
+            "per_learner_score": stack_info["per_learner_score"],
+            "weights": stack_info["weights"],
+            "n_meta_features": stack_info["n_meta_features"],
+            "n_pruned": stack_info["n_pruned"],
+            "applied": meta_score > pre_score,
+        }
+
     # Per-class recall (multiclass) for reviewer context.
     recalls = None
     if task == "multiclass" and inverse_label_map is not None:
