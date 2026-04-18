@@ -1,0 +1,49 @@
+# Iteration 011 (website V23) — port V11's FE blocks onto CatBoost-solo.
+#
+# V22 confirmed the blend is dead on this feature set; CatBoost single (0.96978)
+# is the ceiling. V11's 0.97256 had FE pieces the new pipeline never implemented:
+#   - decimal-digit extraction (synthetic-data fingerprint)
+#   - per-hectare field-normalized ratios
+#   - groupby(cat)[num].agg(mean/std) aggregations
+#   - quantile-binned continuous numerics that get multiclass-TE'd
+#
+# Expected: 0.970-0.974. If ≥ 0.973 we're within spitting distance of 0.975 and
+# V24 (meta-learning stacker) gets a running start.
+
+target: Irrigation_Need
+id_col: id
+task: multiclass
+metric: balanced_accuracy
+
+class_weights: balanced
+
+extra_dataset:
+  slug: miadul/irrigation-water-requirement-prediction-dataset
+  file: irrigation_prediction.csv
+  weight: 0.35
+
+features:
+  - fill_na_median
+  - s6e4_threshold_booleans
+  - s6e4_interactions
+  - s6e4_field_normalized      # NEW: V11 per-hectare ratios
+  - s6e4_decimal_digits        # NEW: V11 synthetic-data fingerprint
+  - s6e4_groupby_aggs          # NEW: V11 groupby(cat)[num].agg(mean/std)
+  - s6e4_quantile_bins         # NEW: V18 decile bins (categorical, TE'd below)
+  - label_encode
+  - target_encode_multiclass   # per-fold; now also encodes the quantile bins
+
+model: catboost
+
+params:
+  iterations: 2500
+  early_stopping_rounds: 150
+  learning_rate: 0.04
+  depth: 7
+  l2_leaf_reg: 5.0
+  random_seed: 42
+
+cv:
+  n_splits: 10
+  seed: 42
+  stratified: true
