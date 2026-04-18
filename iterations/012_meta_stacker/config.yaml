@@ -1,0 +1,91 @@
+# Iteration 012 (website V24) — meta-stacker over CB + LGBM + XGB + LogReg.
+#
+# Port of arXiv:2602.12469 (Mohammad & Meherab 2026) recipe:
+#   1. Train 4 diverse base models under the same 10-fold CV (shares compute).
+#   2. Build a meta-feature matrix of all 4x3 = 12 OOF probabilities per row.
+#   3. Prune: drop columns where corr >= 0.95 AND pairwise MSE is tiny.
+#   4. Augment with row-wise mean/std/median/range of per-class probs across
+#      the model ensemble (4 stats x 3 classes = 12 new cols).
+#   5. Fit L1, L2, ElasticNet multinomial LogReg meta-learners per-fold
+#      (nested CV = the existing 10-fold index).
+#   6. Blend the 3 meta-learners by inverse-(1-bal_acc).
+#   7. Only apply if meta-score beats base blend score (guarded in train.py).
+#
+# Expected: meta-learner typically adds +0.001-0.003 on top of best base blend.
+# Base blend here = V22's CB-heavy weights on V23's richer feature set.
+# Floor target: 0.972. Stretch: 0.975.
+
+target: Irrigation_Need
+id_col: id
+task: multiclass
+metric: balanced_accuracy
+
+class_weights: balanced
+
+extra_dataset:
+  slug: miadul/irrigation-water-requirement-prediction-dataset
+  file: irrigation_prediction.csv
+  weight: 0.35
+
+features:
+  - fill_na_median
+  - s6e4_threshold_booleans
+  - s6e4_interactions
+  - s6e4_field_normalized
+  - s6e4_decimal_digits
+  - s6e4_groupby_aggs
+  - s6e4_quantile_bins
+  - label_encode
+  - target_encode_multiclass
+
+model:
+  - lgbm
+  - xgb
+  - catboost
+  - logreg
+
+# V11 hand-tuned blend weights (base blend that meta-stacker sits on top of).
+# LogReg gets tiny weight so its diversity contributes to meta-features without
+# dominating the base blend fallback.
+blend_weights:
+  catboost: 0.60
+  lgbm: 0.25
+  xgb: 0.10
+  logreg: 0.05
+
+postprocess: meta_stacker
+
+params:
+  lgbm:
+    num_boost_round: 2500
+    early_stopping_rounds: 100
+    learning_rate: 0.04
+    num_leaves: 63
+    min_data_in_leaf: 50
+    feature_fraction: 0.85
+    bagging_fraction: 0.85
+    bagging_freq: 5
+    lambda_l2: 1.5
+  xgb:
+    num_boost_round: 2000
+    early_stopping_rounds: 100
+    eta: 0.04
+    max_depth: 8
+    subsample: 0.85
+    colsample_bytree: 0.85
+    reg_lambda: 1.5
+  catboost:
+    iterations: 2500
+    early_stopping_rounds: 150
+    learning_rate: 0.04
+    depth: 7
+    l2_leaf_reg: 5.0
+    random_seed: 42
+  logreg:
+    C: 1.0
+    max_iter: 2000
+
+cv:
+  n_splits: 10
+  seed: 42
+  stratified: true
