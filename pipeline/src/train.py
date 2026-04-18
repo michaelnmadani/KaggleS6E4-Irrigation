@@ -171,13 +171,20 @@ def run(config_path: str, input_dir: str, output_dir: str) -> dict:
         test_preds = per_model_test[model_names[0]]
         blend_weights = {model_names[0]: 1.0}
     else:
-        raw_w = np.array([per_model_cv[m] for m in model_names])
-        raw_w = np.maximum(raw_w, 1e-9)
+        manual_w = cfg.get("blend_weights")
+        if isinstance(manual_w, dict) and set(manual_w.keys()) == set(model_names):
+            raw_w = np.array([float(manual_w[m]) for m in model_names])
+            raw_w = np.maximum(raw_w, 0.0)
+            weight_mode = "manual"
+        else:
+            raw_w = np.array([per_model_cv[m] for m in model_names])
+            raw_w = np.maximum(raw_w, 1e-9)
+            weight_mode = "score_proportional"
         w = raw_w / raw_w.sum()
         blend_weights = {m: float(wi) for m, wi in zip(model_names, w)}
         oof = sum(wi * per_model_oof[m] for m, wi in zip(model_names, w))
         test_preds = sum(wi * per_model_test[m] for m, wi in zip(model_names, w))
-        log_lines.append(f"blend weights: {blend_weights}")
+        log_lines.append(f"blend weights ({weight_mode}): {blend_weights}")
 
     # Fold scores for the blend (or single model) for compatibility.
     fold_scores = [
