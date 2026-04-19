@@ -90,6 +90,39 @@ def _catboost_fit(X_tr, y_tr, X_val, y_val, X_test, params, task, sample_weight=
     return FitResult(model=model, val_pred=val_pred, test_pred=test_pred)
 
 
+def _extra_trees_fit(X_tr, y_tr, X_val, y_val, X_test, params, task, sample_weight=None) -> FitResult:
+    """ExtraTreesClassifier (Geurts 2006) — extremely randomized trees with
+    random split thresholds. Adds hypothesis-space diversity to GBM-dominated
+    ensembles. Uses numeric X (label-encoded cats already)."""
+    from sklearn.ensemble import ExtraTreesClassifier, ExtraTreesRegressor
+    base = {
+        "n_estimators": 800,
+        "min_samples_leaf": 50,
+        "max_features": 0.85,
+        "n_jobs": -1,
+        "random_state": 42,
+    }
+    base.update({k: v for k, v in params.items() if k in base or k in {"max_depth", "bootstrap", "criterion"}})
+    X_tr_num = X_tr.select_dtypes(include=[np.number]).fillna(0)
+    X_val_num = X_val.reindex(columns=X_tr_num.columns, fill_value=0).select_dtypes(include=[np.number]).fillna(0)
+    X_test_num = X_test.reindex(columns=X_tr_num.columns, fill_value=0).select_dtypes(include=[np.number]).fillna(0)
+    if task in ("binary", "multiclass"):
+        model = ExtraTreesClassifier(**base, class_weight=None)
+        model.fit(X_tr_num, y_tr, sample_weight=sample_weight)
+        if task == "binary":
+            val_pred = model.predict_proba(X_val_num)[:, 1]
+            test_pred = model.predict_proba(X_test_num)[:, 1]
+        else:
+            val_pred = model.predict_proba(X_val_num)
+            test_pred = model.predict_proba(X_test_num)
+    else:
+        model = ExtraTreesRegressor(**base)
+        model.fit(X_tr_num, y_tr, sample_weight=sample_weight)
+        val_pred = model.predict(X_val_num)
+        test_pred = model.predict(X_test_num)
+    return FitResult(model=model, val_pred=val_pred, test_pred=test_pred)
+
+
 def _logreg_fit(X_tr, y_tr, X_val, y_val, X_test, params, task, sample_weight=None) -> FitResult:
     """Multinomial logistic regression with one-hot categorical expansion.
 
@@ -208,6 +241,7 @@ FITTERS = {
     # Aliases for multi-seed CatBoost ensembling; config supplies distinct random_seed/rsm.
     "catboost_a": _catboost_fit,
     "catboost_b": _catboost_fit,
+    "extra_trees": _extra_trees_fit,
     "logreg": _logreg_fit,
     "realmlp": _realmlp_fit,
     "pytabkit_realmlp": _pytabkit_realmlp_fit,
