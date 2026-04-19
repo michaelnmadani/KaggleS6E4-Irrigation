@@ -1,0 +1,109 @@
+# Iteration 013 (website V25) — multi-seed CatBoost + meta-stacker.
+#
+# V24 (0.97178) proved meta-stacker with L1/L2/EN logreg works. LogReg base
+# consumed ~8h for a 0.05 contribution. V25 reallocates that budget to 2 extra
+# CatBoost seeds with diversified rsm / random_strength / random_seed / depth /
+# lr / l2_leaf_reg, giving the meta-stacker 5 diverse base models instead of 4.
+#
+# Research base: Caruana 2004 "Ensemble Selection from Libraries of Models",
+# Kaggle TPS-01-2022 CatBoost seed-averaging notebook. Multi-seed CatBoost
+# typically adds +0.001-0.002 on synthetic PS multiclass tabular. Stacked into
+# a redundancy-pruned meta-learner the lift compounds 10-30% from reduced
+# correlated-error variance.
+#
+# Target: 0.973-0.974 CV. V26 will layer Caruana greedy hill-climb for final
+# +0.001-0.002 to reach 0.975.
+
+target: Irrigation_Need
+id_col: id
+task: multiclass
+metric: balanced_accuracy
+
+class_weights: balanced
+
+extra_dataset:
+  slug: miadul/irrigation-water-requirement-prediction-dataset
+  file: irrigation_prediction.csv
+  weight: 0.35
+
+features:
+  - fill_na_median
+  - s6e4_threshold_booleans
+  - s6e4_interactions
+  - s6e4_field_normalized
+  - s6e4_decimal_digits
+  - s6e4_groupby_aggs
+  - s6e4_quantile_bins
+  - label_encode
+  - target_encode_multiclass
+
+model:
+  - lgbm
+  - xgb
+  - catboost
+  - catboost_a
+  - catboost_b
+
+# CB ensemble weighted together at 0.65 total (V22's proven CB share), split
+# 0.28/0.21/0.16 so the primary seed gets most weight. Base blend is the
+# fallback if meta-stacker fails to improve.
+blend_weights:
+  catboost: 0.28
+  catboost_a: 0.21
+  catboost_b: 0.16
+  lgbm: 0.25
+  xgb: 0.10
+
+postprocess: meta_stacker
+
+params:
+  lgbm:
+    num_boost_round: 2500
+    early_stopping_rounds: 100
+    learning_rate: 0.04
+    num_leaves: 63
+    min_data_in_leaf: 50
+    feature_fraction: 0.85
+    bagging_fraction: 0.85
+    bagging_freq: 5
+    lambda_l2: 1.5
+  xgb:
+    num_boost_round: 2000
+    early_stopping_rounds: 100
+    eta: 0.04
+    max_depth: 8
+    subsample: 0.85
+    colsample_bytree: 0.85
+    reg_lambda: 1.5
+  catboost:
+    iterations: 2500
+    early_stopping_rounds: 150
+    learning_rate: 0.04
+    depth: 7
+    l2_leaf_reg: 5.0
+    random_seed: 42
+    rsm: 0.85
+    random_strength: 1.0
+  catboost_a:
+    iterations: 2000
+    early_stopping_rounds: 150
+    learning_rate: 0.05
+    depth: 8
+    l2_leaf_reg: 3.0
+    random_seed: 123
+    rsm: 0.75
+    random_strength: 2.0
+  catboost_b:
+    iterations: 2000
+    early_stopping_rounds: 150
+    learning_rate: 0.03
+    depth: 6
+    l2_leaf_reg: 7.0
+    random_seed: 777
+    rsm: 0.95
+    random_strength: 0.5
+
+cv:
+  n_splits: 10
+  seed: 42
+  stratified: true
