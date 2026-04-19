@@ -205,6 +205,9 @@ FITTERS = {
     "lgbm": _lgbm_fit,
     "xgb": _xgb_fit,
     "catboost": _catboost_fit,
+    # Aliases for multi-seed CatBoost ensembling; config supplies distinct random_seed/rsm.
+    "catboost_a": _catboost_fit,
+    "catboost_b": _catboost_fit,
     "logreg": _logreg_fit,
     "realmlp": _realmlp_fit,
     "pytabkit_realmlp": _pytabkit_realmlp_fit,
