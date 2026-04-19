@@ -195,9 +195,13 @@ def run(config_path: str, input_dir: str, output_dir: str) -> dict:
     plain_acc = float(accuracy_score(y, _hard_labels(oof)))
     bal_acc = float(balanced_accuracy_score(y, _hard_labels(oof)))
 
+    # Normalize postprocess to list so multiple stages can chain (best-of applied).
+    pp_raw = cfg.get("postprocess")
+    pp_stages = pp_raw if isinstance(pp_raw, list) else ([pp_raw] if pp_raw else [])
+
     # Post-processing: logit-bias tuning for balanced accuracy.
     postprocess_info = None
-    if cfg.get("postprocess") == "logit_bias" and oof.ndim == 2:
+    if "logit_bias" in pp_stages and oof.ndim == 2:
         info = post_mod.tune_bias_nested_cv(oof, np.asarray(y), folds)
         # Apply ALL-FOLDS bias to test probabilities before argmax.
         if test_preds.ndim == 2:
@@ -217,7 +221,7 @@ def run(config_path: str, input_dir: str, output_dir: str) -> dict:
         bal_acc = float(balanced_accuracy_score(y, _hard_labels(oof)))
 
     # Post-processing: meta-stacker (V24). Requires >=2 base models.
-    if cfg.get("postprocess") == "meta_stacker" and len(model_names) >= 2 and oof.ndim == 2:
+    if "meta_stacker" in pp_stages and len(model_names) >= 2 and oof.ndim == 2:
         stack_info = post_mod.stack_meta_learner(
             per_model_oof, per_model_test, np.asarray(y), folds, metric_fn,
         )
@@ -249,6 +253,38 @@ def run(config_path: str, input_dir: str, output_dir: str) -> dict:
             "n_pruned": stack_info["n_pruned"],
             "applied": meta_score > pre_score,
         }
+
+    # Post-processing: Caruana greedy hill-climb on balanced_accuracy (V26).
+    # Runs AFTER meta-stacker — only accepted if it beats whatever's current.
+    if "caruana" in pp_stages and len(model_names) >= 2 and oof.ndim == 2:
+        ch = post_mod.caruana_hill_climb(
+            per_model_oof, per_model_test, np.asarray(y), folds, metric_fn,
+        )
+        pre_score = cv_score
+        caruana_score = ch["score"]
+        log_lines.append(
+            f"caruana: pre={pre_score:.5f}  caruana={caruana_score:.5f}  "
+            f"delta={caruana_score - pre_score:+.5f}  weights={ch['weights']}"
+        )
+        if caruana_score > pre_score:
+            oof = ch["oof"]
+            test_preds = ch["test"]
+            cv_score = float(metric_fn(y, oof))
+            plain_acc = float(accuracy_score(y, _hard_labels(oof)))
+            bal_acc = float(balanced_accuracy_score(y, _hard_labels(oof)))
+            log_lines.append(f"caruana applied (CV: {pre_score:.5f} -> {cv_score:.5f})")
+        else:
+            log_lines.append("caruana skipped (did not improve)")
+        caruana_info = {
+            "kind": "caruana",
+            "pre_score": pre_score,
+            "caruana_score": caruana_score,
+            "weights": ch["weights"],
+            "applied": caruana_score > pre_score,
+        }
+        postprocess_info = (
+            [postprocess_info, caruana_info] if postprocess_info else caruana_info
+        )
 
     # Per-class recall (multiclass) for reviewer context.
     recalls = None

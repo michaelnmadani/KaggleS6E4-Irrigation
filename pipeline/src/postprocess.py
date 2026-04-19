@@ -187,3 +187,62 @@ def stack_meta_learner(per_model_oof: dict, per_model_test: dict,
         "n_meta_features_pre_prune": int(keep.shape[0]),
         "n_pruned": int((~keep).sum()),
     }
+
+
+# ------------------------------------------------------------------------
+# Caruana greedy forward-selection ensemble on balanced_accuracy (V26).
+# Ref: Caruana et al. 2004 "Ensemble Selection from Libraries of Models".
+# Directly optimizes the competition metric (balanced_accuracy via argmax),
+# so beats a log-loss meta-learner on metric-mismatched multiclass problems.
+# ------------------------------------------------------------------------
+
+
+def caruana_hill_climb(per_model_oof: dict, per_model_test: dict,
+                       y: np.ndarray, folds: np.ndarray, metric_fn,
+                       n_iters: int = 100, n_bags: int = 20, bag_frac: float = 0.5,
+                       seed: int = 42) -> dict:
+    """Caruana greedy forward-selection ensemble averaged over `n_bags` restarts.
+
+    For each bag: start empty; at each of n_iters steps pick the model (with
+    replacement) whose addition to the running mean maximally raises OOF
+    balanced_accuracy. Bag restarts subsample `bag_frac` of candidates to
+    reduce selection overfit. Final weights = average count across bags.
+    Runs in <1 min on CPU for 5 models x 640k x 3 classes."""
+    y = np.asarray(y).astype(int)
+    folds = np.asarray(folds)
+    names = list(per_model_oof.keys())
+    rng = np.random.default_rng(seed)
+
+    counts = {m: 0.0 for m in names}
+    for b in range(n_bags):
+        # Sample a subset of candidates; ensure at least 2 so there's a choice.
+        k = max(2, int(round(bag_frac * len(names))))
+        picks = rng.choice(len(names), size=k, replace=False)
+        cand = [names[i] for i in picks]
+        running = np.zeros_like(per_model_oof[names[0]])
+        bag_counts = {m: 0 for m in cand}
+        n_picked = 0
+        for _ in range(n_iters):
+            best_m = None
+            best_s = -np.inf
+            for m in cand:
+                new_mean = (running * n_picked + per_model_oof[m]) / (n_picked + 1)
+                s = float(metric_fn(y, new_mean))
+                if s > best_s:
+                    best_s = s
+                    best_m = m
+            if best_m is None:
+                break
+            running = (running * n_picked + per_model_oof[best_m]) / (n_picked + 1)
+            n_picked += 1
+            bag_counts[best_m] += 1
+        total = max(1, sum(bag_counts.values()))
+        for m, c in bag_counts.items():
+            counts[m] += c / total
+
+    total = max(1e-12, sum(counts.values()))
+    weights = {m: counts[m] / total for m in names}
+    oof_blend = sum(weights[m] * per_model_oof[m] for m in names)
+    test_blend = sum(weights[m] * per_model_test[m] for m in names)
+    score = float(metric_fn(y, oof_blend))
+    return {"oof": oof_blend, "test": test_blend, "score": score, "weights": weights}
