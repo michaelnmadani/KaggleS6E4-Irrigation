@@ -236,6 +236,9 @@ def _pytabkit_realmlp_fit(X_tr, y_tr, X_val, y_val, X_test, params, task, sample
 
 FITTERS = {
     "lgbm": _lgbm_fit,
+    # Alias: LGBM in Random-Forest mode (boosting_type=rf in config params).
+    # Provides RF-family diversity at native-LGBM speed (vs sklearn ExtraTrees).
+    "lgbm_rf": _lgbm_fit,
     "xgb": _xgb_fit,
     "catboost": _catboost_fit,
     # Aliases for multi-seed CatBoost ensembling; config supplies distinct random_seed/rsm.

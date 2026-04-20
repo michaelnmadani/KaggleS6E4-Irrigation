@@ -1,0 +1,111 @@
+# Iteration 017 (website V29) — LGBM-RandomForest mode replaces sklearn ExtraTrees.
+#
+# V27 (800 ET trees) timed out at 12h. V28 (300 ET trees) also timed out.
+# Sklearn ExtraTrees on 640k x 10 folds is fundamentally too slow on Kaggle's
+# 4-vCPU box. V29 switches to LightGBM's native Random-Forest mode
+# (boosting_type=rf) — same RF-family hypothesis-space diversity at 10-20x
+# native C++ speed.
+#
+# LGBM-RF settings (standard RF recipe):
+#   - boosting_type: rf
+#   - num_boost_round: 500 (trees)
+#   - bagging_fraction: 0.632 (classic bootstrap ~63.2% rule)
+#   - bagging_freq: 1
+#   - feature_fraction: 0.6 (per-split feature subsample)
+#   - learning_rate: 1.0 (unused in RF mode but required)
+#
+# Projected runtime: LGBM-RF ~30 min vs V28's ET ~6+ hours. Total pipeline ~6-7h.
+#
+# Target: CV 0.972-0.974 via error-decorrelated meta-stacking.
+
+target: Irrigation_Need
+id_col: id
+task: multiclass
+metric: balanced_accuracy
+
+class_weights: balanced
+
+extra_dataset:
+  slug: miadul/irrigation-water-requirement-prediction-dataset
+  file: irrigation_prediction.csv
+  weight: 0.35
+
+features:
+  - fill_na_median
+  - s6e4_threshold_booleans
+  - s6e4_interactions
+  - label_encode
+  - target_encode_multiclass
+
+model:
+  - lgbm
+  - xgb
+  - catboost
+  - catboost_a
+  - lgbm_rf
+
+blend_weights:
+  catboost: 0.38
+  catboost_a: 0.22
+  lgbm: 0.25
+  xgb: 0.10
+  lgbm_rf: 0.05
+
+postprocess:
+  - meta_stacker
+  - caruana
+
+params:
+  lgbm:
+    num_boost_round: 2500
+    early_stopping_rounds: 100
+    learning_rate: 0.04
+    num_leaves: 63
+    min_data_in_leaf: 50
+    feature_fraction: 0.85
+    bagging_fraction: 0.85
+    bagging_freq: 5
+    lambda_l2: 1.5
+  xgb:
+    num_boost_round: 2000
+    early_stopping_rounds: 100
+    eta: 0.04
+    max_depth: 8
+    subsample: 0.85
+    colsample_bytree: 0.85
+    reg_lambda: 1.5
+  catboost:
+    iterations: 2500
+    early_stopping_rounds: 150
+    learning_rate: 0.04
+    depth: 7
+    l2_leaf_reg: 5.0
+    random_seed: 42
+    rsm: 0.85
+    random_strength: 1.0
+  catboost_a:
+    iterations: 2000
+    early_stopping_rounds: 150
+    learning_rate: 0.05
+    depth: 8
+    l2_leaf_reg: 3.0
+    random_seed: 123
+    rsm: 0.75
+    random_strength: 2.0
+  lgbm_rf:
+    boosting_type: rf
+    num_boost_round: 500
+    # Early stopping disabled in RF mode: set rounds > num_boost_round so it never fires.
+    early_stopping_rounds: 600
+    learning_rate: 1.0
+    num_leaves: 255
+    min_data_in_leaf: 100
+    feature_fraction: 0.6
+    bagging_fraction: 0.632
+    bagging_freq: 1
+    seed: 777
+
+cv:
+  n_splits: 10
+  seed: 42
+  stratified: true
