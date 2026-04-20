@@ -1,0 +1,75 @@
+# Iteration 018 (website V30) — minimal 3-model stack, fast turnaround.
+#
+# V27/V28 timed out (ET was infeasible on 4-vCPU Kaggle), V29 is slow.
+# V30 strips back to CatBoost + LGBM + XGB + meta-stacker (no extra seeds,
+# no RF model, no Caruana). Known-safe ~3h runtime (V22-class).
+#
+# Purpose: confirm the TE bug fix (now in main) actually moves CatBoost
+# solo from V15's 0.96978 to something higher on the same base config as
+# V22 ran on. If so, meta-stacker on top should still hit ~0.971+.
+
+target: Irrigation_Need
+id_col: id
+task: multiclass
+metric: balanced_accuracy
+
+class_weights: balanced
+
+extra_dataset:
+  slug: miadul/irrigation-water-requirement-prediction-dataset
+  file: irrigation_prediction.csv
+  weight: 0.35
+
+features:
+  - fill_na_median
+  - s6e4_threshold_booleans
+  - s6e4_interactions
+  - label_encode
+  - target_encode_multiclass
+
+model:
+  - lgbm
+  - xgb
+  - catboost
+
+blend_weights:
+  catboost: 0.65
+  lgbm: 0.25
+  xgb: 0.10
+
+postprocess:
+  - meta_stacker
+
+params:
+  lgbm:
+    num_boost_round: 2500
+    early_stopping_rounds: 100
+    learning_rate: 0.04
+    num_leaves: 63
+    min_data_in_leaf: 50
+    feature_fraction: 0.85
+    bagging_fraction: 0.85
+    bagging_freq: 5
+    lambda_l2: 1.5
+  xgb:
+    num_boost_round: 2000
+    early_stopping_rounds: 100
+    eta: 0.04
+    max_depth: 8
+    subsample: 0.85
+    colsample_bytree: 0.85
+    reg_lambda: 1.5
+  catboost:
+    iterations: 2500
+    early_stopping_rounds: 150
+    learning_rate: 0.04
+    depth: 7
+    l2_leaf_reg: 5.0
+    random_seed: 42
+    rsm: 0.85
+    random_strength: 1.0
+
+cv:
+  n_splits: 10
+  seed: 42
+  stratified: true
