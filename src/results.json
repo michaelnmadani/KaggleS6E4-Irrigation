@@ -2331,6 +2331,143 @@
         "Not submitted (no improvement)",
         "V21 pivot: use pytabkit's official RealMLP_TD_Classifier (by the RealMLP paper authors) instead of my custom port — my V19 port scored 0.96 vs reference 0.978 so something's off in my re-implementation"
       ]
+    },
+    {
+      "version": 21,
+      "score": 0.9604973799803754,
+      "best_model": "pytabkit_realmlp",
+      "source": "autonomous pipeline (iter 009_pytabkit_realmlp)",
+      "plain_accuracy": 0.98488125,
+      "per_class_recall": {
+        "High": 0.9106113843991567,
+        "Low": 0.9947655682432055,
+        "Medium": 0.976115187298764
+      },
+      "fold_std": 0.002666832438548894,
+      "elapsed_sec": 41499,
+      "changes": [
+        "Official pytabkit RealMLP_TD_Classifier (arXiv RealMLP paper authors)",
+        "GPU kernel with torch 2.4.1 on Kaggle P100",
+        "CV 0.96050 — far below reference 0.97802 and V15 0.96978",
+        "Took 11.5h; RealMLP path abandoned as unproductive for this problem"
+      ]
+    },
+    {
+      "version": 22,
+      "score": 0.9689276955346399,
+      "best_model": "blend_lgbm_xgb_catboost",
+      "source": "autonomous pipeline (iter 010_catboost_heavy_blend)",
+      "plain_accuracy": 0.9850390625,
+      "per_class_recall": {
+        "High": 0.9384867650503631,
+        "Low": 0.995771473278319,
+        "Medium": 0.9725248482752373
+      },
+      "fold_std": 0.002134271930554218,
+      "elapsed_sec": 10779.8,
+      "per_model_cv": {
+        "lgbm": 0.9673336576315021,
+        "xgb": 0.9667812987588897,
+        "catboost": 0.9697793785416716
+      },
+      "blend_weights": {
+        "lgbm": 0.25,
+        "xgb": 0.1,
+        "catboost": 0.65
+      },
+      "changes": [
+        "V11 hand-tuned CB-heavy blend weights (0.65/0.25/0.10) on V15 base",
+        "Per-model CV: CatBoost 0.96978, LGBM 0.96733, XGB 0.96678",
+        "Blend dragged CatBoost down to 0.96893 — weights don't transfer from V11's feature set",
+        "Finding: on current FE, CatBoost-solo >= any GBM blend"
+      ]
+    },
+    {
+      "version": 23,
+      "score": 0.9693189508389128,
+      "best_model": "catboost",
+      "source": "autonomous pipeline (iter 011_v11_feature_port)",
+      "plain_accuracy": 0.9844625,
+      "per_class_recall": {
+        "High": 0.941391426563598,
+        "Low": 0.9956916395453735,
+        "Medium": 0.970873786407767
+      },
+      "fold_std": 0.0021683245112916554,
+      "elapsed_sec": 12118.6,
+      "changes": [
+        "Ported V11 FE: decimal digits, per-hectare ratios, groupby(cat)[num] aggs, quantile-binned numerics",
+        "32 → 124 features but CV dropped 0.96978 → 0.96932",
+        "Finding: extra FE adds noise for CatBoost on synthetic data; lean features win"
+      ]
+    },
+    {
+      "version": 24,
+      "score": 0.9717751832547208,
+      "best_model": "meta_stacker(l1+l2+en) over 4 bases",
+      "source": "autonomous pipeline (iter 012_meta_stacker)",
+      "plain_accuracy": 0.9821984375,
+      "per_class_recall": {
+        "High": 0.9558210353712814,
+        "Low": 0.995374965738023,
+        "Medium": 0.9641295486548581
+      },
+      "fold_std": 0.002350580895475256,
+      "elapsed_sec": 42723.9,
+      "per_model_cv": {
+        "lgbm": 0.9673228731620079,
+        "xgb": 0.9665281007829635,
+        "catboost": 0.9690174104760821,
+        "logreg": 0.7634876017337743
+      },
+      "blend_weights": {
+        "lgbm": 0.25,
+        "xgb": 0.1,
+        "catboost": 0.6,
+        "logreg": 0.05
+      },
+      "changes": [
+        "Regularized meta-stacker per arXiv:2602.12469 (Mohammad & Meherab 2026)",
+        "Redundancy-pruned L1/L2/EN LogReg on base OOF probs + row-wise stats",
+        "Base blend 0.96827 → meta-stacker 0.97178 (+0.0035)",
+        "Fixed silent TE bug (V13-V22 had it too): TE now also picks up int-coded cats (nunique<=20)",
+        "High-class recall 0.944 → 0.956 — minority unlock",
+        "New best, +0.0020 over V15"
+      ]
+    },
+    {
+      "version": 26,
+      "score": 0.9718739412725895,
+      "best_model": "meta_stacker over 4 bases (2 CB seeds + LGBM + XGB)",
+      "source": "autonomous pipeline (iter 014_compact_stack_caruana)",
+      "plain_accuracy": 0.9817796875,
+      "per_class_recall": {
+        "High": 0.9566643241977044,
+        "Low": 0.9942226988591759,
+        "Medium": 0.9647348007608884
+      },
+      "fold_std": 0.002125448166517606,
+      "elapsed_sec": 22494.6,
+      "per_model_cv": {
+        "lgbm": 0.9675445539122544,
+        "xgb": 0.9668906631878187,
+        "catboost": 0.9697571766251035,
+        "catboost_a": 0.9682195699140852
+      },
+      "blend_weights": {
+        "lgbm": 0.25,
+        "xgb": 0.1,
+        "catboost": 0.4,
+        "catboost_a": 0.25
+      },
+      "changes": [
+        "Compact V15 features + 2 CatBoost seeds (diversified rsm/random_strength/depth) + LGBM + XGB",
+        "Added Caruana 2004 greedy hill-climb as chained postprocess after meta_stacker",
+        "Caruana: 0.96917, skipped (meta-stacker wins)",
+        "Meta-stacker CV 0.97187 — marginal +0.0001 over V24",
+        "Pruned 10/24 meta-features: all 4 GBM bases have correlated errors, meta-lift capped",
+        "V25 (3 CB seeds, 124 feats) timed out at Kaggle's 12h cap — no metrics"
+      ]
     }
   ],
   "improvement": {
