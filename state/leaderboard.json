@@ -1,5 +1,8 @@
 {
   "001_baseline": {
     "public_lb": "0.96152"
+  },
+  "014_compact_stack_caruana": {
+    "public_lb": "0.96947"
   }
 }
