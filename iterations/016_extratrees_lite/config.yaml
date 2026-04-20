@@ -1,0 +1,101 @@
+# Iteration 016 (website V28) — lighter ExtraTrees after V27 hit wall.
+#
+# V27 (iter 015) with ET at 800 trees x 10 folds x 640k rows was >12h (killed).
+# V28 cuts ET to 300 trees + min_samples_leaf=100 + max_depth=18 so a fold
+# finishes in ~10-15 min. Still retains meaningful orthogonal signal vs GBM.
+#
+# Rest of config is identical to V26 (compact V15 features + CB + CB_a + LGBM
+# + XGB + meta-stacker + Caruana chain). ET sits as 5th base for meta-stacker
+# diversity.
+#
+# Runtime budget (projected):
+#   CB: ~2.5h, CB_a: ~2h, LGBM: ~1h, XGB: ~1h, ET_lite: ~1.5h, meta+caruana: <5min
+#   Total: ~8h (safe under 12h cap).
+#
+# Target: CV 0.972-0.974 via meta-stacker error decorrelation.
+
+target: Irrigation_Need
+id_col: id
+task: multiclass
+metric: balanced_accuracy
+
+class_weights: balanced
+
+extra_dataset:
+  slug: miadul/irrigation-water-requirement-prediction-dataset
+  file: irrigation_prediction.csv
+  weight: 0.35
+
+features:
+  - fill_na_median
+  - s6e4_threshold_booleans
+  - s6e4_interactions
+  - label_encode
+  - target_encode_multiclass
+
+model:
+  - lgbm
+  - xgb
+  - catboost
+  - catboost_a
+  - extra_trees
+
+blend_weights:
+  catboost: 0.38
+  catboost_a: 0.22
+  lgbm: 0.25
+  xgb: 0.10
+  extra_trees: 0.05
+
+postprocess:
+  - meta_stacker
+  - caruana
+
+params:
+  lgbm:
+    num_boost_round: 2500
+    early_stopping_rounds: 100
+    learning_rate: 0.04
+    num_leaves: 63
+    min_data_in_leaf: 50
+    feature_fraction: 0.85
+    bagging_fraction: 0.85
+    bagging_freq: 5
+    lambda_l2: 1.5
+  xgb:
+    num_boost_round: 2000
+    early_stopping_rounds: 100
+    eta: 0.04
+    max_depth: 8
+    subsample: 0.85
+    colsample_bytree: 0.85
+    reg_lambda: 1.5
+  catboost:
+    iterations: 2500
+    early_stopping_rounds: 150
+    learning_rate: 0.04
+    depth: 7
+    l2_leaf_reg: 5.0
+    random_seed: 42
+    rsm: 0.85
+    random_strength: 1.0
+  catboost_a:
+    iterations: 2000
+    early_stopping_rounds: 150
+    learning_rate: 0.05
+    depth: 8
+    l2_leaf_reg: 3.0
+    random_seed: 123
+    rsm: 0.75
+    random_strength: 2.0
+  extra_trees:
+    n_estimators: 300          # was 800 in V27 — too slow
+    min_samples_leaf: 100      # was 50 — faster per-split + less overfit
+    max_depth: 18              # cap depth to prevent huge trees on 640k rows
+    max_features: 0.7
+    random_state: 42
+
+cv:
+  n_splits: 10
+  seed: 42
+  stratified: true
