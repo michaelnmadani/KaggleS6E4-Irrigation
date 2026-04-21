@@ -2468,6 +2468,95 @@
         "Pruned 10/24 meta-features: all 4 GBM bases have correlated errors, meta-lift capped",
         "V25 (3 CB seeds, 124 feats) timed out at Kaggle's 12h cap — no metrics"
       ]
+    },
+    {
+      "version": 27,
+      "score": null,
+      "best_model": "killed",
+      "source": "iter 015_extratrees_diversity (CANCELLED)",
+      "changes": [
+        "sklearn ExtraTreesClassifier at 800 trees + 10 folds timed out at Kaggle's 12h CPU cap",
+        "No metrics produced",
+        "Finding: sklearn ET is infeasible on 640k rows × 10 folds on 4 vCPUs regardless of n_estimators"
+      ]
+    },
+    {
+      "version": 28,
+      "score": null,
+      "best_model": "killed",
+      "source": "iter 016_extratrees_lite (CANCELLED)",
+      "changes": [
+        "Retried ET with 300 trees + max_depth=18 + min_samples_leaf=100",
+        "Still timed out at 12h cap — sklearn ET fundamentally too slow on this config",
+        "Next iteration switched to LGBM-RF mode (native C++ RF, 10-20x faster)"
+      ]
+    },
+    {
+      "version": 29,
+      "score": 0.9717823237522819,
+      "best_model": "meta_stacker over 5 bases (CB+CB_a+LGBM+XGB+LGBM_RF)",
+      "source": "autonomous pipeline (iter 017_lgbm_rf_diversity)",
+      "plain_accuracy": 0.9815703125,
+      "per_class_recall": {
+        "High": 0.9572265167486531,
+        "Low": 0.9946538010170818,
+        "Medium": 0.9634666534911106
+      },
+      "fold_std": 0.002091552943877711,
+      "elapsed_sec": 38193.9,
+      "per_model_cv": {
+        "lgbm": 0.9673162838587679,
+        "xgb": 0.966848049009081,
+        "catboost": 0.9697309124367419,
+        "catboost_a": 0.9680659502172319,
+        "lgbm_rf": 0.9658518389345364
+      },
+      "blend_weights": {
+        "lgbm": 0.25,
+        "xgb": 0.1,
+        "catboost": 0.38,
+        "catboost_a": 0.22,
+        "lgbm_rf": 0.05
+      },
+      "changes": [
+        "Replaced sklearn ExtraTrees with LightGBM native RF mode (boosting_type=rf) — 10-20x faster",
+        "5 bases: CB + CB_a + LGBM + XGB + LGBM_RF (boosting_type=rf, 500 trees)",
+        "LGBM_RF CV 0.96585 — weakest base but still contributed to meta-features",
+        "Base blend 0.96846 → meta-stacker 0.97178 (+0.0033)",
+        "Caruana: 0.96902, skipped",
+        "Finding: adding RF family diversity didn't break the 0.9717 ceiling — all GBM-style models still share correlated errors"
+      ]
+    },
+    {
+      "version": 30,
+      "score": 0.971669316515722,
+      "best_model": "meta_stacker over 3 bases (CB+LGBM+XGB)",
+      "source": "autonomous pipeline (iter 018_simple_stack)",
+      "plain_accuracy": 0.9818375,
+      "per_class_recall": {
+        "High": 0.9559615835090185,
+        "Low": 0.9944515555602864,
+        "Medium": 0.964594810477861
+      },
+      "fold_std": 0.002137760784908533,
+      "elapsed_sec": 23929,
+      "per_model_cv": {
+        "lgbm": 0.9674897211597141,
+        "xgb": 0.9669384012239851,
+        "catboost": 0.9696353060853022
+      },
+      "blend_weights": {
+        "lgbm": 0.25,
+        "xgb": 0.1,
+        "catboost": 0.65
+      },
+      "changes": [
+        "Minimal 3-base stack: CatBoost + LGBM + XGB with V11-style weights (0.65/0.25/0.10) + meta_stacker",
+        "Dropped all extra CB seeds, Caruana, LGBM-RF — fast ~6.6h runtime",
+        "CV 0.97167 — essentially matches V24/V26/V29 despite being simplest",
+        "CONFIRMS THE CEILING: adding more GBM diversity is diminishing returns beyond 3 bases",
+        "To cross 0.9720, need genuinely orthogonal signal (deep NN, TabPFN, pseudo-labels, or BA-direct threshold tuning)"
+      ]
     }
   ],
   "improvement": {
