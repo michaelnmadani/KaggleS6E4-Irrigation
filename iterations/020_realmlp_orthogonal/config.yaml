@@ -1,0 +1,95 @@
+# Iteration 020 (website V32) — RealMLP-TD as orthogonal base to break GBM ceiling.
+#
+# V31 (TabPFN) blocked: TabPFN now requires license-accepted API token which
+# can't be set up on non-interactive Kaggle kernels. Pivoting to research option
+# #2: RealMLP-TD via pytabkit (NeurIPS 2024, arXiv:2407.04491). No license gating.
+#
+# RealMLP standalone scored 0.960 in V21 (below GBMs), BUT the research (arXiv
+# 2502.17361 TabArena) shows that weak-but-decorrelated NN bases routinely add
+# +0.001-0.002 to GBM meta-stacks via error decorrelation. That's what we need
+# to crack the 0.9717 plateau.
+#
+# To fit in 9h GPU cap (V21 took 11.5h):
+#   - 5-fold CV (V30's 10-fold-equivalent CV quality is fine for the stacker)
+#   - RealMLP n_cv=1 (no internal ensemble), n_epochs=150
+#   - V15 minimal features (lean, not V21's heavier s6e4_realmlp_fe block)
+#
+# Runtime budget (GPU P100/T4, 9h cap):
+#   CatBoost 5-fold: ~1.5h (CPU)
+#   LGBM 5-fold: ~30min (CPU)
+#   RealMLP 5-fold: ~3-4h (GPU)
+#   meta_stacker+caruana: <5min
+#   Total ~5-6h. Safe.
+#
+# Target: +0.001-0.002 via error decorrelation -> CV 0.9727-0.9737.
+
+target: Irrigation_Need
+id_col: id
+task: multiclass
+metric: balanced_accuracy
+
+class_weights: balanced
+
+extra_dataset:
+  slug: miadul/irrigation-water-requirement-prediction-dataset
+  file: irrigation_prediction.csv
+  weight: 0.35
+
+kernel:
+  enable_gpu: true
+  enable_internet: true
+
+pip_install:
+  - pytabkit
+
+features:
+  - fill_na_median
+  - s6e4_threshold_booleans
+  - s6e4_interactions
+  - label_encode
+  - target_encode_multiclass
+
+model:
+  - lgbm
+  - catboost
+  - pytabkit_realmlp
+
+blend_weights:
+  catboost: 0.60
+  lgbm: 0.30
+  pytabkit_realmlp: 0.10
+
+postprocess:
+  - meta_stacker
+  - caruana
+
+params:
+  lgbm:
+    num_boost_round: 2500
+    early_stopping_rounds: 100
+    learning_rate: 0.04
+    num_leaves: 63
+    min_data_in_leaf: 50
+    feature_fraction: 0.85
+    bagging_fraction: 0.85
+    bagging_freq: 5
+    lambda_l2: 1.5
+  catboost:
+    iterations: 2500
+    early_stopping_rounds: 150
+    learning_rate: 0.04
+    depth: 7
+    l2_leaf_reg: 5.0
+    random_seed: 42
+    rsm: 0.85
+    random_strength: 1.0
+  pytabkit_realmlp:
+    device: cuda
+    n_cv: 1           # single network per fold (no internal ensemble) for speed
+    n_epochs: 150     # down from default 256
+    random_state: 42
+
+cv:
+  n_splits: 5         # down from 10 so RealMLP fits in 9h GPU cap
+  seed: 42
+  stratified: true
