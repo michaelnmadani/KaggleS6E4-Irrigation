@@ -1,0 +1,104 @@
+
+# Iteration 019 (website V31) — TabPFN v2 bagged as orthogonal base to crack
+# the 0.9717 GBM meta-stacker plateau.
+#
+# Rationale: V24/V26/V29/V30 all converged to CV ~0.9717 post-meta-stacker.
+# All bases were GBM-family -> correlated errors cap the meta-lift. TabPFN v2
+# (transformer foundation model, in-context learning) has attention-based,
+# Bayesian-posterior decision boundaries that are empirically uncorrelated
+# with axis-aligned tree splits. Even as a weak standalone signal it should
+# add +0.0015-0.0040 to the meta-stacker. Refs: arXiv 2502.17361, 2511.08667.
+#
+# Implementation: _tabpfn_bagged_fit draws N stratified subsamples of ~8k rows,
+# fits TabPFNClassifier on each (GPU, n_estimators=4 internal ensemble),
+# predicts val+test, averages. Stratified to preserve class balance.
+#
+# Runtime (9h GPU cap):
+#   TabPFN: 5 bags x ~2min/bag x 10 folds = ~100 min on T4
+#   CB+LGBM+XGB CPU on the GPU kernel's 4 vCPU: ~3h
+#   meta_stacker+caruana: <5 min
+#   Total ~5-6h. Safe.
+
+target: Irrigation_Need
+id_col: id
+task: multiclass
+metric: balanced_accuracy
+
+class_weights: balanced
+
+extra_dataset:
+  slug: miadul/irrigation-water-requirement-prediction-dataset
+  file: irrigation_prediction.csv
+  weight: 0.35
+
+kernel:
+  enable_gpu: true
+  enable_internet: true
+
+pip_install:
+  - tabpfn
+
+features:
+  - fill_na_median
+  - s6e4_threshold_booleans
+  - s6e4_interactions
+  - label_encode
+  - target_encode_multiclass
+
+model:
+  - lgbm
+  - xgb
+  - catboost
+  - tabpfn_bagged
+
+# TabPFN as 4th base at 0.10 — not dominant, just contributing orthogonal
+# meta-features. Blend is the fallback if meta-stacker fails to improve.
+blend_weights:
+  catboost: 0.55
+  lgbm: 0.25
+  xgb: 0.10
+  tabpfn_bagged: 0.10
+
+postprocess:
+  - meta_stacker
+  - caruana
+
+params:
+  lgbm:
+    num_boost_round: 2500
+    early_stopping_rounds: 100
+    learning_rate: 0.04
+    num_leaves: 63
+    min_data_in_leaf: 50
+    feature_fraction: 0.85
+    bagging_fraction: 0.85
+    bagging_freq: 5
+    lambda_l2: 1.5
+  xgb:
+    num_boost_round: 2000
+    early_stopping_rounds: 100
+    eta: 0.04
+    max_depth: 8
+    subsample: 0.85
+    colsample_bytree: 0.85
+    reg_lambda: 1.5
+  catboost:
+    iterations: 2500
+    early_stopping_rounds: 150
+    learning_rate: 0.04
+    depth: 7
+    l2_leaf_reg: 5.0
+    random_seed: 42
+    rsm: 0.85
+    random_strength: 1.0
+  tabpfn_bagged:
+    n_bags: 5
+    bag_size: 8000
+    n_estimators: 4
+    device: cuda
+    random_state: 42
+
+cv:
+  n_splits: 10
+  seed: 42
+  stratified: true
