@@ -1,5 +1,8 @@
 {
   "001_baseline": {
     "public_lb": "0.96152"
+  },
+  "017_lgbm_rf_diversity": {
+    "public_lb": "0.97031"
   }
 }
