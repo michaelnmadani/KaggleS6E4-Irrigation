@@ -123,6 +123,73 @@ def _extra_trees_fit(X_tr, y_tr, X_val, y_val, X_test, params, task, sample_weig
     return FitResult(model=model, val_pred=val_pred, test_pred=test_pred)
 
 
+def _tabpfn_bagged_fit(X_tr, y_tr, X_val, y_val, X_test, params, task, sample_weight=None) -> FitResult:
+    """TabPFN v2 bagged subsample ensemble — orthogonal base to GBM stack.
+
+    TabPFN is a transformer foundation model for tabular. Pretrained on synthetic
+    priors, it works via in-context learning on small train-set subsamples.
+    For large-data (640k rows) we bag several stratified subsamples of ~10k each,
+    predict val+test with each TabPFN instance, and average. Ensemble decision
+    boundaries are attention-based (smooth, Bayesian-style) — decorrelated with
+    axis-aligned GBM splits. Refs: arXiv:2502.17361 (TabPFN v2), 2511.08667 (TabArena).
+    """
+    from tabpfn import TabPFNClassifier
+    n_bags = int(params.get("n_bags", 8))
+    bag_size = int(params.get("bag_size", 10000))
+    n_ests = int(params.get("n_estimators", 4))
+    device = params.get("device", "cuda")
+    rng = np.random.default_rng(int(params.get("random_state", 42)))
+
+    if task not in ("binary", "multiclass"):
+        raise ValueError("tabpfn_bagged only supports classification tasks")
+
+    y_tr_arr = np.asarray(y_tr).astype(int)
+    classes = np.sort(np.unique(y_tr_arr))
+    n_classes = len(classes)
+
+    # TabPFN is sensitive to categorical dtypes — feed pure float32 numerics.
+    num_cols = X_tr.select_dtypes(include=[np.number]).columns.tolist()
+    X_tr_num = X_tr[num_cols].fillna(0.0).astype(np.float32)
+    X_val_num = X_val.reindex(columns=num_cols, fill_value=0).fillna(0.0).astype(np.float32).values
+    X_test_num = X_test.reindex(columns=num_cols, fill_value=0).fillna(0.0).astype(np.float32).values
+
+    # Cap feature dim: TabPFN's native support is up to ~500 features; we're well
+    # under that, but skip any constant cols that sklearn/TabPFN will drop anyway.
+    stds = X_tr_num.std(axis=0)
+    keep = stds > 1e-9
+    X_tr_num = X_tr_num.loc[:, keep]
+    X_val_num = X_val_num[:, keep.values]
+    X_test_num = X_test_num[:, keep.values]
+
+    val_sum = np.zeros((X_val_num.shape[0], n_classes), dtype=np.float64)
+    test_sum = np.zeros((X_test_num.shape[0], n_classes), dtype=np.float64)
+    log_snippet = []
+
+    for bag in range(n_bags):
+        # Stratified subsample preserving class ratios.
+        indices = []
+        for k in classes:
+            idx_k = np.where(y_tr_arr == k)[0]
+            take = max(50, int(bag_size * len(idx_k) / len(y_tr_arr)))
+            take = min(take, len(idx_k))
+            indices.extend(rng.choice(idx_k, size=take, replace=False))
+        indices = np.asarray(indices)
+        X_bag = X_tr_num.iloc[indices].values
+        y_bag = y_tr_arr[indices]
+        clf = TabPFNClassifier(
+            device=device,
+            n_estimators=n_ests,
+            random_state=int(rng.integers(0, 2**31 - 1)),
+        )
+        clf.fit(X_bag, y_bag)
+        val_sum += clf.predict_proba(X_val_num)
+        test_sum += clf.predict_proba(X_test_num)
+        log_snippet.append(f"bag{bag}:{len(indices)}")
+    val_pred = val_sum / n_bags
+    test_pred = test_sum / n_bags
+    return FitResult(model=None, val_pred=val_pred, test_pred=test_pred)
+
+
 def _logreg_fit(X_tr, y_tr, X_val, y_val, X_test, params, task, sample_weight=None) -> FitResult:
     """Multinomial logistic regression with one-hot categorical expansion.
 
@@ -239,6 +306,7 @@ FITTERS = {
     # Alias: LGBM in Random-Forest mode (boosting_type=rf in config params).
     # Provides RF-family diversity at native-LGBM speed (vs sklearn ExtraTrees).
     "lgbm_rf": _lgbm_fit,
+    "tabpfn_bagged": _tabpfn_bagged_fit,
     "xgb": _xgb_fit,
     "catboost": _catboost_fit,
     # Aliases for multi-seed CatBoost ensembling; config supplies distinct random_seed/rsm.
