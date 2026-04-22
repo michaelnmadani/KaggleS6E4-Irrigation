@@ -1,0 +1,124 @@
+
+# Iteration 025 (website V37) — multi-seed/multi-depth XGB + CatBoost blend.
+#
+# V36 (CV 0.97585, LB 0.97586) vs V34 (CV 0.97503, LB 0.97617):
+#   - V36 had higher CV but flat LB → some fold overfit from meta_stacker+Optuna
+#   - CatBoost base added +0.00184 via meta-stacker (biggest postprocess delta)
+#
+# V37 extends diversity with 3 XGB configs at different seed+depth, + CatBoost:
+#   - xgb:   seed=42, depth=4, max_leaves=30  (V34 baseline)
+#   - xgb_a: seed=123, depth=5, max_leaves=40 (deeper trees)
+#   - xgb_b: seed=777, depth=3, max_leaves=20 (shallower, more regularized)
+#   - catboost: seed=42, depth=6 (V36 config)
+#
+# Meta-stacker takes 4 bases of varying bias → more diverse OOF features.
+# Optuna stage kept but expected ≤+0.0002 (V36 showed meta-stacker absorbs it).
+#
+# Runtime: 3× XGB GPU ~30min each + CB GPU ~60min + meta ~5min = ~2.5h.
+# Target: +0.0005-0.0015 over V36 → CV 0.9763-0.9773.
+
+target: Irrigation_Need
+id_col: id
+task: multiclass
+metric: balanced_accuracy
+
+class_weights: balanced
+
+extra_dataset:
+  slug: miadul/irrigation-water-requirement-prediction-dataset
+  file: irrigation_prediction.csv
+  weight: 0.35
+
+kernel:
+  enable_gpu: true
+  enable_internet: true
+
+pip_install:
+  - optuna
+
+features:
+  - fill_na_median
+  - s6e4_digit_extraction_wide
+  - s6e4_freq_filter_cats
+  - ordered_te
+
+model:
+  - xgb
+  - xgb_a
+  - xgb_b
+  - catboost
+
+# XGB seeds share a total of 0.60, CatBoost gets 0.40 (V36 pattern).
+blend_weights:
+  xgb: 0.25
+  xgb_a: 0.20
+  xgb_b: 0.15
+  catboost: 0.40
+
+postprocess:
+  - meta_stacker
+  - class_weight_optuna
+
+optuna_trials: 200
+
+params:
+  xgb:
+    num_boost_round: 512
+    early_stopping_rounds: 1024
+    eta: 0.1
+    max_depth: 4
+    max_leaves: 30
+    subsample: 0.8
+    colsample_bytree: 0.8
+    reg_alpha: 5
+    reg_lambda: 5
+    min_child_weight: 2
+    tree_method: hist
+    max_bin: 10000
+    device: cuda
+    seed: 42
+  xgb_a:
+    num_boost_round: 512
+    early_stopping_rounds: 1024
+    eta: 0.08
+    max_depth: 5
+    max_leaves: 40
+    subsample: 0.85
+    colsample_bytree: 0.75
+    reg_alpha: 3
+    reg_lambda: 7
+    min_child_weight: 2
+    tree_method: hist
+    max_bin: 10000
+    device: cuda
+    seed: 123
+  xgb_b:
+    num_boost_round: 700
+    early_stopping_rounds: 1024
+    eta: 0.12
+    max_depth: 3
+    max_leaves: 20
+    subsample: 0.75
+    colsample_bytree: 0.85
+    reg_alpha: 7
+    reg_lambda: 3
+    min_child_weight: 3
+    tree_method: hist
+    max_bin: 10000
+    device: cuda
+    seed: 777
+  catboost:
+    iterations: 3000
+    early_stopping_rounds: 100
+    learning_rate: 0.05
+    depth: 6
+    l2_leaf_reg: 5.0
+    random_seed: 42
+    task_type: GPU
+    bootstrap_type: Bayesian
+    bagging_temperature: 1.0
+
+cv:
+  n_splits: 5
+  seed: 42
+  stratified: true
