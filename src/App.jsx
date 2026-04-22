@@ -291,7 +291,7 @@ function ModelTrainingSection({ data }) {
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="fold" />
               <YAxis domain={['auto', 'auto']} />
-              <Tooltip formatter={(v) => typeof v === 'number' ? v.toFixed(5) : v} />
+              <Tooltip formatter={(v, name, p) => p && p.payload && p.payload.failed ? 'Model failed' : (typeof v === 'number' ? v.toFixed(5) : v)} />
               <Legend />
               {cvModels.map(([name]) => (
                 <Line key={name} type="monotone" dataKey={name} name={MODEL_LABELS[name] || name}
@@ -421,10 +421,14 @@ function ImprovementsSection({ data }) {
   const isImproved = imp && imp.score_change > 0;
   const recommendations = imp?.recommendations_applied || [];
 
-  // Build version history chart data
+  // Build version history chart data (include failed runs anchored at y-floor)
+  const scored = versionHistory.filter(v => v.score != null).map(v => v.score);
+  const yMin = scored.length ? Math.max(0, Math.min(...scored) - 0.003) : 0.95;
+  const yMax = scored.length ? Math.min(1, Math.max(...scored) + 0.003) : 1;
   const versionData = versionHistory.map(v => ({
     version: `V${v.version}`,
-    score: v.score,
+    score: v.score != null ? v.score : yMin,
+    failed: v.score == null,
     model: MODEL_LABELS[v.best_model] || v.best_model,
   }));
 
@@ -465,11 +469,11 @@ function ImprovementsSection({ data }) {
             <BarChart data={versionData}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="version" />
-              <YAxis domain={[0.955, 0.975]} />
-              <Tooltip formatter={(v) => typeof v === 'number' ? v.toFixed(5) : v} />
+              <YAxis domain={[yMin, yMax]} />
+              <Tooltip formatter={(v, name, p) => p && p.payload && p.payload.failed ? 'Model failed' : (typeof v === 'number' ? v.toFixed(5) : v)} />
               <Bar dataKey="score" name="Balanced Accuracy">
                 {versionData.map((entry, i) => (
-                  <Cell key={i} fill={bestVersion && entry.score === bestVersion.score ? '#22c55e' : '#3b82f6'} />
+                  <Cell key={i} fill={entry.failed ? '#ef4444' : (bestVersion && entry.score === bestVersion.score ? '#22c55e' : '#3b82f6')} />
                 ))}
               </Bar>
             </BarChart>
@@ -494,8 +498,9 @@ function ImprovementsSection({ data }) {
               </thead>
               <tbody>
                 {versionHistory.map((v, i) => {
-                  const prevScore = i > 0 ? versionHistory[i - 1].score : null;
-                  const delta = prevScore != null ? v.score - prevScore : null;
+                  const prevScored = versionHistory.slice(0, i).reverse().find(u => u.score != null);
+                  const prevScore = prevScored ? prevScored.score : null;
+                  const delta = (prevScore != null && v.score != null) ? v.score - prevScore : null;
                   const isBest = bestVersion && v.score != null && v.score === bestVersion.score;
                   return (
                     <tr key={v.version} className={isBest ? 'bg-green-50' : i % 2 ? 'bg-gray-50' : ''}>
@@ -503,7 +508,7 @@ function ImprovementsSection({ data }) {
                         V{v.version} {isBest && <Badge text="Best" variant="success" />}
                       </td>
                       <td className="px-4 py-2 text-gray-700">{MODEL_LABELS[v.best_model] || v.best_model}</td>
-                      <td className="px-4 py-2 font-mono font-bold text-gray-800">{v.score != null ? v.score.toFixed(5) : "—"}</td>
+                      <td className={'px-4 py-2 font-mono font-bold ' + (v.score == null ? 'text-red-600' : 'text-gray-800')}>{v.score != null ? v.score.toFixed(5) : 'Model failed'}</td>
                       <td className={`px-4 py-2 font-mono ${delta == null ? 'text-gray-400' : delta > 0 ? 'text-green-600' : delta < 0 ? 'text-red-600' : 'text-gray-400'}`}>
                         {delta == null ? '\u2014' : `${delta > 0 ? '+' : ''}${delta.toFixed(5)}`}
                       </td>
