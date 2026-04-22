@@ -1,5 +1,8 @@
 {
   "001_baseline": {
     "public_lb": "0.96152"
+  },
+  "022_orderedte_xgb": {
+    "public_lb": "0.97617"
   }
 }
