@@ -1,0 +1,98 @@
+
+# Iteration 029 (website V41) — add LightGBM as 3rd GBM family.
+#
+# V36-V40 all converge at CV ~0.9756-0.9759 regardless of FE extensions or
+# base model count within the XGB+CB family. V39 cat-pair TE and V40 quantile
+# TE both hurt — ordered_te space is saturated.
+#
+# V41 adds LightGBM (leaf-wise tree growth) as 3rd model family. XGB and
+# CatBoost both use depth-wise growth — LGBM's leaf-wise creates different
+# decision boundaries. Meta-stacker should decorrelate errors for +0.0005-0.001.
+#
+# Back to V38's minimal feature set (no failed quantile_bins/cat_pair additions).
+#
+# Runtime: xgb_b 30min + CB 60min + LGBM 45min + meta+optuna 5min = ~2.3h.
+
+target: Irrigation_Need
+id_col: id
+task: multiclass
+metric: balanced_accuracy
+
+class_weights: balanced
+
+extra_dataset:
+  slug: miadul/irrigation-water-requirement-prediction-dataset
+  file: irrigation_prediction.csv
+  weight: 0.35
+
+kernel:
+  enable_gpu: true
+  enable_internet: true
+
+pip_install:
+  - optuna
+
+features:
+  - fill_na_median
+  - s6e4_digit_extraction_wide
+  - s6e4_freq_filter_cats
+  - ordered_te
+
+model:
+  - xgb
+  - catboost
+  - lgbm
+
+blend_weights:
+  xgb: 0.45
+  catboost: 0.35
+  lgbm: 0.20
+
+postprocess:
+  - meta_stacker
+  - class_weight_optuna
+
+optuna_trials: 200
+
+params:
+  xgb:
+    num_boost_round: 700
+    early_stopping_rounds: 1024
+    eta: 0.12
+    max_depth: 3
+    max_leaves: 20
+    subsample: 0.75
+    colsample_bytree: 0.85
+    reg_alpha: 7
+    reg_lambda: 3
+    min_child_weight: 3
+    tree_method: hist
+    max_bin: 10000
+    device: cuda
+    seed: 777
+  catboost:
+    iterations: 3000
+    early_stopping_rounds: 100
+    learning_rate: 0.05
+    depth: 6
+    l2_leaf_reg: 5.0
+    random_seed: 42
+    task_type: GPU
+    bootstrap_type: Bayesian
+    bagging_temperature: 1.0
+  lgbm:
+    num_boost_round: 2500
+    early_stopping_rounds: 100
+    learning_rate: 0.04
+    num_leaves: 63
+    min_data_in_leaf: 50
+    feature_fraction: 0.85
+    bagging_fraction: 0.85
+    bagging_freq: 5
+    lambda_l2: 1.5
+    device: gpu
+
+cv:
+  n_splits: 5
+  seed: 42
+  stratified: true
