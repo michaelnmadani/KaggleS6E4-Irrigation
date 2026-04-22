@@ -2710,6 +2710,36 @@
         "High recall improved to 0.9707 (from V36 0.9699), Medium dropped to 0.9613",
         "Next: FE changes (cat-pair combined TE keys) to inject new signal"
       ]
+    },
+    {
+      "version": 39,
+      "score": 0.9755169147140451,
+      "best_model": "xgb+catboost + pairwise-cat-TE + meta_stacker",
+      "source": "autonomous pipeline (iter 027_cat_pair_te_keys)",
+      "plain_accuracy": 0.98145625,
+      "per_class_recall": {
+        "High": 0.9704380416959475,
+        "Low": 0.9956517226789008,
+        "Medium": 0.9604609797672867
+      },
+      "fold_std": 0.0017452971199199022,
+      "elapsed_sec": 8220.3,
+      "per_model_cv": {
+        "xgb": 0.97418136507362,
+        "catboost": 0.9727757376762648
+      },
+      "blend_weights": {
+        "xgb": 0.6,
+        "catboost": 0.4
+      },
+      "changes": [
+        "NEW FE: s6e4_cat_pair_combined_keys — C(6,2)=15 pair-combined cat cols (cardinality up to 36 per pair)",
+        "Features: 439 → 499 (+60 new TE cols from pair cats + their 3-class TE variants)",
+        "CV 0.97552 = DROP of -0.00034 vs V38 0.97586 — pairwise TE added noise, not signal",
+        "Per-model CV dropped: xgb 0.97418 (-0.00022), catboost 0.97278 (-0.00044)",
+        "Freq-filter didn't suppress sparse-level noise enough — many pair levels have low support",
+        "Rejecting cat-pair TE direction. Pivot to pseudo-labeling for V40"
+      ]
     }
   ],
   "improvement": {
