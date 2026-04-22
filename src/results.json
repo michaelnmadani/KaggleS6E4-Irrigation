@@ -2646,6 +2646,40 @@
         "High recall 0.9699 stable; Medium 0.9625 (down slightly); Low 0.9951",
         "CV 0.97585 = +0.00062 over V35. Need +0.00115 more to clear 0.978"
       ]
+    },
+    {
+      "version": 37,
+      "score": 0.975866776744723,
+      "best_model": "3xgb seeds + catboost + meta_stacker + optuna",
+      "source": "autonomous pipeline (iter 025_multiseed_xgb_cb)",
+      "plain_accuracy": 0.9822640625,
+      "per_class_recall": {
+        "High": 0.9689388615600844,
+        "Low": 0.9951248200414603,
+        "Medium": 0.9635366486326243
+      },
+      "fold_std": 0.0017226794949780112,
+      "elapsed_sec": 15397.9,
+      "per_model_cv": {
+        "xgb": 0.9740042488097519,
+        "xgb_a": 0.9731990069916853,
+        "xgb_b": 0.974522519095102,
+        "catboost": 0.9732217354540026
+      },
+      "blend_weights": {
+        "xgb": 0.25,
+        "xgb_a": 0.2,
+        "xgb_b": 0.15,
+        "catboost": 0.4
+      },
+      "changes": [
+        "3 XGB variants (depth 4/5/3, seed 42/123/777) + CatBoost GPU",
+        "Per-model CV: xgb 0.97400, xgb_a 0.97320, xgb_b 0.97452, catboost 0.97322",
+        "KEY FINDING: xgb_b (depth=3, lr=0.12, reg_alpha=7, 700 rounds) is best solo — shallower + more regularized wins",
+        "Meta-stacker pruned 11/24 — 3 XGBs produced highly correlated preds, diminishing returns from multi-seed",
+        "Meta-stacker +0.00202 (0.97378 → 0.97580), Optuna collapsed to +0.00007",
+        "CV 0.97587 = +0.0002 over V36 — multi-seed XGB didn't deliver; pivot to FE changes next"
+      ]
     }
   ],
   "improvement": {
