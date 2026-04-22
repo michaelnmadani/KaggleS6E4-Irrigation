@@ -1,0 +1,92 @@
+# Iteration 027 (website V39) — V38 base + pairwise combined-cat TE keys.
+#
+# V36/V37/V38 all converged at CV ~0.9758. Meta-stacker ceiling reached on
+# current feature set. V39 injects NEW FE: create combined-key strings for
+# each pair of the 6 original cats (C(6,2)=15 new cat cols, cardinality up to
+# 36 levels each). These get freq-filtered then ordered-TE'd → 15 × 3 = 45
+# new per-class TE features beyond the current 18 (from single cats).
+#
+# Research (Kaggle Grandmasters Playbook): high-cardinality pairwise cat TE
+# captures multi-way conditional signal single-cat TE misses. Typical lift
+# +0.0005-0.0015 on synthetic PS problems.
+#
+# Feature pipeline order:
+#   1. fill_na_median
+#   2. s6e4_digit_extraction_wide (99 digit cols)
+#   3. s6e4_cat_pair_combined_keys (NEW: 15 cat-pair strings)
+#   4. s6e4_freq_filter_cats (now covers 6 orig + 15 pairs + 99 digits = 120)
+#   5. ordered_te (per-fold, encodes all cat-like cols)
+#
+# Runtime: +30-40 min for extra TE cols × 5 folds × 4x shuffle. Total ~2h.
+
+target: Irrigation_Need
+id_col: id
+task: multiclass
+metric: balanced_accuracy
+
+class_weights: balanced
+
+extra_dataset:
+  slug: miadul/irrigation-water-requirement-prediction-dataset
+  file: irrigation_prediction.csv
+  weight: 0.35
+
+kernel:
+  enable_gpu: true
+  enable_internet: true
+
+pip_install:
+  - optuna
+
+features:
+  - fill_na_median
+  - s6e4_digit_extraction_wide
+  - s6e4_cat_pair_combined_keys
+  - s6e4_freq_filter_cats
+  - ordered_te
+
+model:
+  - xgb
+  - catboost
+
+blend_weights:
+  xgb: 0.6
+  catboost: 0.4
+
+postprocess:
+  - meta_stacker
+  - class_weight_optuna
+
+optuna_trials: 200
+
+params:
+  xgb:
+    num_boost_round: 700
+    early_stopping_rounds: 1024
+    eta: 0.12
+    max_depth: 3
+    max_leaves: 20
+    subsample: 0.75
+    colsample_bytree: 0.85
+    reg_alpha: 7
+    reg_lambda: 3
+    min_child_weight: 3
+    tree_method: hist
+    max_bin: 10000
+    device: cuda
+    seed: 777
+  catboost:
+    iterations: 3000
+    early_stopping_rounds: 100
+    learning_rate: 0.05
+    depth: 6
+    l2_leaf_reg: 5.0
+    random_seed: 42
+    task_type: GPU
+    bootstrap_type: Bayesian
+    bagging_temperature: 1.0
+
+cv:
+  n_splits: 5
+  seed: 42
+  stratified: true
