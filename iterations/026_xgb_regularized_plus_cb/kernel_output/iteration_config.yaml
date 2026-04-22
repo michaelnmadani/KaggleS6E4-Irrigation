@@ -1,0 +1,84 @@
+
+# Iteration 026 (website V38) — xgb_b regularized config as primary + CatBoost.
+#
+# V37 finding: xgb_b (depth=3, lr=0.12, reg_alpha=7, 700 rounds) was the BEST
+# single XGB (CV 0.97452) beating the V34 baseline xgb (depth=4) at 0.97400.
+# Shallower + more regularized wins on this dataset.
+#
+# V38 uses xgb_b as the sole XGB (drops underperforming xgb/xgb_a) + CatBoost.
+# Simpler 2-base stack should match or beat V37's 4-base 0.97587 because:
+#   - fewer correlated preds = meta_stacker has less to prune (V37 pruned 11/24)
+#   - xgb_b's higher solo CV means the base blend starts stronger
+#
+# Runtime: xgb_b ~30min + CB ~60min + meta ~5min = ~1.5h. Very fast vs V37's 4h.
+
+target: Irrigation_Need
+id_col: id
+task: multiclass
+metric: balanced_accuracy
+
+class_weights: balanced
+
+extra_dataset:
+  slug: miadul/irrigation-water-requirement-prediction-dataset
+  file: irrigation_prediction.csv
+  weight: 0.35
+
+kernel:
+  enable_gpu: true
+  enable_internet: true
+
+pip_install:
+  - optuna
+
+features:
+  - fill_na_median
+  - s6e4_digit_extraction_wide
+  - s6e4_freq_filter_cats
+  - ordered_te
+
+model:
+  - xgb
+  - catboost
+
+blend_weights:
+  xgb: 0.6
+  catboost: 0.4
+
+postprocess:
+  - meta_stacker
+  - class_weight_optuna
+
+optuna_trials: 200
+
+params:
+  xgb:
+    num_boost_round: 700
+    early_stopping_rounds: 1024
+    eta: 0.12
+    max_depth: 3
+    max_leaves: 20
+    subsample: 0.75
+    colsample_bytree: 0.85
+    reg_alpha: 7
+    reg_lambda: 3
+    min_child_weight: 3
+    tree_method: hist
+    max_bin: 10000
+    device: cuda
+    seed: 777
+  catboost:
+    iterations: 3000
+    early_stopping_rounds: 100
+    learning_rate: 0.05
+    depth: 6
+    l2_leaf_reg: 5.0
+    random_seed: 42
+    task_type: GPU
+    bootstrap_type: Bayesian
+    bagging_temperature: 1.0
+
+cv:
+  n_splits: 5
+  seed: 42
+  stratified: true
