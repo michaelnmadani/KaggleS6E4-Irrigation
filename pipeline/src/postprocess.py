@@ -246,3 +246,48 @@ def caruana_hill_climb(per_model_oof: dict, per_model_test: dict,
     test_blend = sum(weights[m] * per_model_test[m] for m in names)
     score = float(metric_fn(y, oof_blend))
     return {"oof": oof_blend, "test": test_blend, "score": score, "weights": weights}
+
+
+# ------------------------------------------------------------------------
+# Class-weight Optuna postprocess (V34 port from yunsuxiaozi Kaggle notebook).
+# Multiplies per-class probabilities by learned scalars, renormalizes, argmax.
+# Directly optimizes balanced_accuracy on OOF via TPE search.
+# ------------------------------------------------------------------------
+
+
+def class_weight_optuna(probs: np.ndarray, test_probs: np.ndarray, y: np.ndarray,
+                       metric_fn, n_trials: int = 200, seed: int = 42) -> dict:
+    """Search per-class probability multipliers maximizing metric on OOF.
+    Returns reweighted OOF + test + best weights + pre/post scores."""
+    import optuna
+    from optuna.samplers import TPESampler
+
+    optuna.logging.set_verbosity(optuna.logging.WARNING)
+    y = np.asarray(y).astype(int)
+    n_classes = probs.shape[1]
+    pre_score = float(metric_fn(y, probs))
+
+    def _reweight(P, w):
+        adj = P * w
+        adj = adj / adj.sum(axis=1, keepdims=True)
+        return adj
+
+    def _objective(trial):
+        w = np.array([trial.suggest_float(f"w{k}", 0.5, 3.0) for k in range(n_classes)])
+        return float(metric_fn(y, _reweight(probs, w)))
+
+    study = optuna.create_study(direction="maximize", sampler=TPESampler(seed=seed))
+    study.optimize(_objective, n_trials=n_trials, show_progress_bar=False)
+
+    best_w = np.array([study.best_params[f"w{k}"] for k in range(n_classes)])
+    oof_adj = _reweight(probs, best_w)
+    test_adj = _reweight(test_probs, best_w)
+    post_score = float(metric_fn(y, oof_adj))
+    return {
+        "oof": oof_adj,
+        "test": test_adj,
+        "pre_score": pre_score,
+        "post_score": post_score,
+        "weights": best_w.tolist(),
+        "n_trials": n_trials,
+    }

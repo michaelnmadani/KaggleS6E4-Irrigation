@@ -1,0 +1,72 @@
+# Iteration 022 (website V34) — port of yunsuxiaozi PSS6E4 XGB CV:0.979805.
+# Ref: https://www.kaggle.com/code/yunsuxiaozi/pss6e4-xgb-cv-0-979805
+#
+# Three novel techniques vs our current pipeline:
+#   1. Wide digit extraction (digits k ∈ [-4,4] for every numeric, ~99 cols)
+#   2. Ordered target encoding with 4x shuffle augmentation — per fold, train
+#      gets row-level cumulative (sum - current) / (count - 1) TE per class,
+#      replicated across 4 different permutations -> 4x training rows
+#   3. Class-weight Optuna postprocess: 200-trial TPE search over per-class
+#      probability multipliers on OOF, applied to test probs
+#
+# XGBoost settings from the reference notebook:
+#   max_depth=4, max_leaves=30, lr=0.1, n_estimators=512, alpha=5, reg_lambda=5,
+#   min_child_weight=2, tree_method=hist, max_bin=10000, device=cuda
+#
+# Reference CV: 0.979805 (this author's balanced_accuracy). Our current plateau:
+# 0.9717. If we reproduce even 0.975+, we clear the user's target.
+#
+# Runtime (GPU P100 or T4 — needs torch for xgboost GPU):
+#   Per fold: XGB-GPU on 2.52M rows × ~100 features = 10-25 min
+#   5 folds = 60-150 min
+#   Optuna 200 trials: <1 min (all vectorized on OOF)
+#   Total ~2-3h. Well under 9h GPU cap.
+
+target: Irrigation_Need
+id_col: id
+task: multiclass
+metric: balanced_accuracy
+
+class_weights: balanced
+
+kernel:
+  enable_gpu: true
+  enable_internet: true
+
+pip_install:
+  - optuna
+
+features:
+  - fill_na_median
+  - s6e4_digit_extraction_wide    # NEW: digits k∈[-4,4] for each numeric
+  - s6e4_freq_filter_cats         # NEW: freq>=5 filter for cats + digit cols
+  - ordered_te                    # NEW: per-fold ordered TE with 4x shuffle (augments rows)
+
+model:
+  - xgb
+
+postprocess:
+  - class_weight_optuna
+
+optuna_trials: 200
+
+params:
+  xgb:
+    num_boost_round: 512
+    early_stopping_rounds: 1024
+    eta: 0.1
+    max_depth: 4
+    max_leaves: 30
+    subsample: 0.8
+    colsample_bytree: 0.8
+    reg_alpha: 5
+    reg_lambda: 5
+    min_child_weight: 2
+    tree_method: hist
+    max_bin: 10000
+    device: cuda
+
+cv:
+  n_splits: 5
+  seed: 42
+  stratified: false    # author used KFold(shuffle=True), not stratified
