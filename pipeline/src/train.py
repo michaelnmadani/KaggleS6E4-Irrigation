@@ -138,13 +138,30 @@ def run(config_path: str, input_dir: str, output_dir: str) -> dict:
             X_tr, val_test = fn(X_tr, val_test, y_tr=y_tr)
             X_va = val_test.iloc[: len(X_va)].reset_index(drop=True)
             X_te_fold = val_test.iloc[len(X_va) :].reset_index(drop=True)
+
+        # Blocks like ordered_te may augment training rows (e.g. 4x shuffle
+        # concatenation) and smuggle the corresponding shuffled labels via
+        # _ote_y_shuffled. Extract them here so downstream model.fit sees
+        # the augmented (X_tr, y_tr) pair with aligned sample_weight.
+        if "_ote_y_shuffled" in X_tr.columns:
+            y_tr = pd.Series(X_tr["_ote_y_shuffled"].values).reset_index(drop=True)
+            X_tr = X_tr.drop(columns=["_ote_y_shuffled"])
+        if "_ote_y_shuffled" in X_va.columns:
+            X_va = X_va.drop(columns=["_ote_y_shuffled"])
+        if "_ote_y_shuffled" in X_te_fold.columns:
+            X_te_fold = X_te_fold.drop(columns=["_ote_y_shuffled"])
         n_features_final = X_tr.shape[1]
 
         sw = models_mod.compute_balanced_sample_weights(y_tr) if class_weights_mode == "balanced" else None
         # Down-weight external rows (miadul etc.) if configured via extra_dataset.weight.
         extra_weight = (cfg.get("extra_dataset") or {}).get("weight")
         if extra_weight is not None and is_original.any():
+            # If ordered_te augmented rows, is_original[tr_idx] is shorter than y_tr;
+            # tile it to match the augmented row count.
             is_orig_tr = is_original[tr_idx]
+            if len(is_orig_tr) != len(y_tr):
+                reps = len(y_tr) // len(is_orig_tr)
+                is_orig_tr = np.tile(is_orig_tr, reps)
             if sw is None:
                 sw = np.ones(len(y_tr), dtype=float)
             sw = sw * np.where(is_orig_tr, float(extra_weight), 1.0)
@@ -253,6 +270,33 @@ def run(config_path: str, input_dir: str, output_dir: str) -> dict:
             "n_pruned": stack_info["n_pruned"],
             "applied": meta_score > pre_score,
         }
+
+    # Post-processing: class-weight Optuna (V34 — yunsuxiaozi port).
+    if "class_weight_optuna" in pp_stages and oof.ndim == 2:
+        cwo = post_mod.class_weight_optuna(oof, test_preds, np.asarray(y), metric_fn,
+                                           n_trials=int(cfg.get("optuna_trials", 200)))
+        log_lines.append(
+            f"class_weight_optuna: pre={cwo['pre_score']:.5f}  post={cwo['post_score']:.5f}  "
+            f"delta={cwo['post_score'] - cwo['pre_score']:+.5f}  weights={cwo['weights']}"
+        )
+        if cwo["post_score"] > cwo["pre_score"]:
+            oof = cwo["oof"]
+            test_preds = cwo["test"]
+            cv_score = float(metric_fn(y, oof))
+            plain_acc = float(accuracy_score(y, _hard_labels(oof)))
+            bal_acc = float(balanced_accuracy_score(y, _hard_labels(oof)))
+            log_lines.append(f"class_weight_optuna applied (CV: {cwo['pre_score']:.5f} -> {cv_score:.5f})")
+        cwo_info = {
+            "kind": "class_weight_optuna",
+            "pre_score": cwo["pre_score"],
+            "post_score": cwo["post_score"],
+            "weights": cwo["weights"],
+            "applied": cwo["post_score"] > cwo["pre_score"],
+        }
+        postprocess_info = (
+            [postprocess_info, cwo_info] if isinstance(postprocess_info, dict) else
+            ([*postprocess_info, cwo_info] if isinstance(postprocess_info, list) else cwo_info)
+        )
 
     # Post-processing: Caruana greedy hill-climb on balanced_accuracy (V26).
     # Runs AFTER meta-stacker — only accepted if it beats whatever's current.

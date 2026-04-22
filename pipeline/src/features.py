@@ -343,6 +343,118 @@ def s6e4_quantile_bins(X_tr: pd.DataFrame, X_te: pd.DataFrame) -> tuple[pd.DataF
     return X_tr, X_te
 
 
+def s6e4_digit_extraction_wide(X_tr: pd.DataFrame, X_te: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """yunsuxiaozi V34 port: extract digit at positions k in [-4, 4] for each
+    numeric column. Each numeric -> 9 digit features.
+
+    For k<0: treats as decimal (10**k acts as shift).
+    For k>=0: int-divide by 10**k, modulo 10.
+    Plus rounding: if max<10 -> round(3); <100 -> round(2); else round(1).
+    Ref: https://www.kaggle.com/code/yunsuxiaozi/pss6e4-xgb-cv-0-979805
+    """
+    X_tr, X_te = X_tr.copy(), X_te.copy()
+    num_cols = [c for c in _V11_NUMERIC_SOURCES if c in X_tr.columns]
+    max_vals = {c: float(X_tr[c].max()) for c in num_cols}
+    for c in num_cols:
+        v_tr = X_tr[c].astype(float).fillna(0.0).values
+        v_te = X_te[c].astype(float).fillna(0.0).values
+        for k in range(-4, 5):
+            p = 10.0 ** k
+            X_tr[f"{c}_digit{k}"] = (np.floor(v_tr / p).astype(np.int64) % 10).astype(np.int16)
+            X_te[f"{c}_digit{k}"] = (np.floor(v_te / p).astype(np.int64) % 10).astype(np.int16)
+        m = max_vals[c]
+        if m < 10:
+            X_tr[c] = X_tr[c].round(3); X_te[c] = X_te[c].round(3)
+        elif m < 100:
+            X_tr[c] = X_tr[c].round(2); X_te[c] = X_te[c].round(2)
+        else:
+            X_tr[c] = X_tr[c].round(1); X_te[c] = X_te[c].round(1)
+    return X_tr, X_te
+
+
+def s6e4_freq_filter_cats(X_tr: pd.DataFrame, X_te: pd.DataFrame, min_count: int = 5) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """yunsuxiaozi V34 port: for each object/category/digit col, map values with
+    train-count >= min_count to indices 0..K-1; rare values -> K (default bucket)."""
+    X_tr, X_te = X_tr.copy(), X_te.copy()
+    target_cols = [c for c in X_tr.columns
+                   if str(X_tr[c].dtype) in ("object", "category") or "digit" in c]
+    for c in target_cols:
+        freq = X_tr[c].value_counts()
+        keep = freq[freq >= min_count].index.tolist()
+        mapping = {v: i for i, v in enumerate(keep)}
+        default = len(mapping)
+        X_tr[c] = X_tr[c].map(lambda x: mapping.get(x, default)).astype(np.int32)
+        X_te[c] = X_te[c].map(lambda x: mapping.get(x, default)).astype(np.int32)
+    return X_tr, X_te
+
+
+def ordered_te(X_tr: pd.DataFrame, X_te: pd.DataFrame, y_tr=None, smoothing: float = 1.0, n_shuffles: int = 4, seed: int = 42) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """yunsuxiaozi V34 port: ordered target-encoding with shuffle augmentation.
+
+    For each category col c and each target class k, computes cumulative
+    (sum_so_far - y_current) / (count_so_far - 1), smoothed by class prior.
+    Done n_shuffles times with different row orders and concatenated — this
+    effectively augments training data by n_shuffles×.
+
+    IMPORTANT: this block returns a LARGER X_tr (n_shuffles × original rows) plus
+    a correspondingly stacked y_tr hidden in a special '_y_shuffled' column.
+    The train.py caller recognizes the column name and extracts y. Test/val are
+    encoded once using train's full per-category priors."""
+    if y_tr is None:
+        raise ValueError("ordered_te requires y_tr")
+    X_tr, X_te = X_tr.copy(), X_te.copy()
+    y = pd.Series(y_tr).reset_index(drop=True).astype(int)
+    classes = sorted(y.unique().tolist())
+    # Identify integer categoricals (already-encoded or low-nunique ints).
+    cat_cols = [c for c in X_tr.columns
+                if str(X_tr[c].dtype).startswith("int") or str(X_tr[c].dtype) in ("object", "category")]
+    # Precompute per-category totals on full train for test/val transform.
+    global_prior = {k: float((y == k).mean()) for k in classes}
+    stats = {c: {k: None for k in classes} for c in cat_cols}
+    for c in cat_cols:
+        for k in classes:
+            yk = (y == k).astype(int)
+            agg = pd.DataFrame({"cat": X_tr[c].values, "t": yk.values}).groupby("cat")["t"].agg(["sum", "count"])
+            stats[c][k] = agg
+
+    # Build n_shuffles training copies with ordered cumulative TE features.
+    rng = np.random.default_rng(seed)
+    aug_parts = []
+    aug_y_parts = []
+    for s in range(n_shuffles):
+        perm = rng.permutation(len(X_tr))
+        X_s = X_tr.iloc[perm].reset_index(drop=True).copy()
+        y_s = y.iloc[perm].reset_index(drop=True)
+        for c in cat_cols:
+            for k in classes:
+                yk = (y_s == k).astype(int)
+                df = pd.DataFrame({"cat": X_s[c].values, "y": yk.values})
+                df["cum_cnt"] = df.groupby("cat").cumcount()   # rows before current, same cat
+                df["cum_sum"] = df.groupby("cat")["y"].cumsum() - df["y"]
+                prior = global_prior[k]
+                te = (df["cum_sum"] + smoothing * prior) / (df["cum_cnt"] + smoothing)
+                te[df["cum_cnt"] == 0] = prior  # first-seen -> prior
+                X_s[f"{c}_ote_c{k}"] = te.values.astype(np.float32)
+        aug_parts.append(X_s)
+        aug_y_parts.append(y_s)
+
+    X_tr_aug = pd.concat(aug_parts, axis=0, ignore_index=True)
+    y_tr_aug = pd.concat(aug_y_parts, axis=0, ignore_index=True)
+    # Smuggle y via special col so train.py can pull it back.
+    X_tr_aug["_ote_y_shuffled"] = y_tr_aug.values.astype(np.int32)
+
+    # Transform test/val: use full-train stats, smoothed prior.
+    X_te_out = X_te.copy()
+    for c in cat_cols:
+        for k in classes:
+            agg = stats[c][k]
+            prior = global_prior[k]
+            te_vals = ((agg["sum"].values + smoothing * prior) / (agg["count"].values + smoothing))
+            mp = dict(zip(agg.index.tolist(), te_vals.tolist()))
+            X_te_out[f"{c}_ote_c{k}"] = X_te[c].map(mp).fillna(prior).astype(np.float32).values
+    return X_tr_aug, X_te_out
+
+
 BLOCKS = {
     "label_encode": label_encode,
     "fill_na_median": fill_na_median,
@@ -357,6 +469,9 @@ BLOCKS = {
     "s6e4_groupby_aggs": s6e4_groupby_aggs,
     "s6e4_quantile_bins": s6e4_quantile_bins,
     "target_encode_multiclass": target_encode_multiclass,
+    "s6e4_digit_extraction_wide": s6e4_digit_extraction_wide,
+    "s6e4_freq_filter_cats": s6e4_freq_filter_cats,
+    "ordered_te": ordered_te,
 }
 
 
