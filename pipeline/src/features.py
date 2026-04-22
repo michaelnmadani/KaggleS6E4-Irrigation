@@ -455,6 +455,28 @@ def ordered_te(X_tr: pd.DataFrame, X_te: pd.DataFrame, y_tr=None, smoothing: flo
     return X_tr_aug, X_te_out
 
 
+def s6e4_cat_pair_combined_keys(X_tr, X_te):
+    """Create combined-key features by joining pairs of the 6 original
+    categoricals into single string keys. Run BEFORE s6e4_freq_filter_cats
+    so the freq filter maps them to compact int codes; then ordered_te picks
+    them up as per-fold per-class TE features.
+
+    V39 FE lever: C(6,2)=15 new cat columns with higher cardinality than any
+    single cat. Each has up to 6*6=36 levels per pair. Ordered TE on these
+    captures multi-way class-conditional signal the single-cat TE misses.
+    """
+    X_tr, X_te = X_tr.copy(), X_te.copy()
+    CATS = ["Soil_Type", "Crop_Type", "Region", "Season",
+            "Crop_Growth_Stage", "Mulching_Used"]
+    cats = [c for c in CATS if c in X_tr.columns]
+    for i, a in enumerate(cats):
+        for b in cats[i+1:]:
+            name = f"{a}_X_{b}"
+            X_tr[name] = X_tr[a].astype(str) + "|" + X_tr[b].astype(str)
+            X_te[name] = X_te[a].astype(str) + "|" + X_te[b].astype(str)
+    return X_tr, X_te
+
+
 BLOCKS = {
     "label_encode": label_encode,
     "fill_na_median": fill_na_median,
@@ -470,6 +492,7 @@ BLOCKS = {
     "s6e4_quantile_bins": s6e4_quantile_bins,
     "target_encode_multiclass": target_encode_multiclass,
     "s6e4_digit_extraction_wide": s6e4_digit_extraction_wide,
+    "s6e4_cat_pair_combined_keys": s6e4_cat_pair_combined_keys,
     "s6e4_freq_filter_cats": s6e4_freq_filter_cats,
     "ordered_te": ordered_te,
 }
