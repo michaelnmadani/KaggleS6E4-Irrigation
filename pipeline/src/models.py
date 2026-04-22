@@ -308,6 +308,9 @@ FITTERS = {
     "lgbm_rf": _lgbm_fit,
     "tabpfn_bagged": _tabpfn_bagged_fit,
     "xgb": _xgb_fit,
+    # Aliases for multi-seed XGB ensembling; config supplies distinct seed / depth.
+    "xgb_a": _xgb_fit,
+    "xgb_b": _xgb_fit,
     "catboost": _catboost_fit,
     # Aliases for multi-seed CatBoost ensembling; config supplies distinct random_seed/rsm.
     "catboost_a": _catboost_fit,
