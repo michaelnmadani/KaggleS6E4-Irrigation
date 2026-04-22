@@ -2680,6 +2680,36 @@
         "Meta-stacker +0.00202 (0.97378 → 0.97580), Optuna collapsed to +0.00007",
         "CV 0.97587 = +0.0002 over V36 — multi-seed XGB didn't deliver; pivot to FE changes next"
       ]
+    },
+    {
+      "version": 38,
+      "score": 0.9758583426992927,
+      "best_model": "xgb_b regularized + catboost + meta_stacker",
+      "source": "autonomous pipeline (iter 026_xgb_regularized_plus_cb)",
+      "plain_accuracy": 0.981725,
+      "per_class_recall": {
+        "High": 0.9707191379714218,
+        "Low": 0.9955426165772086,
+        "Medium": 0.9613132735492478
+      },
+      "fold_std": 0.0018171812074032968,
+      "elapsed_sec": 7458.3,
+      "per_model_cv": {
+        "xgb": 0.9743959295579581,
+        "catboost": 0.9732217354540026
+      },
+      "blend_weights": {
+        "xgb": 0.6,
+        "catboost": 0.4
+      },
+      "changes": [
+        "V37's winning xgb_b config (depth=3, lr=0.12, reg_alpha=7, 700 rounds) as sole XGB + CatBoost",
+        "CV 0.97586 — virtually identical to V36 0.97585 / V37 0.97587",
+        "PLATEAU confirmed at ~0.9758 regardless of base model count (4→2 bases, same meta output)",
+        "Meta-stacker lift +0.00145 consistent across all 3 iterations; Optuna effectively dead (+0.00012)",
+        "High recall improved to 0.9707 (from V36 0.9699), Medium dropped to 0.9613",
+        "Next: FE changes (cat-pair combined TE keys) to inject new signal"
+      ]
     }
   ],
   "improvement": {
