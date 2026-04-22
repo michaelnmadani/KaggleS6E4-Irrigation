@@ -1,0 +1,70 @@
+{
+  "cv_score": 0.9715541539033691,
+  "metric": "balanced_accuracy",
+  "plain_accuracy": 0.981003125,
+  "balanced_accuracy": 0.9715541539033691,
+  "fold_scores": [
+    0.9670418671834154,
+    0.9668447381815842,
+    0.9665727292703501,
+    0.966999237423637,
+    0.9625298262822183
+  ],
+  "fold_mean": 0.9659976796682411,
+  "fold_std": 0.001741702774936207,
+  "per_class_recall": {
+    "High": 0.9584914499882876,
+    "Low": 0.9952818263829198,
+    "Medium": 0.9608891853389
+  },
+  "elapsed_sec": 17489.8,
+  "model": [
+    "lgbm",
+    "catboost",
+    "pytabkit_realmlp"
+  ],
+  "per_model_cv": {
+    "lgbm": 0.9670203743819433,
+    "catboost": 0.969224652642779,
+    "pytabkit_realmlp": 0.9617480127419386
+  },
+  "blend_weights": {
+    "lgbm": 0.30000000000000004,
+    "catboost": 0.6000000000000001,
+    "pytabkit_realmlp": 0.10000000000000002
+  },
+  "postprocess": [
+    {
+      "kind": "meta_stacker",
+      "pre_score": 0.9679386433689806,
+      "meta_score": 0.9715541539033691,
+      "per_learner_score": {
+        "l2": 0.9707691918699305,
+        "l1": 0.9712259230143614,
+        "en": 0.9714396023167922
+      },
+      "weights": {
+        "l2": 0.32901810342266335,
+        "l1": 0.33424061029889496,
+        "en": 0.3367412862784418
+      },
+      "n_meta_features": 17,
+      "n_pruned": 4,
+      "applied": true
+    },
+    {
+      "kind": "caruana",
+      "pre_score": 0.9715541539033691,
+      "caruana_score": 0.9685924189688345,
+      "weights": {
+        "lgbm": 0.3,
+        "catboost": 0.7,
+        "pytabkit_realmlp": 0.0
+      },
+      "applied": false
+    }
+  ],
+  "n_features": 68,
+  "n_train": 640000,
+  "n_test": 270000
+}
