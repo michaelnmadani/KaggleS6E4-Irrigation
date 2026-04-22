@@ -2557,6 +2557,37 @@
         "CONFIRMS THE CEILING: adding more GBM diversity is diminishing returns beyond 3 bases",
         "To cross 0.9720, need genuinely orthogonal signal (deep NN, TabPFN, pseudo-labels, or BA-direct threshold tuning)"
       ]
+    },
+    {
+      "version": 34,
+      "score": 0.9750273506369781,
+      "best_model": "xgb+ordered_te+class_weight_optuna",
+      "source": "autonomous pipeline (iter 022_orderedte_xgb) — port of yunsuxiaozi CV 0.9798 recipe",
+      "plain_accuracy": 0.9813238095238095,
+      "per_class_recall": {
+        "High": 0.9693940692084345,
+        "Low": 0.9959558495554408,
+        "Medium": 0.9597321331470591
+      },
+      "fold_std": 0.0012926079429835449,
+      "elapsed_sec": 3887.6,
+      "per_model_cv": {
+        "xgb": 0.9737646856872063
+      },
+      "blend_weights": {
+        "xgb": 1
+      },
+      "changes": [
+        "Port of yunsuxiaozi PSS6E4 XGB CV:0.979805 recipe (kaggle.com/code/yunsuxiaozi/pss6e4-xgb-cv-0-979805)",
+        "3 new feature blocks: s6e4_digit_extraction_wide (digits k∈[-4,4] per numeric, 99 cols), s6e4_freq_filter_cats (freq>=5 filter, rare->default), ordered_te (per-fold cumulative TE with 4x shuffle augmentation)",
+        "OrderedTE augments training 4x via shuffle-then-cumsum (630k → 2.52M rows per fold) — 321 per-class TE columns added",
+        "XGBoost GPU: max_depth=4, max_leaves=30, lr=0.1, alpha=5, reg_lambda=5, tree_method=hist, max_bin=10000",
+        "Class-weight Optuna postprocess: 200-trial TPE search over (cw0,cw1,cw2) multipliers on OOF probs",
+        "CROSSED 0.975: XGB solo 0.97376 → Optuna 0.97503 (+0.0013 postprocess delta)",
+        "High-class recall 0.9567 → 0.9694 (+0.013 — the minority class unlock)",
+        "Confirms: feature engineering, not model diversity, was the GBM plateau breaker",
+        "Runtime 65 min on GPU kernel (vs V33's 4.9h 3-model CPU stack)"
+      ]
     }
   ],
   "improvement": {
