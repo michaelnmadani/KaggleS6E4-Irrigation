@@ -2615,6 +2615,37 @@
         "High recall 0.9694 → 0.9665 (slight drop), Medium 0.9597 → 0.9638",
         "CV 0.97523 (+0.0002 over V34). Next: CatBoost blend for GBM-diversity lift"
       ]
+    },
+    {
+      "version": 36,
+      "score": 0.9758490640600179,
+      "best_model": "xgb+catboost blend + meta_stacker + class_weight_optuna",
+      "source": "autonomous pipeline (iter 024_v35_plus_catboost_blend)",
+      "plain_accuracy": 0.9819234375,
+      "per_class_recall": {
+        "High": 0.9698758491449988,
+        "Low": 0.995143447912481,
+        "Medium": 0.9625278951225739
+      },
+      "fold_std": 0.0018229031672141972,
+      "elapsed_sec": 7223.2,
+      "per_model_cv": {
+        "xgb": 0.9739867079870863,
+        "catboost": 0.9732285977227785
+      },
+      "blend_weights": {
+        "xgb": 0.6,
+        "catboost": 0.4
+      },
+      "changes": [
+        "V35 features + CatBoost GPU as 2nd base (task_type=GPU, depth=6, lr=0.05, Bayesian bootstrap)",
+        "Per-model CV: XGB 0.97399 / CatBoost 0.97323 — CatBoost slightly weaker solo but adds diversity",
+        "Base blend (xgb=0.6 / cat=0.4) = 0.97385",
+        "Meta-stacker lift +0.00184 → 0.97569 (largest postprocess delta across all versions)",
+        "Class-weight Optuna collapsed to +0.00016 (meta-stacker absorbs the class balancing)",
+        "High recall 0.9699 stable; Medium 0.9625 (down slightly); Low 0.9951",
+        "CV 0.97585 = +0.00062 over V35. Need +0.00115 more to clear 0.978"
+      ]
     }
   ],
   "improvement": {
