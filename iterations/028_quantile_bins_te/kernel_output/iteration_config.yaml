@@ -1,0 +1,86 @@
+
+# Iteration 028 (website V40) — V38 base + quantile-bin TE on numerics.
+#
+# V39 cat-pair TE hurt (too sparse). V40 tries the complementary FE: bin each
+# numeric into deciles, cast to Categorical, and let ordered_te encode per
+# class. 11 numerics × 10 bins × 3 classes = 33 new per-class TE features with
+# dense support (each bin has ~63k rows on 630k train).
+#
+# Purpose: capture non-linear distributional signal the raw numerics miss.
+# Ordered TE on decile-cats gives the model access to class-conditional prob
+# of each numeric being in a given decile.
+#
+# Runtime: quantile_bins is O(n log n) per col = <5s total. Ordered TE on 33
+# extra cat cols adds ~5 min. Total ~1.6h on GPU.
+
+target: Irrigation_Need
+id_col: id
+task: multiclass
+metric: balanced_accuracy
+
+class_weights: balanced
+
+extra_dataset:
+  slug: miadul/irrigation-water-requirement-prediction-dataset
+  file: irrigation_prediction.csv
+  weight: 0.35
+
+kernel:
+  enable_gpu: true
+  enable_internet: true
+
+pip_install:
+  - optuna
+
+features:
+  - fill_na_median
+  - s6e4_digit_extraction_wide
+  - s6e4_quantile_bins
+  - s6e4_freq_filter_cats
+  - ordered_te
+
+model:
+  - xgb
+  - catboost
+
+blend_weights:
+  xgb: 0.6
+  catboost: 0.4
+
+postprocess:
+  - meta_stacker
+  - class_weight_optuna
+
+optuna_trials: 200
+
+params:
+  xgb:
+    num_boost_round: 700
+    early_stopping_rounds: 1024
+    eta: 0.12
+    max_depth: 3
+    max_leaves: 20
+    subsample: 0.75
+    colsample_bytree: 0.85
+    reg_alpha: 7
+    reg_lambda: 3
+    min_child_weight: 3
+    tree_method: hist
+    max_bin: 10000
+    device: cuda
+    seed: 777
+  catboost:
+    iterations: 3000
+    early_stopping_rounds: 100
+    learning_rate: 0.05
+    depth: 6
+    l2_leaf_reg: 5.0
+    random_seed: 42
+    task_type: GPU
+    bootstrap_type: Bayesian
+    bagging_temperature: 1.0
+
+cv:
+  n_splits: 5
+  seed: 42
+  stratified: true
