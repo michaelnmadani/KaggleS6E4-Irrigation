@@ -2740,6 +2740,35 @@
         "Freq-filter didn't suppress sparse-level noise enough — many pair levels have low support",
         "Rejecting cat-pair TE direction. Pivot to pseudo-labeling for V40"
       ]
+    },
+    {
+      "version": 40,
+      "score": 0.9756500588159668,
+      "best_model": "xgb+catboost + quantile-bin-TE + meta_stacker",
+      "source": "autonomous pipeline (iter 028_quantile_bins_te)",
+      "plain_accuracy": 0.981246875,
+      "per_class_recall": {
+        "High": 0.9711407823846334,
+        "Low": 0.9950849031749875,
+        "Medium": 0.9607244908882795
+      },
+      "fold_std": 0.0017455417026621832,
+      "elapsed_sec": 8253.5,
+      "per_model_cv": {
+        "xgb": 0.9743350237397324,
+        "catboost": 0.9731386146963534
+      },
+      "blend_weights": {
+        "xgb": 0.6,
+        "catboost": 0.4
+      },
+      "changes": [
+        "NEW FE: s6e4_quantile_bins → 11 numerics decile-binned, ordered_te gives 33 per-class TE cols",
+        "CV 0.97565 vs V38 0.97586 = -0.00021 DROP — quantile TE added noise",
+        "Confirmation: ordered_te on original cats+digits is already saturated; more TE cols = noise",
+        "Both V39 (cat-pair) and V40 (quantile-bin) FE extensions hurt → data feature space exhausted",
+        "Pivot V41 to model diversity (LightGBM 3rd base) — proven +0.0005-0.001 from tree-family diversification"
+      ]
     }
   ],
   "improvement": {
