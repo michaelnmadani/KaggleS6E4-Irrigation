@@ -1,5 +1,8 @@
 {
   "001_baseline": {
     "public_lb": "0.96152"
+  },
+  "024_v35_plus_catboost_blend": {
+    "public_lb": "0.97586"
   }
 }
