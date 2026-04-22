@@ -2588,6 +2588,33 @@
         "Confirms: feature engineering, not model diversity, was the GBM plateau breaker",
         "Runtime 65 min on GPU kernel (vs V33's 4.9h 3-model CPU stack)"
       ]
+    },
+    {
+      "version": 35,
+      "score": 0.9752278300837357,
+      "best_model": "xgb+ordered_te+class_weight_optuna (stratified + miadul)",
+      "source": "autonomous pipeline (iter 023_v34_stratified_miadul)",
+      "plain_accuracy": 0.9824546875,
+      "per_class_recall": {
+        "High": 0.9664558444600609,
+        "Low": 0.9954068992312012,
+        "Medium": 0.9638207465599447
+      },
+      "fold_std": 0.0016727501625469782,
+      "elapsed_sec": 4022.6,
+      "per_model_cv": {
+        "xgb": 0.9739784732645553
+      },
+      "blend_weights": {
+        "xgb": 1
+      },
+      "changes": [
+        "V34 recipe + StratifiedKFold (was plain KFold) + miadul external data @ weight=0.35",
+        "CV 0.97398 single XGB (+0.0002 over V34's 0.97376) — stratified+miadul under-delivered vs +0.002-0.003 prediction",
+        "Class-weight Optuna landed same +0.0013 postprocess delta",
+        "High recall 0.9694 → 0.9665 (slight drop), Medium 0.9597 → 0.9638",
+        "CV 0.97523 (+0.0002 over V34). Next: CatBoost blend for GBM-diversity lift"
+      ]
     }
   ],
   "improvement": {

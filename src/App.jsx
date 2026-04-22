@@ -9,6 +9,7 @@ import {
   Cpu, FlaskConical, ClipboardCheck, TrendingUp, ArrowUpRight, ArrowDownRight
 } from 'lucide-react';
 import RESULTS_DATA from './results.json';
+import FEATURE_CODE from './feature_code.json';
 
 const CLASS_COLORS = { Low: '#22c55e', Medium: '#f59e0b', High: '#ef4444' };
 
@@ -540,6 +541,52 @@ function ImprovementsSection({ data }) {
   );
 }
 
+// ─── Section 5b: Feature Engineering Source Code ──────────────────────
+
+function FeatureCodeSection() {
+  const blocks = (FEATURE_CODE && FEATURE_CODE.feature_blocks) || [];
+  const [open, setOpen] = React.useState(() => new Set());
+  if (!blocks.length) return null;
+  function toggle(name) {
+    setOpen(prev => {
+      const next = new Set(prev);
+      if (next.has(name)) next.delete(name); else next.add(name);
+      return next;
+    });
+  }
+  return (
+    <section className="mb-12">
+      <SectionHeader icon={Leaf} title="Feature Engineering Code" subtitle={`${blocks.length} Python feature blocks from pipeline/src/features.py — click to expand`} />
+      <div className="space-y-3">
+        {blocks.map(b => {
+          const isOpen = open.has(b.name);
+          const lines = b.code.split(String.fromCharCode(10)).length;
+          return (
+            <div key={b.name} className="border border-gray-200 rounded-lg overflow-hidden">
+              <button
+                onClick={() => toggle(b.name)}
+                className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 text-left"
+              >
+                <div className="flex items-center gap-3">
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-mono ${isOpen ? 'bg-brand-100 text-brand-700' : 'bg-gray-200 text-gray-700'}`}>{isOpen ? '−' : '+'}</span>
+                  <span className="font-mono font-semibold text-gray-800">{b.name}</span>
+                  <span className="text-xs text-gray-500">{lines} lines</span>
+                </div>
+                <span className="text-xs text-gray-400">features.py</span>
+              </button>
+              {isOpen && (
+                <div className="bg-gray-900 overflow-hidden">
+                  <pre className="p-4 text-xs text-green-400 font-mono overflow-x-auto whitespace-pre">{b.code}</pre>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
 // ─── Section 6: Summary & Interpretation ───────────────────────────────
 
 function SummarySection({ data }) {
@@ -651,6 +698,7 @@ export default function App() {
         <ModelTrainingSection data={data} />
         <ResultsSection data={data} />
         {data.improvement && <ImprovementsSection data={data} />}
+        <FeatureCodeSection />
         <SummarySection data={data} />
       </main>
 
