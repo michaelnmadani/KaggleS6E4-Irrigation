@@ -109,7 +109,7 @@
     },
     "numeric_stats": {
       "Soil_pH": {
-        "count": 630000.0,
+        "count": 630000,
         "mean": 6.4825,
         "std": 0.9225,
         "min": 4.8,
@@ -119,17 +119,17 @@
         "max": 8.2
       },
       "Soil_Moisture": {
-        "count": 630000.0,
+        "count": 630000,
         "mean": 37.3045,
         "std": 16.3771,
-        "min": 8.0,
+        "min": 8,
         "25%": 23.34,
         "50%": 37.75,
         "75%": 51.27,
         "max": 64.99
       },
       "Organic_Carbon": {
-        "count": 630000.0,
+        "count": 630000,
         "mean": 0.9229,
         "std": 0.3658,
         "min": 0.3,
@@ -139,7 +139,7 @@
         "max": 1.6
       },
       "Electrical_Conductivity": {
-        "count": 630000.0,
+        "count": 630000,
         "mean": 1.7446,
         "std": 0.9523,
         "min": 0.1,
@@ -149,27 +149,27 @@
         "max": 3.5
       },
       "Temperature_C": {
-        "count": 630000.0,
+        "count": 630000,
         "mean": 26.9982,
         "std": 8.6236,
-        "min": 12.0,
+        "min": 12,
         "25%": 19.5175,
         "50%": 26.96,
         "75%": 34.54,
-        "max": 42.0
+        "max": 42
       },
       "Humidity": {
-        "count": 630000.0,
+        "count": 630000,
         "mean": 61.5632,
         "std": 19.7082,
-        "min": 25.0,
+        "min": 25,
         "25%": 45.39,
         "50%": 61.65,
         "75%": 79.12,
         "max": 94.99
       },
       "Rainfall_mm": {
-        "count": 630000.0,
+        "count": 630000,
         "mean": 1462.2076,
         "std": 612.9897,
         "min": 0.38,
@@ -179,37 +179,37 @@
         "max": 2499.69
       },
       "Sunlight_Hours": {
-        "count": 630000.0,
+        "count": 630000,
         "mean": 7.5134,
         "std": 1.9993,
-        "min": 4.0,
+        "min": 4,
         "25%": 5.76,
         "50%": 7.58,
         "75%": 9.25,
-        "max": 11.0
+        "max": 11
       },
       "Wind_Speed_kmh": {
-        "count": 630000.0,
+        "count": 630000,
         "mean": 10.3754,
         "std": 5.6895,
         "min": 0.5,
         "25%": 5.28,
         "50%": 10.48,
         "75%": 15.43,
-        "max": 20.0
+        "max": 20
       },
       "Field_Area_hectare": {
-        "count": 630000.0,
+        "count": 630000,
         "mean": 7.5177,
         "std": 4.2181,
         "min": 0.3,
         "25%": 3.88,
         "50%": 7.38,
         "75%": 11.14,
-        "max": 15.0
+        "max": 15
       },
       "Previous_Irrigation_mm": {
-        "count": 630000.0,
+        "count": 630000,
         "mean": 62.3182,
         "std": 34.2469,
         "min": 0.02,
@@ -295,7 +295,7 @@
     },
     "correlations": {
       "Soil_pH": {
-        "Soil_pH": 1.0,
+        "Soil_pH": 1,
         "Soil_Moisture": -0.0035,
         "Organic_Carbon": -0.003,
         "Electrical_Conductivity": -0.0002,
@@ -309,7 +309,7 @@
       },
       "Soil_Moisture": {
         "Soil_pH": -0.0035,
-        "Soil_Moisture": 1.0,
+        "Soil_Moisture": 1,
         "Organic_Carbon": -0.0151,
         "Electrical_Conductivity": -0.0091,
         "Temperature_C": -0.0379,
@@ -323,7 +323,7 @@
       "Organic_Carbon": {
         "Soil_pH": -0.003,
         "Soil_Moisture": -0.0151,
-        "Organic_Carbon": 1.0,
+        "Organic_Carbon": 1,
         "Electrical_Conductivity": 0.0109,
         "Temperature_C": -0.002,
         "Humidity": 0.0031,
@@ -337,7 +337,7 @@
         "Soil_pH": -0.0002,
         "Soil_Moisture": -0.0091,
         "Organic_Carbon": 0.0109,
-        "Electrical_Conductivity": 1.0,
+        "Electrical_Conductivity": 1,
         "Temperature_C": 0.0036,
         "Humidity": 0.0003,
         "Rainfall_mm": -0.004,
@@ -351,7 +351,7 @@
         "Soil_Moisture": -0.0379,
         "Organic_Carbon": -0.002,
         "Electrical_Conductivity": 0.0036,
-        "Temperature_C": 1.0,
+        "Temperature_C": 1,
         "Humidity": -0.0204,
         "Rainfall_mm": -0.0168,
         "Sunlight_Hours": -0.003,
@@ -365,7 +365,7 @@
         "Organic_Carbon": 0.0031,
         "Electrical_Conductivity": 0.0003,
         "Temperature_C": -0.0204,
-        "Humidity": 1.0,
+        "Humidity": 1,
         "Rainfall_mm": 0.0006,
         "Sunlight_Hours": 0.0018,
         "Wind_Speed_kmh": 0.0117,
@@ -379,7 +379,7 @@
         "Electrical_Conductivity": -0.004,
         "Temperature_C": -0.0168,
         "Humidity": 0.0006,
-        "Rainfall_mm": 1.0,
+        "Rainfall_mm": 1,
         "Sunlight_Hours": -0.0062,
         "Wind_Speed_kmh": -0.0328,
         "Field_Area_hectare": -0.0116,
@@ -393,7 +393,7 @@
         "Temperature_C": -0.003,
         "Humidity": 0.0018,
         "Rainfall_mm": -0.0062,
-        "Sunlight_Hours": 1.0,
+        "Sunlight_Hours": 1,
         "Wind_Speed_kmh": 0.0001,
         "Field_Area_hectare": -0.005,
         "Previous_Irrigation_mm": 0.0024
@@ -407,7 +407,7 @@
         "Humidity": 0.0117,
         "Rainfall_mm": -0.0328,
         "Sunlight_Hours": 0.0001,
-        "Wind_Speed_kmh": 1.0,
+        "Wind_Speed_kmh": 1,
         "Field_Area_hectare": 0.0097,
         "Previous_Irrigation_mm": 0.0095
       },
@@ -421,7 +421,7 @@
         "Rainfall_mm": -0.0116,
         "Sunlight_Hours": -0.005,
         "Wind_Speed_kmh": 0.0097,
-        "Field_Area_hectare": 1.0,
+        "Field_Area_hectare": 1,
         "Previous_Irrigation_mm": 0.0072
       },
       "Previous_Irrigation_mm": {
@@ -435,7 +435,7 @@
         "Sunlight_Hours": 0.0024,
         "Wind_Speed_kmh": 0.0095,
         "Field_Area_hectare": 0.0072,
-        "Previous_Irrigation_mm": 1.0
+        "Previous_Irrigation_mm": 1
       }
     },
     "sample_data": {
@@ -492,7 +492,7 @@
           7.08,
           56.61,
           0.44,
-          2.0,
+          2,
           22.92,
           67.86,
           985.66,
@@ -698,32 +698,32 @@
             "precision": 0.9328656383571827,
             "recall": 0.9406886858749122,
             "f1-score": 0.9367608295038373,
-            "support": 21345.0
+            "support": 21345
           },
           "1": {
             "precision": 0.9864315219168904,
             "recall": 0.9951807036545222,
             "f1-score": 0.9907867981639831,
-            "support": 375781.0
+            "support": 375781
           },
           "2": {
             "precision": 0.9871449937751189,
             "recall": 0.9728707066215404,
             "f1-score": 0.9799558722285354,
-            "support": 242874.0
+            "support": 242874
           },
           "accuracy": 0.984896875,
           "macro avg": {
             "precision": 0.9688140513497308,
             "recall": 0.9695800320503248,
             "f1-score": 0.9691678332987853,
-            "support": 640000.0
+            "support": 640000
           },
           "weighted avg": {
             "precision": 0.9849157718848801,
             "recall": 0.984896875,
             "f1-score": 0.9848747128410194,
-            "support": 640000.0
+            "support": 640000
           }
         },
         "confusion_matrix": [
@@ -778,7 +778,7 @@
         "total_water_input": 2679.2,
         "active_evapotrans": 2638.7,
         "drought_index": 2576.5,
-        "Rainfall_mm_d2": 2464.0,
+        "Rainfall_mm_d2": 2464,
         "Rainfall_mm_d1": 2429.1,
         "Rainfall_Previous_diff": 2378.2,
         "Temperature_C_d1": 2342.45,
@@ -812,7 +812,7 @@
         "Soil_Type_x_Crop_Type_te": 1713.35,
         "Wind_Speed_kmh_sq": 1675.95,
         "Crop_Type_x_Crop_Growth_Stage_te": 1639.1,
-        "Crop_Type_x_Season_te": 1623.0,
+        "Crop_Type_x_Season_te": 1623,
         "Region_x_Season_te": 1607.9,
         "Rainfall_mm_sq": 1599.6499999999999,
         "Irrigation_Type_x_Water_Source": 1580.2000000000003,
@@ -824,12 +824,12 @@
         "Crop_Growth_Stage_x_Irrigation_Type": 1200.0500000000002,
         "Crop_Type_x_Season": 1148.9,
         "Crop_Type_x_Crop_Growth_Stage": 1124.1,
-        "Region_x_Season": 1087.0,
+        "Region_x_Season": 1087,
         "Crop_Growth_Stage_x_Season": 1038.2,
         "Crop_Growth_Stage_x_Season_te": 945.0500000000001,
         "Mulching_Used": 795.3000000000001,
         "dry_hot_active": 757.45,
-        "Water_Source": 736.0,
+        "Water_Source": 736,
         "Temperature_C_log": 567.55,
         "Region_Temperature_C_mean": 553.6999999999999,
         "Wind_Speed_kmh_log": 534.6,
@@ -876,7 +876,7 @@
         "Crop_Growth_Stage_te_c0": 30.6,
         "Season_te_c1": 20.700000000000003,
         "Season_te_c2": 15.55,
-        "Crop_Growth_Stage_te_c1": 11.0,
+        "Crop_Growth_Stage_te_c1": 11,
         "Crop_Growth_Stage_te_c2": 9.7
       },
       "params": {
@@ -908,32 +908,32 @@
             "precision": 0.9546632124352331,
             "recall": 0.9322557976106817,
             "f1-score": 0.9433264595036621,
-            "support": 21345.0
+            "support": 21345
           },
           "1": {
             "precision": 0.9862042425775979,
             "recall": 0.9956809950476474,
             "f1-score": 0.9909199613863313,
-            "support": 375781.0
+            "support": 375781
           },
           "2": {
             "precision": 0.9871999132480272,
             "recall": 0.9745588247404003,
             "f1-score": 0.9808386409690079,
-            "support": 242874.0
+            "support": 242874
           },
           "accuracy": 0.98555,
           "macro avg": {
             "precision": 0.9760224560869527,
             "recall": 0.9674985391329098,
             "f1-score": 0.9716950206196672,
-            "support": 640000.0
+            "support": 640000
           },
           "weighted avg": {
             "precision": 0.9855301476245059,
             "recall": 0.98555,
             "f1-score": 0.9855068771477022,
-            "support": 640000.0
+            "support": 640000
           }
         },
         "confusion_matrix": [
@@ -1123,7 +1123,7 @@
         "num_parallel_tree": null,
         "random_state": 42,
         "reg_alpha": 0.1,
-        "reg_lambda": 1.0,
+        "reg_lambda": 1,
         "sampling_method": null,
         "scale_pos_weight": null,
         "subsample": 0.8,
@@ -1154,32 +1154,32 @@
             "precision": 0.8950809464508095,
             "recall": 0.9428437573202155,
             "f1-score": 0.9183417372059596,
-            "support": 21345.0
+            "support": 21345
           },
           "1": {
             "precision": 0.9862017827644988,
             "recall": 0.9945500171642526,
             "f1-score": 0.9903583073973524,
-            "support": 375781.0
+            "support": 375781
           },
           "2": {
             "precision": 0.9863007956269859,
             "recall": 0.9687574627172938,
             "f1-score": 0.9774504183387754,
-            "support": 242874.0
+            "support": 242874
           },
           "accuracy": 0.9830375,
           "macro avg": {
             "precision": 0.9558611749474314,
             "recall": 0.968717079067254,
             "f1-score": 0.9620501543140292,
-            "support": 640000.0
+            "support": 640000
           },
           "weighted avg": {
             "precision": 0.9832003349501989,
             "recall": 0.9830375,
             "f1-score": 0.9830580193693086,
-            "support": 640000.0
+            "support": 640000
           }
         },
         "confusion_matrix": [
@@ -1353,32 +1353,32 @@
             "precision": 0.9230203255771177,
             "recall": 0.9403607402201921,
             "f1-score": 0.9316098489243694,
-            "support": 21345.0
+            "support": 21345
           },
           "1": {
             "precision": 0.986284749696682,
             "recall": 0.9951008699215766,
             "f1-score": 0.9906731962682188,
-            "support": 375781.0
+            "support": 375781
           },
           "2": {
             "precision": 0.9869769231412632,
             "recall": 0.9716972586608694,
             "f1-score": 0.9792774923857025,
-            "support": 242874.0
+            "support": 242874
           },
           "accuracy": 0.98439375,
           "macro avg": {
             "precision": 0.9654273328050209,
             "recall": 0.9690529562675461,
             "f1-score": 0.9671868458594303,
-            "support": 640000.0
+            "support": 640000
           },
           "weighted avg": {
             "precision": 0.9844374556347244,
             "recall": 0.98439375,
             "f1-score": 0.9843787785591301,
-            "support": 640000.0
+            "support": 640000
           }
         },
         "confusion_matrix": [
@@ -1553,32 +1553,32 @@
             "precision": 0.938921987146409,
             "recall": 0.9376903256031858,
             "f1-score": 0.9383057521916459,
-            "support": 21345.0
+            "support": 21345
           },
           "1": {
             "precision": 0.9863092790028156,
             "recall": 0.9955665666970922,
             "f1-score": 0.99091630258155,
-            "support": 375781.0
+            "support": 375781
           },
           "2": {
             "precision": 0.9874840731070496,
             "recall": 0.9732577385804986,
             "f1-score": 0.9803192956335834,
-            "support": 242874.0
+            "support": 242874
           },
           "accuracy": 0.9851703125,
           "macro avg": {
             "precision": 0.9709051130854247,
             "recall": 0.9688382102935922,
             "f1-score": 0.9698471168022599,
-            "support": 640000.0
+            "support": 640000
           },
           "weighted avg": {
             "precision": 0.9851746621256229,
             "recall": 0.9851703125,
             "f1-score": 0.9851401937322484,
-            "support": 640000.0
+            "support": 640000
           }
         },
         "confusion_matrix": [
@@ -1633,7 +1633,7 @@
         "total_water_input": 2679.2,
         "active_evapotrans": 2638.7,
         "drought_index": 2576.5,
-        "Rainfall_mm_d2": 2464.0,
+        "Rainfall_mm_d2": 2464,
         "Rainfall_mm_d1": 2429.1,
         "Rainfall_Previous_diff": 2378.2,
         "Temperature_C_d1": 2342.45,
@@ -1667,7 +1667,7 @@
         "Soil_Type_x_Crop_Type_te": 1713.35,
         "Wind_Speed_kmh_sq": 1675.95,
         "Crop_Type_x_Crop_Growth_Stage_te": 1639.1,
-        "Crop_Type_x_Season_te": 1623.0,
+        "Crop_Type_x_Season_te": 1623,
         "Region_x_Season_te": 1607.9,
         "Rainfall_mm_sq": 1599.6499999999999,
         "Irrigation_Type_x_Water_Source": 1580.2000000000003,
@@ -1679,12 +1679,12 @@
         "Crop_Growth_Stage_x_Irrigation_Type": 1200.0500000000002,
         "Crop_Type_x_Season": 1148.9,
         "Crop_Type_x_Crop_Growth_Stage": 1124.1,
-        "Region_x_Season": 1087.0,
+        "Region_x_Season": 1087,
         "Crop_Growth_Stage_x_Season": 1038.2,
         "Crop_Growth_Stage_x_Season_te": 945.0500000000001,
         "Mulching_Used": 795.3000000000001,
         "dry_hot_active": 757.45,
-        "Water_Source": 736.0,
+        "Water_Source": 736,
         "Temperature_C_log": 567.55,
         "Region_Temperature_C_mean": 553.6999999999999,
         "Wind_Speed_kmh_log": 534.6,
@@ -1731,7 +1731,7 @@
         "Crop_Growth_Stage_te_c0": 30.6,
         "Season_te_c1": 20.700000000000003,
         "Season_te_c2": 15.55,
-        "Crop_Growth_Stage_te_c1": 11.0,
+        "Crop_Growth_Stage_te_c1": 11,
         "Crop_Growth_Stage_te_c2": 9.7
       },
       "params": {
@@ -1748,32 +1748,32 @@
             "precision": 0.8135613347583422,
             "recall": 0.9628952916373859,
             "f1-score": 0.881951596292482,
-            "support": 21345.0
+            "support": 21345
           },
           "1": {
             "precision": 0.9862172399159697,
             "recall": 0.9956809950476474,
             "f1-score": 0.9909265223102673,
-            "support": 375781.0
+            "support": 375781
           },
           "2": {
             "precision": 0.9897599320161462,
             "recall": 0.9590981331884022,
             "f1-score": 0.9741878282980361,
-            "support": 242874.0
+            "support": 242874
           },
           "accuracy": 0.9807046875,
           "macro avg": {
             "precision": 0.9298461688968195,
             "recall": 0.9725581399578118,
             "f1-score": 0.9490219823002618,
-            "support": 640000.0
+            "support": 640000
           },
           "weighted avg": {
             "precision": 0.9818033141433894,
             "recall": 0.9807046875,
             "f1-score": 0.9809398608018668,
-            "support": 640000.0
+            "support": 640000
           }
         },
         "confusion_matrix": [
@@ -1828,7 +1828,7 @@
         "total_water_input": 2679.2,
         "active_evapotrans": 2638.7,
         "drought_index": 2576.5,
-        "Rainfall_mm_d2": 2464.0,
+        "Rainfall_mm_d2": 2464,
         "Rainfall_mm_d1": 2429.1,
         "Rainfall_Previous_diff": 2378.2,
         "Temperature_C_d1": 2342.45,
@@ -1862,7 +1862,7 @@
         "Soil_Type_x_Crop_Type_te": 1713.35,
         "Wind_Speed_kmh_sq": 1675.95,
         "Crop_Type_x_Crop_Growth_Stage_te": 1639.1,
-        "Crop_Type_x_Season_te": 1623.0,
+        "Crop_Type_x_Season_te": 1623,
         "Region_x_Season_te": 1607.9,
         "Rainfall_mm_sq": 1599.6499999999999,
         "Irrigation_Type_x_Water_Source": 1580.2000000000003,
@@ -1874,12 +1874,12 @@
         "Crop_Growth_Stage_x_Irrigation_Type": 1200.0500000000002,
         "Crop_Type_x_Season": 1148.9,
         "Crop_Type_x_Crop_Growth_Stage": 1124.1,
-        "Region_x_Season": 1087.0,
+        "Region_x_Season": 1087,
         "Crop_Growth_Stage_x_Season": 1038.2,
         "Crop_Growth_Stage_x_Season_te": 945.0500000000001,
         "Mulching_Used": 795.3000000000001,
         "dry_hot_active": 757.45,
-        "Water_Source": 736.0,
+        "Water_Source": 736,
         "Temperature_C_log": 567.55,
         "Region_Temperature_C_mean": 553.6999999999999,
         "Wind_Speed_kmh_log": 534.6,
@@ -1926,7 +1926,7 @@
         "Crop_Growth_Stage_te_c0": 30.6,
         "Season_te_c1": 20.700000000000003,
         "Season_te_c2": 15.55,
-        "Crop_Growth_Stage_te_c1": 11.0,
+        "Crop_Growth_Stage_te_c1": 11,
         "Crop_Growth_Stage_te_c2": 9.7
       },
       "params": {
@@ -1934,7 +1934,7 @@
         "base": "lightgbm",
         "bias": [
           0.45,
-          -1.0,
+          -1,
           -1.5
         ]
       }
@@ -2010,7 +2010,7 @@
       "score": 0.96737,
       "best_model": "lightgbm_v3",
       "changes": [
-        "Add drought_index (Temp*Wind/(Moisture+1)) \u2014 huge class separator",
+        "Add drought_index (Temp*Wind/(Moisture+1)) — huge class separator",
         "Add water_balance (Rainfall+PrevIrrig-Temp*10)",
         "Add Crop_Growth_Stage interaction features",
         "Add binary threshold features (moisture<20, temp>30, wind>12)",
@@ -2024,7 +2024,7 @@
       "score": 0.96951,
       "best_model": "lightgbm_v4",
       "changes": [
-        "Keep V2 hyperparams (num_leaves=63, max_depth=8) \u2014 V3 deeper trees overfit",
+        "Keep V2 hyperparams (num_leaves=63, max_depth=8) — V3 deeper trees overfit",
         "Keep V3 domain features (drought_index, water_balance, thresholds, stage interactions)",
         "Add evapotranspiration proxy (Temp*Sunlight/Humidity)",
         "Add soil_stress = Soil_pH * EC / (Organic_Carbon + 0.1)",
@@ -2095,11 +2095,11 @@
       "score": 0.96999,
       "best_model": "calibrated_blend",
       "changes": [
-        "Revert LGBM/XGB to V7 hyperparams (num_leaves=63, min_child_samples=50) \u2014 V8 relaxation hurt",
+        "Revert LGBM/XGB to V7 hyperparams (num_leaves=63, min_child_samples=50) — V8 relaxation hurt",
         "Remove HIGH class weight boost (V8's 1.5x was too aggressive, -0.00137 on LGBM)",
         "Keep V8 features: dry_hot_active, moisture_deficit_ratio, rainfall_adequacy",
         "Keep V8 feature drops and Mulching_Used TE exclusion",
-        "CatBoost: depth=6, iterations=2000 (V7 params \u2014 depth=7 was slower AND worse)",
+        "CatBoost: depth=6, iterations=2000 (V7 params — depth=7 was slower AND worse)",
         "Add post-blend probability calibration: search optimal HIGH class scaling on OOF",
         "Keep finer blend grid (step=0.05)"
       ]
@@ -2125,7 +2125,7 @@
       "best_model": "logit_bias_tuned",
       "changes": [
         "Append original dataset (miadul/irrigation-water-requirement-prediction-dataset) with sample_weight=0.35",
-        "Pairwise categorical interaction features with per-fold TE (C(8,2)=28 pairs \u2192 ~135 TE features)",
+        "Pairwise categorical interaction features with per-fold TE (C(8,2)=28 pairs → ~135 TE features)",
         "Decimal digit extraction for all numeric columns (synthetic data exploit)",
         "GroupBy aggregation features: groupby(cat)[num].agg(mean/std) for top combinations",
         "Multi-class target encoding: P(class=k|category) for each of 3 classes (replaces broken single-value TE)",
@@ -2137,27 +2137,469 @@
         "Fix LightGBM bagging_freq=1 (enable actual row subsampling)",
         "Add field-normalized features: Previous_Irrigation/hectare, Rainfall/hectare"
       ]
+    },
+    {
+      "version": 12,
+      "score": 0.9636,
+      "best_model": "lightgbm",
+      "source": "autonomous pipeline (Claude Code — KaggleS6E4-Irrigation)",
+      "plain_accuracy": 0.98561,
+      "public_lb": 0.96152,
+      "per_class_recall": {
+        "Low": 0.99579,
+        "Medium": 0.97568,
+        "High": 0.91932
+      },
+      "changes": [
+        "Baseline re-run via new autonomous pipeline — intentionally minimal to validate end-to-end (repo → Kaggle → PR) plumbing",
+        "Features: s6e4_threshold_booleans only (soil<25, temp>30, rain<300, wind>10) + label_encode of 6 original categoricals",
+        "Model: single LightGBM (num_leaves=31, lr=0.05, 2000 rounds early-stopped) — NO TE, NO ratios, NO ensembling, NO original-data augmentation",
+        "Training metric was plain accuracy (0.98561); balanced_accuracy (0.96360) computed post-hoc from OOF vs y_true",
+        "Public LB: 0.96152 — CV→LB gap of only 0.00208, CV is a reliable proxy",
+        "Regression vs V11 (-0.00896) is driven almost entirely by High-class recall collapsing to 91.9% — V8+ class-weight and V11 logit-bias tricks are specifically what closes that gap",
+        "Confirms: on this data, the minority-class engineering from V8–V11 is worth ~1% balanced-acc; threshold rules alone are insufficient"
+      ]
+    },
+    {
+      "version": 13,
+      "score": 0.96697,
+      "best_model": "lightgbm",
+      "source": "autonomous pipeline (Claude Code — KaggleS6E4-Irrigation, iter 002_weights_te_interactions)",
+      "plain_accuracy": 0.98538,
+      "public_lb": 0.96417,
+      "per_class_recall": {
+        "Low": 0.99562,
+        "Medium": 0.9743,
+        "High": 0.93098
+      },
+      "fold_std": 0.00083,
+      "elapsed_sec": 1517,
+      "changes": [
+        "Port V11's highest-leverage techniques into the new pipeline, isolated to measure each effect",
+        "Class-balanced sample_weights (sklearn 'balanced' formula) passed to LightGBM — the High-class targeted technique from V8",
+        "Per-fold multiclass target encoding: for each of the 6 categoricals, add P(y=k | category) for k ∈ {High, Low, Medium}, smoothing=10; runs INSIDE the CV loop so no val/test leak",
+        "9 weather/soil interaction features: ratios, products, diffs (moisture×temp, rain×humidity, rain-prev_irrig, etc.) — mirrors V10's interaction set",
+        "LGBM hparams held close to V12 (num_leaves=63, lr=0.04, 2500 rounds, early_stop=100) to isolate feature/weight gains from hparam tuning",
+        "HIGH recall: 0.919 → 0.931 (+0.012), delivering the expected balanced-acc lift of +0.0034 vs V12",
+        "Still -0.0056 vs V11: V11 also has 10-fold CV, CatBoost-dominant blend across 3 model families, miadul-original-dataset augmentation, and logit-bias tuning — roadmap for V14+"
+      ]
+    },
+    {
+      "version": 14,
+      "score": 0.96812,
+      "best_model": "blend_lgbm_xgb_catboost",
+      "source": "autonomous pipeline (Claude Code — KaggleS6E4-Irrigation, iter 003_three_model_blend)",
+      "plain_accuracy": 0.98541,
+      "public_lb": 0.96486,
+      "per_class_recall": {
+        "Low": 0.99577,
+        "Medium": 0.97384,
+        "High": 0.93474
+      },
+      "fold_std": 0.00081,
+      "elapsed_sec": 4446,
+      "per_model_cv": {
+        "lgbm": 0.96697,
+        "xgb": 0.96714,
+        "catboost": 0.96987
+      },
+      "blend_weights": {
+        "lgbm": 0.333,
+        "xgb": 0.333,
+        "catboost": 0.334
+      },
+      "changes": [
+        "Three-model CV blend: LGBM + XGB + CatBoost trained on V13's feature set (balanced weights, per-fold multiclass TE, 9 interactions)",
+        "Per-model CV scores: LGBM 0.96697 — XGB 0.96714 — CatBoost 0.96987 (strongest single model to date, approaching V11's 0.97256)",
+        "Score-proportional blend weights landed near-equal (0.333/0.333/0.334) because raw CV scores are all within 0.003 of each other",
+        "KEY INSIGHT: equal-weight blend (0.96812) is WORSE than CatBoost alone (0.96987). Blending dragged the strongest model down — V11's hand-tuned CatBoost=0.65/LGBM=0.25/XGB=0.10 was non-trivially better than uniform averaging",
+        "HIGH recall: 0.931 → 0.935 (+0.004), Low/Medium essentially unchanged",
+        "Runtime 74 min (V13: 25 min) — still comfortably under Kaggle's 9-hr cap so room for 10-fold in V15",
+        "V15 will address the blend-weight issue: either OOF-optimized weights via scipy or keeping CatBoost as the solo model with V15's original-data augmentation added on top"
+      ]
+    },
+    {
+      "version": 15,
+      "score": 0.96978,
+      "best_model": "catboost",
+      "source": "autonomous pipeline (Claude Code — KaggleS6E4-Irrigation, iter 004_catboost_10fold_extdata)",
+      "plain_accuracy": 0.98404,
+      "public_lb": 0.96644,
+      "per_class_recall": {
+        "Low": 0.99552,
+        "Medium": 0.9698,
+        "High": 0.94401
+      },
+      "fold_std": 0.00206,
+      "elapsed_sec": 5573,
+      "changes": [
+        "CatBoost-solo (best single model per V14 analysis) + 10-fold stratified CV + miadul external-dataset augmentation with sample_weight=0.35",
+        "640k train rows (630k comp + ~10k miadul after test-row dedupe)",
+        "HIGH recall 0.935 → 0.944 (+0.009) — external data helped the minority class learn cleaner boundaries",
+        "Score matches V14's CatBoost-alone (0.96987) within noise — miadul augmentation gave negligible lift because Kaggle generated the comp data FROM miadul, so the 'external' rows were largely redundant with train",
+        "10-fold std 0.00206 (V14 5-fold std 0.00081) — smaller folds are noisier; 10-fold's value here was stability of the OOF estimate for V16's bias-tuning, not direct CV lift",
+        "Roughly matches the CatBoost-solo ceiling on this feature set. Remaining gap to V11 (-0.003) is concentrated in the post-processing V16 handles"
+      ]
+    },
+    {
+      "version": 16,
+      "score": 0.96978,
+      "best_model": "catboost",
+      "source": "autonomous pipeline (Claude Code — KaggleS6E4-Irrigation, iter 005_logit_bias)",
+      "plain_accuracy": 0.98405,
+      "per_class_recall": {
+        "Low": 0.99552,
+        "Medium": 0.9698,
+        "High": 0.94401
+      },
+      "fold_std": 0.00206,
+      "elapsed_sec": 5597,
+      "changes": [
+        "V15 config + postprocess: logit_bias — nested-CV Nelder-Mead per-class logit offsets on OOF probabilities",
+        "Bias vector converged to [0.0, 0.0, 0.00025] — essentially zero. delta_nested = 0.00000",
+        "Pre-bias bal-acc 0.96978, post-bias (full-fit) 0.96978 — identical",
+        "FINDING: logit-bias post-processing gives ZERO lift on an already class_weight-balanced model. V11's 0.97256 gain is NOT from logit-bias alone — must come from other techniques (multi-model blend, original-data augmentation, TE variants)",
+        "Not submitted (decision gate: delta_nested must be > 0.003 to avoid overfit submissions; 0.0 fails)",
+        "V16 retired: class-weighted CatBoost has left no headroom for symmetric logit adjustments. Future post-processing needs an unbalanced base model OR a different calibration family"
+      ]
+    },
+    {
+      "version": 17,
+      "score": 0.96203,
+      "best_model": "logreg_cdeotte",
+      "source": "autonomous pipeline (Claude Code — KaggleS6E4-Irrigation, iter 006_logreg_cdeotte)",
+      "plain_accuracy": 0.98113,
+      "per_class_recall": {
+        "Low": 0.99572,
+        "Medium": 0.9633,
+        "High": 0.92708
+      },
+      "fold_std": 0.00099,
+      "elapsed_sec": 34,
+      "changes": [
+        "Pure-linear baseline: multinomial LogReg on exactly cdeotte's 10 features (4 threshold booleans + 1-hot Crop_Growth_Stage + 1-hot Mulching_Used), per discussion 687460 'Original Data's Exact Formula'",
+        "34-second kernel runtime vs V14's 74 min — LogReg on 10 features is ~130× faster than CatBoost+10-fold",
+        "HIGH recall 0.927 (V13 0.931, V14 0.935), slightly below tree-based models",
+        "KEY LEARNING: score 0.96203 is LOWER than V12/V13/V14 — comp's synthetic test set isn't a pure cdeotte generator. Has noise/perturbation beyond the original formula, and tree models fit it better than linear",
+        "cdeotte's formula nails the 10k original-dataset rows (CV=1.0 there) but the 630k comp rows include added variance — linear model can't represent it",
+        "Takeaway for V15+: keep the tree-based path. LogReg is a useful diagnostic but not a winning solo model here. Could contribute as a weak learner in a diverse blend — V11 didn't use it, V18+ could"
+      ]
+    },
+    {
+      "version": 19,
+      "score": 0.95991,
+      "best_model": "realmlp",
+      "source": "autonomous pipeline (Claude Code — KaggleS6E4-Irrigation, iter 007_realmlp)",
+      "plain_accuracy": 0.98199,
+      "per_class_recall": {
+        "Low": 0.99363,
+        "Medium": 0.96973,
+        "High": 0.91637
+      },
+      "fold_std": 0.00473,
+      "elapsed_sec": 842,
+      "changes": [
+        "Port of mahoganybuttstrings/pg-s6e4-realmlp reference notebook (reference CV 0.97802 / LB 0.97685)",
+        "Ported from-scratch torch RealMLP: PBLD periodic embeddings, 8-head parallel ensemble, 5 AdamW param groups, flat_cos LR schedule, expm4t dropout schedule, cosine label smoothing",
+        "Kernel infra: enable_gpu + pip install torch==2.4.1 (Kaggle base torch 2.10 dropped sm_60; P100 allocation needed older torch)",
+        "FE block s6e4_realmlp_fe: duplicate numerics as _2 (float), factorize 8 cats + 11 nums + C(6,2)=15 pairwise-concat interactions on the 6 generator cols, cast pairwise to Categorical for TE",
+        "DISAPPOINTING: CV 0.95991 (vs reference 0.97802, -0.018) and below V15 (0.96978)",
+        "Likely causes: my custom per-fold TE differs subtly from sklearn TargetEncoder(target_type='multiclass', cv=5); sparse-filter may drop pairs the reference keeps; hyperparams may need more tuning",
+        "Not submitted (per user rule: new score must beat running best 0.96978)",
+        "Runtime 14 min on GPU vs V15's 90 min CPU — fast reruns. Next: V20 synthesis using proven tree path (CatBoost) PLUS the pairwise-interaction idea from this notebook, rather than debugging the RealMLP port further"
+      ]
+    },
+    {
+      "version": 20,
+      "score": 0.96951,
+      "best_model": "catboost",
+      "source": "autonomous pipeline (Claude Code — KaggleS6E4-Irrigation, iter 008_catboost_pairwise)",
+      "plain_accuracy": 0.98412,
+      "per_class_recall": {
+        "Low": 0.99544,
+        "Medium": 0.97024,
+        "High": 0.94284
+      },
+      "fold_std": 0.00226,
+      "elapsed_sec": 4183,
+      "changes": [
+        "V15 config + new s6e4_pairwise_only feature block — 15 factorized pairwise-concat interactions on the 6 generator cols (Soil_Moisture, Temperature_C, Rainfall_mm, Wind_Speed_kmh, Crop_Growth_Stage, Mulching_Used)",
+        "Pairwise cast as Categorical so target_encode_multiclass TE's them (15 pairs × 3 classes = up to 45 TE cols). Originals untouched so CatBoost keeps continuous numeric signal",
+        "Final feature count 41 (V15: 32) — +9 pairwise + ~18 TE minus pairs filtered for sparsity",
+        "RESULT: CV 0.96951 (-0.00027 vs V15). Pairwise interactions gave NO lift to CatBoost",
+        "FINDING: CatBoost already learns these interactions internally via tree splits. Explicit pairwise-TE features add regularization noise rather than new information. The RealMLP reference notebook's gain from pairwise-TE is specific to DEEP models that can't easily discover interactions from scratch — tree models derive zero or negative value",
+        "Not submitted (no improvement)",
+        "V21 pivot: use pytabkit's official RealMLP_TD_Classifier (by the RealMLP paper authors) instead of my custom port — my V19 port scored 0.96 vs reference 0.978 so something's off in my re-implementation"
+      ]
+    },
+    {
+      "version": 21,
+      "score": 0.9604973799803754,
+      "best_model": "pytabkit_realmlp",
+      "source": "autonomous pipeline (iter 009_pytabkit_realmlp)",
+      "plain_accuracy": 0.98488125,
+      "per_class_recall": {
+        "High": 0.9106113843991567,
+        "Low": 0.9947655682432055,
+        "Medium": 0.976115187298764
+      },
+      "fold_std": 0.002666832438548894,
+      "elapsed_sec": 41499,
+      "changes": [
+        "Official pytabkit RealMLP_TD_Classifier (arXiv RealMLP paper authors)",
+        "GPU kernel with torch 2.4.1 on Kaggle P100",
+        "CV 0.96050 — far below reference 0.97802 and V15 0.96978",
+        "Took 11.5h; RealMLP path abandoned as unproductive for this problem"
+      ]
+    },
+    {
+      "version": 22,
+      "score": 0.9689276955346399,
+      "best_model": "blend_lgbm_xgb_catboost",
+      "source": "autonomous pipeline (iter 010_catboost_heavy_blend)",
+      "plain_accuracy": 0.9850390625,
+      "per_class_recall": {
+        "High": 0.9384867650503631,
+        "Low": 0.995771473278319,
+        "Medium": 0.9725248482752373
+      },
+      "fold_std": 0.002134271930554218,
+      "elapsed_sec": 10779.8,
+      "per_model_cv": {
+        "lgbm": 0.9673336576315021,
+        "xgb": 0.9667812987588897,
+        "catboost": 0.9697793785416716
+      },
+      "blend_weights": {
+        "lgbm": 0.25,
+        "xgb": 0.1,
+        "catboost": 0.65
+      },
+      "changes": [
+        "V11 hand-tuned CB-heavy blend weights (0.65/0.25/0.10) on V15 base",
+        "Per-model CV: CatBoost 0.96978, LGBM 0.96733, XGB 0.96678",
+        "Blend dragged CatBoost down to 0.96893 — weights don't transfer from V11's feature set",
+        "Finding: on current FE, CatBoost-solo >= any GBM blend"
+      ]
+    },
+    {
+      "version": 23,
+      "score": 0.9693189508389128,
+      "best_model": "catboost",
+      "source": "autonomous pipeline (iter 011_v11_feature_port)",
+      "plain_accuracy": 0.9844625,
+      "per_class_recall": {
+        "High": 0.941391426563598,
+        "Low": 0.9956916395453735,
+        "Medium": 0.970873786407767
+      },
+      "fold_std": 0.0021683245112916554,
+      "elapsed_sec": 12118.6,
+      "changes": [
+        "Ported V11 FE: decimal digits, per-hectare ratios, groupby(cat)[num] aggs, quantile-binned numerics",
+        "32 → 124 features but CV dropped 0.96978 → 0.96932",
+        "Finding: extra FE adds noise for CatBoost on synthetic data; lean features win"
+      ]
+    },
+    {
+      "version": 24,
+      "score": 0.9717751832547208,
+      "best_model": "meta_stacker(l1+l2+en) over 4 bases",
+      "source": "autonomous pipeline (iter 012_meta_stacker)",
+      "plain_accuracy": 0.9821984375,
+      "per_class_recall": {
+        "High": 0.9558210353712814,
+        "Low": 0.995374965738023,
+        "Medium": 0.9641295486548581
+      },
+      "fold_std": 0.002350580895475256,
+      "elapsed_sec": 42723.9,
+      "per_model_cv": {
+        "lgbm": 0.9673228731620079,
+        "xgb": 0.9665281007829635,
+        "catboost": 0.9690174104760821,
+        "logreg": 0.7634876017337743
+      },
+      "blend_weights": {
+        "lgbm": 0.25,
+        "xgb": 0.1,
+        "catboost": 0.6,
+        "logreg": 0.05
+      },
+      "changes": [
+        "Regularized meta-stacker per arXiv:2602.12469 (Mohammad & Meherab 2026)",
+        "Redundancy-pruned L1/L2/EN LogReg on base OOF probs + row-wise stats",
+        "Base blend 0.96827 → meta-stacker 0.97178 (+0.0035)",
+        "Fixed silent TE bug (V13-V22 had it too): TE now also picks up int-coded cats (nunique<=20)",
+        "High-class recall 0.944 → 0.956 — minority unlock",
+        "New best, +0.0020 over V15"
+      ]
+    },
+    {
+      "version": 26,
+      "score": 0.9718739412725895,
+      "best_model": "meta_stacker over 4 bases (2 CB seeds + LGBM + XGB)",
+      "source": "autonomous pipeline (iter 014_compact_stack_caruana)",
+      "plain_accuracy": 0.9817796875,
+      "per_class_recall": {
+        "High": 0.9566643241977044,
+        "Low": 0.9942226988591759,
+        "Medium": 0.9647348007608884
+      },
+      "fold_std": 0.002125448166517606,
+      "elapsed_sec": 22494.6,
+      "per_model_cv": {
+        "lgbm": 0.9675445539122544,
+        "xgb": 0.9668906631878187,
+        "catboost": 0.9697571766251035,
+        "catboost_a": 0.9682195699140852
+      },
+      "blend_weights": {
+        "lgbm": 0.25,
+        "xgb": 0.1,
+        "catboost": 0.4,
+        "catboost_a": 0.25
+      },
+      "changes": [
+        "Compact V15 features + 2 CatBoost seeds (diversified rsm/random_strength/depth) + LGBM + XGB",
+        "Added Caruana 2004 greedy hill-climb as chained postprocess after meta_stacker",
+        "Caruana: 0.96917, skipped (meta-stacker wins)",
+        "Meta-stacker CV 0.97187 — marginal +0.0001 over V24",
+        "Pruned 10/24 meta-features: all 4 GBM bases have correlated errors, meta-lift capped",
+        "V25 (3 CB seeds, 124 feats) timed out at Kaggle's 12h cap — no metrics"
+      ]
+    },
+    {
+      "version": 27,
+      "score": null,
+      "best_model": "killed",
+      "source": "iter 015_extratrees_diversity (CANCELLED)",
+      "changes": [
+        "sklearn ExtraTreesClassifier at 800 trees + 10 folds timed out at Kaggle's 12h CPU cap",
+        "No metrics produced",
+        "Finding: sklearn ET is infeasible on 640k rows × 10 folds on 4 vCPUs regardless of n_estimators"
+      ]
+    },
+    {
+      "version": 28,
+      "score": null,
+      "best_model": "killed",
+      "source": "iter 016_extratrees_lite (CANCELLED)",
+      "changes": [
+        "Retried ET with 300 trees + max_depth=18 + min_samples_leaf=100",
+        "Still timed out at 12h cap — sklearn ET fundamentally too slow on this config",
+        "Next iteration switched to LGBM-RF mode (native C++ RF, 10-20x faster)"
+      ]
+    },
+    {
+      "version": 29,
+      "score": 0.9717823237522819,
+      "best_model": "meta_stacker over 5 bases (CB+CB_a+LGBM+XGB+LGBM_RF)",
+      "source": "autonomous pipeline (iter 017_lgbm_rf_diversity)",
+      "plain_accuracy": 0.9815703125,
+      "per_class_recall": {
+        "High": 0.9572265167486531,
+        "Low": 0.9946538010170818,
+        "Medium": 0.9634666534911106
+      },
+      "fold_std": 0.002091552943877711,
+      "elapsed_sec": 38193.9,
+      "per_model_cv": {
+        "lgbm": 0.9673162838587679,
+        "xgb": 0.966848049009081,
+        "catboost": 0.9697309124367419,
+        "catboost_a": 0.9680659502172319,
+        "lgbm_rf": 0.9658518389345364
+      },
+      "blend_weights": {
+        "lgbm": 0.25,
+        "xgb": 0.1,
+        "catboost": 0.38,
+        "catboost_a": 0.22,
+        "lgbm_rf": 0.05
+      },
+      "changes": [
+        "Replaced sklearn ExtraTrees with LightGBM native RF mode (boosting_type=rf) — 10-20x faster",
+        "5 bases: CB + CB_a + LGBM + XGB + LGBM_RF (boosting_type=rf, 500 trees)",
+        "LGBM_RF CV 0.96585 — weakest base but still contributed to meta-features",
+        "Base blend 0.96846 → meta-stacker 0.97178 (+0.0033)",
+        "Caruana: 0.96902, skipped",
+        "Finding: adding RF family diversity didn't break the 0.9717 ceiling — all GBM-style models still share correlated errors"
+      ]
+    },
+    {
+      "version": 30,
+      "score": 0.971669316515722,
+      "best_model": "meta_stacker over 3 bases (CB+LGBM+XGB)",
+      "source": "autonomous pipeline (iter 018_simple_stack)",
+      "plain_accuracy": 0.9818375,
+      "per_class_recall": {
+        "High": 0.9559615835090185,
+        "Low": 0.9944515555602864,
+        "Medium": 0.964594810477861
+      },
+      "fold_std": 0.002137760784908533,
+      "elapsed_sec": 23929,
+      "per_model_cv": {
+        "lgbm": 0.9674897211597141,
+        "xgb": 0.9669384012239851,
+        "catboost": 0.9696353060853022
+      },
+      "blend_weights": {
+        "lgbm": 0.25,
+        "xgb": 0.1,
+        "catboost": 0.65
+      },
+      "changes": [
+        "Minimal 3-base stack: CatBoost + LGBM + XGB with V11-style weights (0.65/0.25/0.10) + meta_stacker",
+        "Dropped all extra CB seeds, Caruana, LGBM-RF — fast ~6.6h runtime",
+        "CV 0.97167 — essentially matches V24/V26/V29 despite being simplest",
+        "CONFIRMS THE CEILING: adding more GBM diversity is diminishing returns beyond 3 bases",
+        "To cross 0.9720, need genuinely orthogonal signal (deep NN, TabPFN, pseudo-labels, or BA-direct threshold tuning)"
+      ]
+    },
+    {
+      "version": 34,
+      "score": 0.9750273506369781,
+      "best_model": "xgb+ordered_te+class_weight_optuna",
+      "source": "autonomous pipeline (iter 022_orderedte_xgb) — port of yunsuxiaozi CV 0.9798 recipe",
+      "plain_accuracy": 0.9813238095238095,
+      "per_class_recall": {
+        "High": 0.9693940692084345,
+        "Low": 0.9959558495554408,
+        "Medium": 0.9597321331470591
+      },
+      "fold_std": 0.0012926079429835449,
+      "elapsed_sec": 3887.6,
+      "per_model_cv": {
+        "xgb": 0.9737646856872063
+      },
+      "blend_weights": {
+        "xgb": 1
+      },
+      "changes": [
+        "Port of yunsuxiaozi PSS6E4 XGB CV:0.979805 recipe (kaggle.com/code/yunsuxiaozi/pss6e4-xgb-cv-0-979805)",
+        "3 new feature blocks: s6e4_digit_extraction_wide (digits k∈[-4,4] per numeric, 99 cols), s6e4_freq_filter_cats (freq>=5 filter, rare->default), ordered_te (per-fold cumulative TE with 4x shuffle augmentation)",
+        "OrderedTE augments training 4x via shuffle-then-cumsum (630k → 2.52M rows per fold) — 321 per-class TE columns added",
+        "XGBoost GPU: max_depth=4, max_leaves=30, lr=0.1, alpha=5, reg_lambda=5, tree_method=hist, max_bin=10000",
+        "Class-weight Optuna postprocess: 200-trial TPE search over (cw0,cw1,cw2) multipliers on OOF probs",
+        "CROSSED 0.975: XGB solo 0.97376 → Optuna 0.97503 (+0.0013 postprocess delta)",
+        "High-class recall 0.9567 → 0.9694 (+0.013 — the minority class unlock)",
+        "Confirms: feature engineering, not model diversity, was the GBM plateau breaker",
+        "Runtime 65 min on GPU kernel (vs V33's 4.9h 3-model CPU stack)"
+      ]
     }
   ],
   "improvement": {
-    "previous_best_model": "lightgbm",
-    "previous_best_score": 0.96921,
-    "improved_best_model": "logit_bias_tuned",
-    "improved_best_score": 0.97256,
-    "score_change": 0.00335,
+    "previous_best_model": "blend_lgbm_xgb_catboost",
+    "previous_best_score": 0.96812,
+    "improved_best_model": "logreg_cdeotte",
+    "improved_best_score": 0.96203,
+    "score_change": -0.00609,
     "recommendations_applied": [
-      "Append original dataset (miadul/irrigation-water-requirement-prediction-dataset) with sample_weight=0.35",
-      "Pairwise categorical interaction features with per-fold TE (C(8,2)=28 pairs \u2192 ~135 TE features)",
-      "Decimal digit extraction for all numeric columns (synthetic data exploit)",
-      "GroupBy aggregation features: groupby(cat)[num].agg(mean/std) for top combinations",
-      "Multi-class target encoding: P(class=k|category) for each of 3 classes (replaces broken single-value TE)",
-      "CatBoost native categorical handling via cat_features parameter",
-      "10-fold CV (up from 5-fold) for more stable OOF estimates",
-      "Logit-space bias tuning with nested CV: per-class logit offsets for balanced accuracy",
-      "CatBoost-dominant blend: CatBoost=0.65, LightGBM=0.25, XGBoost=0.10",
-      "Fix CatBoost sample_weight bug (was missing from fit call)",
-      "Fix LightGBM bagging_freq=1 (enable actual row subsampling)",
-      "Add field-normalized features: Previous_Irrigation/hectare, Rainfall/hectare"
+      "Three-model CV blend infrastructure — pipeline's train.py now accepts model: [list] and weights models score-proportionally on OOF",
+      "Proved CatBoost is the strongest single model on this feature set (0.96987 standalone), within 0.003 of V11's 0.97256 benchmark",
+      "Identified blend-weight strategy weakness: score-proportional with near-identical scores collapses to uniform average, which underperforms the best single model — V15 must use CV-optimized weights or go CatBoost-solo"
     ]
   }
 }
