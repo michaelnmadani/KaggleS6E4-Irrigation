@@ -429,8 +429,8 @@ function ImprovementsSection({ data }) {
   }));
 
   // Find best version
-  const bestVersion = versionHistory.reduce((best, v) => (!best || v.score > best.score) ? v : best, null);
-  const latestVersion = versionHistory[versionHistory.length - 1];
+  const bestVersion = versionHistory.reduce((best, v) => (v.score != null && (!best || v.score > best.score)) ? v : best, null);
+  const latestVersion = [...versionHistory].reverse().find(v => v.score != null) || versionHistory[versionHistory.length - 1];
 
   return (
     <section className="mb-12">
@@ -443,7 +443,7 @@ function ImprovementsSection({ data }) {
           <StatCard label={`Best (V${bestVersion.version})`} value={bestVersion.score.toFixed(5)} sub={MODEL_LABELS[bestVersion.best_model] || bestVersion.best_model} color="brand" />
         )}
         {latestVersion && (
-          <StatCard label={`Latest (V${latestVersion.version})`} value={latestVersion.score.toFixed(5)} sub={MODEL_LABELS[latestVersion.best_model] || latestVersion.best_model} color="blue" />
+          <StatCard label={`Latest (V${latestVersion.version})`} value={latestVersion.score != null ? latestVersion.score.toFixed(5) : "—"} sub={MODEL_LABELS[latestVersion.best_model] || latestVersion.best_model} color="blue" />
         )}
         {imp && (
           <div className={`rounded-xl border p-4 ${isImproved ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
@@ -496,14 +496,14 @@ function ImprovementsSection({ data }) {
                 {versionHistory.map((v, i) => {
                   const prevScore = i > 0 ? versionHistory[i - 1].score : null;
                   const delta = prevScore != null ? v.score - prevScore : null;
-                  const isBest = bestVersion && v.score === bestVersion.score;
+                  const isBest = bestVersion && v.score != null && v.score === bestVersion.score;
                   return (
                     <tr key={v.version} className={isBest ? 'bg-green-50' : i % 2 ? 'bg-gray-50' : ''}>
                       <td className={`px-4 py-2 font-medium ${isBest ? 'text-green-700' : 'text-gray-800'}`}>
                         V{v.version} {isBest && <Badge text="Best" variant="success" />}
                       </td>
                       <td className="px-4 py-2 text-gray-700">{MODEL_LABELS[v.best_model] || v.best_model}</td>
-                      <td className="px-4 py-2 font-mono font-bold text-gray-800">{v.score.toFixed(5)}</td>
+                      <td className="px-4 py-2 font-mono font-bold text-gray-800">{v.score != null ? v.score.toFixed(5) : "—"}</td>
                       <td className={`px-4 py-2 font-mono ${delta == null ? 'text-gray-400' : delta > 0 ? 'text-green-600' : delta < 0 ? 'text-red-600' : 'text-gray-400'}`}>
                         {delta == null ? '\u2014' : `${delta > 0 ? '+' : ''}${delta.toFixed(5)}`}
                       </td>
