@@ -1,0 +1,67 @@
+# Iteration 031 (website V43) — single XGB with xgb_b regularized params.
+#
+# LB observations: V34 (simplest recipe, single XGB + Optuna) LB 0.97617
+# beats every stacked variant since (V36 0.97586, V37 0.97603, V38 0.97582).
+# Meta-stacker adds +0.0015-0.0020 CV but often doesn't transfer to LB.
+#
+# V43 strips back to V34's simplicity but with V37's winning xgb_b hparams
+# (depth=3, lr=0.12, reg_alpha=7, 700 rounds) which scored 0.97452 standalone.
+# Also keeps stratified + miadul (V35 confirmed small lift).
+#
+# If V43 LB beats V34's 0.97617, we have a new Pareto frontier for simple.
+# Runtime ~50 min on GPU.
+
+target: Irrigation_Need
+id_col: id
+task: multiclass
+metric: balanced_accuracy
+
+class_weights: balanced
+
+extra_dataset:
+  slug: miadul/irrigation-water-requirement-prediction-dataset
+  file: irrigation_prediction.csv
+  weight: 0.35
+
+kernel:
+  enable_gpu: true
+  enable_internet: true
+
+pip_install:
+  - optuna
+
+features:
+  - fill_na_median
+  - s6e4_digit_extraction_wide
+  - s6e4_freq_filter_cats
+  - ordered_te
+
+model:
+  - xgb
+
+postprocess:
+  - class_weight_optuna
+
+optuna_trials: 200
+
+params:
+  xgb:
+    num_boost_round: 700
+    early_stopping_rounds: 1024
+    eta: 0.12
+    max_depth: 3
+    max_leaves: 20
+    subsample: 0.75
+    colsample_bytree: 0.85
+    reg_alpha: 7
+    reg_lambda: 3
+    min_child_weight: 3
+    tree_method: hist
+    max_bin: 10000
+    device: cuda
+    seed: 777
+
+cv:
+  n_splits: 5
+  seed: 42
+  stratified: true
