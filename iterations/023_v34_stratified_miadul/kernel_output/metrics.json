@@ -1,0 +1,44 @@
+{
+  "cv_score": 0.9752278300837357,
+  "metric": "balanced_accuracy",
+  "plain_accuracy": 0.9824546875,
+  "balanced_accuracy": 0.9752278300837357,
+  "fold_scores": [
+    0.9754722205759109,
+    0.9742325397922466,
+    0.9749239746618219,
+    0.9745257081603683,
+    0.9707379184081448
+  ],
+  "fold_mean": 0.9739784723196985,
+  "fold_std": 0.0016727501625469782,
+  "per_class_recall": {
+    "High": 0.9664558444600609,
+    "Low": 0.9954068992312012,
+    "Medium": 0.9638207465599447
+  },
+  "elapsed_sec": 4022.6,
+  "model": [
+    "xgb"
+  ],
+  "per_model_cv": {
+    "xgb": 0.9739784732645553
+  },
+  "blend_weights": {
+    "xgb": 1.0
+  },
+  "postprocess": {
+    "kind": "class_weight_optuna",
+    "pre_score": 0.9739784732645553,
+    "post_score": 0.9752278300837357,
+    "weights": [
+      2.623863719524483,
+      1.1207245314747865,
+      1.57576344360515
+    ],
+    "applied": true
+  },
+  "n_features": 439,
+  "n_train": 640000,
+  "n_test": 270000
+}

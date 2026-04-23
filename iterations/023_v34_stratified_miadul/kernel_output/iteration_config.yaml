@@ -1,0 +1,68 @@
+
+# Iteration 023 (website V35) — V34 recipe + StratifiedKFold + miadul external data.
+#
+# V34 (CV 0.97503 / LB 0.97617) cleared target. V35 layers two low-risk DE
+# upgrades from research:
+#   1. Stratified 5-fold (V34 used plain KFold, matching author). For a 3-class
+#      problem with per-fold ordered TE, stratified CV stabilises the per-fold
+#      class-prior used by the TE smoothing, reducing fold-to-fold TE variance.
+#      Expected +0.0015-0.0030. Zero runtime cost.
+#   2. miadul external dataset @ weight=0.35. V15 used this; V34 dropped it.
+#      V34's richer feature surface should let the external rows carry more
+#      signal than V15 did. Expected +0.0005-0.0015. +10-15 min runtime.
+#
+# Total expected CV: 0.977-0.980. V36 will layer CatBoost blend if still short.
+
+target: Irrigation_Need
+id_col: id
+task: multiclass
+metric: balanced_accuracy
+
+class_weights: balanced
+
+extra_dataset:
+  slug: miadul/irrigation-water-requirement-prediction-dataset
+  file: irrigation_prediction.csv
+  weight: 0.35
+
+kernel:
+  enable_gpu: true
+  enable_internet: true
+
+pip_install:
+  - optuna
+
+features:
+  - fill_na_median
+  - s6e4_digit_extraction_wide
+  - s6e4_freq_filter_cats
+  - ordered_te
+
+model:
+  - xgb
+
+postprocess:
+  - class_weight_optuna
+
+optuna_trials: 200
+
+params:
+  xgb:
+    num_boost_round: 512
+    early_stopping_rounds: 1024
+    eta: 0.1
+    max_depth: 4
+    max_leaves: 30
+    subsample: 0.8
+    colsample_bytree: 0.8
+    reg_alpha: 5
+    reg_lambda: 5
+    min_child_weight: 2
+    tree_method: hist
+    max_bin: 10000
+    device: cuda
+
+cv:
+  n_splits: 5
+  seed: 42
+  stratified: true    # <-- changed from false
