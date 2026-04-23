@@ -2769,6 +2769,49 @@
         "Both V39 (cat-pair) and V40 (quantile-bin) FE extensions hurt → data feature space exhausted",
         "Pivot V41 to model diversity (LightGBM 3rd base) — proven +0.0005-0.001 from tree-family diversification"
       ]
+    },
+    {
+      "version": 41,
+      "score": null,
+      "best_model": "killed",
+      "source": "iter 029_xgb_cb_lgbm (CANCELLED)",
+      "changes": [
+        "LGBM GPU mode crashed: 'best_split_info.left_count > 0'",
+        "Known issue with LGBM GPU on OrderedTE 4x-augmented duplicate rows",
+        "V42 retried on LGBM CPU (successful)"
+      ]
+    },
+    {
+      "version": 42,
+      "score": 0.9759194148492488,
+      "best_model": "xgb + catboost + lgbm(cpu) + meta_stacker",
+      "source": "autonomous pipeline (iter 030_xgb_cb_lgbm_cpu)",
+      "plain_accuracy": 0.9827734375,
+      "per_class_recall": {
+        "High": 0.9676739283204497,
+        "Low": 0.9951807036545222,
+        "Medium": 0.9649036125727743
+      },
+      "fold_std": 0.0017999455941995154,
+      "elapsed_sec": 36332.5,
+      "per_model_cv": {
+        "xgb": 0.9745564969221094,
+        "catboost": 0.9732285977227785,
+        "lgbm": 0.9696903490160249
+      },
+      "blend_weights": {
+        "xgb": 0.45,
+        "catboost": 0.35,
+        "lgbm": 0.2
+      },
+      "changes": [
+        "Added LightGBM CPU as 3rd GBM family (leaf-wise growth vs XGB/CB depth-wise)",
+        "Per-model CV: xgb 0.97456, catboost 0.97323, lgbm 0.96969 — LGBM WEAKEST on this data",
+        "CV 0.97592 = +0.00006 over V38 — LGBM contributed negligible signal",
+        "Meta-stacker pruned 7/21 features; LGBM errors correlated with XGB/CB anyway",
+        "Runtime 10.1h (near 12h cap) — LGBM CPU on 2.52M rows too slow for sustained pipeline",
+        "HARD PLATEAU confirmed at 0.9758 across V38, V39, V40, V42 regardless of architecture changes"
+      ]
     }
   ],
   "improvement": {
