@@ -1,5 +1,8 @@
 {
   "001_baseline": {
     "public_lb": "0.96152"
+  },
+  "030_xgb_cb_lgbm_cpu": {
+    "public_lb": "0.97609"
   }
 }
