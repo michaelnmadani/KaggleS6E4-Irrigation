@@ -1,0 +1,18 @@
+config: /kaggle/working/iteration_config.yaml
+train=(640000, 19)  test=(270000, 19)  external_rows=10000
+target encoded: {0: 'High', 1: 'Low', 2: 'Medium'}
+global features: ['fill_na_median', 's6e4_digit_extraction_wide', 's6e4_freq_filter_cats'] -> 118 cols
+per-fold features: ['ordered_te']
+fold 0 xgb: balanced_accuracy=0.97536
+fold 1 xgb: balanced_accuracy=0.97451
+fold 2 xgb: balanced_accuracy=0.97566
+fold 3 xgb: balanced_accuracy=0.97394
+fold 4 xgb: balanced_accuracy=0.97144
+model xgb: CV balanced_accuracy=0.97418
+class_weight_optuna: pre=0.97418  post=0.97485  delta=+0.00067  weights=[2.0201876657563096, 1.4216776226399885, 1.3375012431971587]
+class_weight_optuna applied (CV: 0.97418 -> 0.97485)
+=== Pseudo-label final fit: threshold=0.85 weight=0.5 selected 257043/270000 test rows (95.2%) ===
+final fit rows: 897043 (real 640000 + pseudo 257043)
+pseudo final fit xgb: done
+pseudo final fit applied: test_preds replaced with augmented-fit predictions
+CV balanced_accuracy=0.97485  plain_acc=0.98134  balanced_acc=0.97485
