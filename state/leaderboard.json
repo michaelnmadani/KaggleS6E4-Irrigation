@@ -1,5 +1,8 @@
 {
   "001_baseline": {
     "public_lb": "0.96152"
+  },
+  "035_pseudo_label_v2": {
+    "public_lb": "0.97286"
   }
 }
