@@ -407,14 +407,18 @@ def run(config_path: str, input_dir: str, output_dir: str) -> dict:
             X_pseudo = X_test.iloc[sel].copy().reset_index(drop=True)
             y_pseudo = pd.Series(pseudo_labels[sel]).reset_index(drop=True)
 
-            # Run per-fold blocks once with full y_orig as y_tr (no fold split).
-            # The per-fold blocks see the entire train, compute TE features
-            # on the full distribution, then we fit on that.
+            # Run per-fold blocks once with full y as y_tr. CRITICAL: ordered_te
+            # uses 4× shuffle augmentation by default which would expand X to
+            # 2.5M rows — too memory-heavy when also adding pseudo. Override
+            # to n_shuffles=1 for the final fit only.
             X_full_tr = X.copy()
             X_full_te = pd.concat([X_pseudo, X_test], axis=0, ignore_index=True)
             for name in per_fold_blocks:
                 fn = feat_mod.BLOCKS[name]
-                X_full_tr, X_full_te = fn(X_full_tr, X_full_te, y_tr=y)
+                if name == "ordered_te":
+                    X_full_tr, X_full_te = fn(X_full_tr, X_full_te, y_tr=y, n_shuffles=1)
+                else:
+                    X_full_tr, X_full_te = fn(X_full_tr, X_full_te, y_tr=y)
             if "_ote_y_shuffled" in X_full_tr.columns:
                 y_full_tr = pd.Series(X_full_tr["_ote_y_shuffled"].values).reset_index(drop=True)
                 X_full_tr = X_full_tr.drop(columns=["_ote_y_shuffled"])
