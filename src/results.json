@@ -2812,6 +2812,34 @@
         "Runtime 10.1h (near 12h cap) — LGBM CPU on 2.52M rows too slow for sustained pipeline",
         "HARD PLATEAU confirmed at 0.9758 across V38, V39, V40, V42 regardless of architecture changes"
       ]
+    },
+    {
+      "version": 44,
+      "score": 0.9747791621403413,
+      "best_model": "xgb + adversarial-validation reweighting",
+      "source": "autonomous pipeline (iter 033_adversarial_reweight)",
+      "plain_accuracy": 0.9817109375,
+      "per_class_recall": {
+        "High": 0.9673459826657297,
+        "Low": 0.9957688121538875,
+        "Medium": 0.9612226916014065
+      },
+      "fold_std": 0.001667524312932581,
+      "elapsed_sec": 11981.9,
+      "per_model_cv": {
+        "xgb": 0.9741478537914746
+      },
+      "blend_weights": {
+        "xgb": 1
+      },
+      "changes": [
+        "NEW: adversarial_reweight pipeline knob — binary XGB on (train||test, target=is_test), weight = clip(p/(1-p), 0.1, 10)",
+        "AV weights came back near-uniform: mean=1.00, p10=0.936, p90=1.063",
+        "Train and test virtually indistinguishable from AV classifier's view → no distribution-shift signal to exploit",
+        "CV 0.97478 vs V34 0.97503 — AV noise hurt slightly",
+        "FINDING: AV reweight provides no signal on this synthetic dataset; reject direction",
+        "CPU kernel ran 3.3h. NOT submitted (lower CV than V34)"
+      ]
     }
   ],
   "improvement": {
