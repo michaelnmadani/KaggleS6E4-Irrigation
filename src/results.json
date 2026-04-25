@@ -2851,6 +2851,34 @@
         "ordered_te 4x shuffle augmentation expands 640k → 2.56M rows; adding pseudo + DMatrix overflowed Kaggle 30GB",
         "Fix planned for V46: call ordered_te with n_shuffles=1 only for the final fit (skip augmentation)"
       ]
+    },
+    {
+      "version": 46,
+      "score": 0.974851902739814,
+      "best_model": "xgb + pseudo-label final fit (V45 OOM fix)",
+      "source": "autonomous pipeline (iter 035_pseudo_label_v2)",
+      "plain_accuracy": 0.98134375,
+      "per_class_recall": {
+        "High": 0.9686109159053643,
+        "Low": 0.9957102674163941,
+        "Medium": 0.9602345248976836
+      },
+      "fold_std": 0.0015004337429197362,
+      "elapsed_sec": 13421.8,
+      "per_model_cv": {
+        "xgb": 0.9741837889383455
+      },
+      "blend_weights": {
+        "xgb": 1
+      },
+      "changes": [
+        "OOM fix: ordered_te called with n_shuffles=1 in pseudo final-fit code path (skip the 4x augmentation that blew RAM in V45)",
+        "Pseudo-label final fit selected 257,043 / 270,000 test rows (95.2%) at threshold 0.85",
+        "Final fit on 897,043 rows (640k real + 257k pseudo @ weight=0.5) succeeded",
+        "CV 0.97485 unchanged from V44 (0.97478) — CV doesn't reflect pseudo benefit; OOF computed BEFORE the final fit",
+        "Submitting to LB despite lower CV: pseudo-labeling specifically targets LB>CV gap closure",
+        "Runtime 3.7h CPU — manageable. GPU re-enabled for V47+"
+      ]
     }
   ],
   "improvement": {
