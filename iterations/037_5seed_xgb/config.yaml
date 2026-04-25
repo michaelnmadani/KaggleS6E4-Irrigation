@@ -1,4 +1,4 @@
-# Iteration 036 (website V48) — 5-seed XGB averaging on V34's exact recipe.
+# Iteration 037 (website V48) — 5-seed XGB averaging on V34's exact recipe.
 #
 # After 4 LB-noisy attempts (V44 AV, V45 OOM, V46 pseudo, V47 vote) all not
 # beating V34 0.97617, simplest move: 5 XGB seeds, equal-blend their probs.
