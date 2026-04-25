@@ -1,0 +1,135 @@
+# Iteration 036 (website V48) — 5-seed XGB averaging on V34's exact recipe.
+#
+# After 4 LB-noisy attempts (V44 AV, V45 OOM, V46 pseudo, V47 vote) all not
+# beating V34 0.97617, simplest move: 5 XGB seeds, equal-blend their probs.
+# Bagging-style diversity within identical hparams; tiny lift typical.
+#
+# Runtime: 5 XGB GPU × ~10min/fold × 5 folds = 4-5 min/fold-model = 25 min/model
+# × 5 seeds = ~2.5h on GPU. Comfortable under 9h cap.
+
+target: Irrigation_Need
+id_col: id
+task: multiclass
+metric: balanced_accuracy
+
+class_weights: balanced
+
+extra_dataset:
+  slug: miadul/irrigation-water-requirement-prediction-dataset
+  file: irrigation_prediction.csv
+  weight: 0.35
+
+kernel:
+  enable_gpu: true
+  enable_internet: true
+
+pip_install:
+  - optuna
+
+features:
+  - fill_na_median
+  - s6e4_digit_extraction_wide
+  - s6e4_freq_filter_cats
+  - ordered_te
+
+model:
+  - xgb
+  - xgb_a
+  - xgb_b
+  - xgb_c
+  - xgb_d
+
+# Equal blend of 5 seeds.
+blend_weights:
+  xgb: 0.20
+  xgb_a: 0.20
+  xgb_b: 0.20
+  xgb_c: 0.20
+  xgb_d: 0.20
+
+postprocess:
+  - class_weight_optuna
+
+optuna_trials: 200
+
+params:
+  xgb:
+    num_boost_round: 700
+    early_stopping_rounds: 1024
+    eta: 0.12
+    max_depth: 3
+    max_leaves: 20
+    subsample: 0.75
+    colsample_bytree: 0.85
+    reg_alpha: 7
+    reg_lambda: 3
+    min_child_weight: 3
+    tree_method: hist
+    max_bin: 10000
+    device: cuda
+    seed: 42
+  xgb_a:
+    num_boost_round: 700
+    early_stopping_rounds: 1024
+    eta: 0.12
+    max_depth: 3
+    max_leaves: 20
+    subsample: 0.75
+    colsample_bytree: 0.85
+    reg_alpha: 7
+    reg_lambda: 3
+    min_child_weight: 3
+    tree_method: hist
+    max_bin: 10000
+    device: cuda
+    seed: 123
+  xgb_b:
+    num_boost_round: 700
+    early_stopping_rounds: 1024
+    eta: 0.12
+    max_depth: 3
+    max_leaves: 20
+    subsample: 0.75
+    colsample_bytree: 0.85
+    reg_alpha: 7
+    reg_lambda: 3
+    min_child_weight: 3
+    tree_method: hist
+    max_bin: 10000
+    device: cuda
+    seed: 777
+  xgb_c:
+    num_boost_round: 700
+    early_stopping_rounds: 1024
+    eta: 0.12
+    max_depth: 3
+    max_leaves: 20
+    subsample: 0.75
+    colsample_bytree: 0.85
+    reg_alpha: 7
+    reg_lambda: 3
+    min_child_weight: 3
+    tree_method: hist
+    max_bin: 10000
+    device: cuda
+    seed: 999
+  xgb_d:
+    num_boost_round: 700
+    early_stopping_rounds: 1024
+    eta: 0.12
+    max_depth: 3
+    max_leaves: 20
+    subsample: 0.75
+    colsample_bytree: 0.85
+    reg_alpha: 7
+    reg_lambda: 3
+    min_child_weight: 3
+    tree_method: hist
+    max_bin: 10000
+    device: cuda
+    seed: 1234
+
+cv:
+  n_splits: 5
+  seed: 42
+  stratified: true
