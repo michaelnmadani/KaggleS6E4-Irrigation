@@ -1,5 +1,8 @@
 {
   "001_baseline": {
     "public_lb": "0.96152"
+  },
+  "036_ensemble_vote": {
+    "public_lb": "0.97614"
   }
 }
