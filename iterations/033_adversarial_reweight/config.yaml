@@ -1,0 +1,72 @@
+# Iteration 033 (website V44) — V34 + adversarial-validation reweighting.
+#
+# CV 0.97503 < LB 0.97617 in V34 means TEST is "easier" than CV folds (per-fold
+# class priors slightly differ from test). Adversarial validation identifies
+# which TRAIN rows look most test-like; upweighting them aligns the loss with
+# the LB distribution.
+#
+# Standard +0.001-0.003 LB delta in Kaggle PS plateaus where CV-LB diverges.
+# Cheap: one extra binary XGB fit on (train || test, target=is_test). Per-row
+# AV weight = clip(p/(1-p), 0.1, 10). Multiplied into existing class-balanced
+# weights inside the fold loop.
+#
+# CPU-only (Kaggle GPU quota depleted today). Drop max_bin to 256 for CPU speed.
+# Runtime estimate: AV fit 15min + main XGB CPU on V34 features ~3.5h = ~3.7h.
+
+target: Irrigation_Need
+id_col: id
+task: multiclass
+metric: balanced_accuracy
+
+class_weights: balanced
+
+# AV reweight enabled with 200-round binary classifier on train vs test.
+adversarial_reweight:
+  n_rounds: 200
+
+extra_dataset:
+  slug: miadul/irrigation-water-requirement-prediction-dataset
+  file: irrigation_prediction.csv
+  weight: 0.35
+
+kernel:
+  enable_gpu: false
+  enable_internet: true
+
+pip_install:
+  - optuna
+
+features:
+  - fill_na_median
+  - s6e4_digit_extraction_wide
+  - s6e4_freq_filter_cats
+  - ordered_te
+
+model:
+  - xgb
+
+postprocess:
+  - class_weight_optuna
+
+optuna_trials: 200
+
+params:
+  xgb:
+    num_boost_round: 700
+    early_stopping_rounds: 1024
+    eta: 0.12
+    max_depth: 3
+    max_leaves: 20
+    subsample: 0.75
+    colsample_bytree: 0.85
+    reg_alpha: 7
+    reg_lambda: 3
+    min_child_weight: 3
+    tree_method: hist
+    max_bin: 256        # was 10000 on GPU; 256 is safe + fast on CPU
+    seed: 777
+
+cv:
+  n_splits: 5
+  seed: 42
+  stratified: true
