@@ -1,0 +1,17 @@
+# Iteration 036 (website V47) — majority-vote ensemble of V34+V37+V42 submissions.
+#
+# No kernel. Done locally by reading 3 prior submission.csvs and taking
+# per-row majority class. 495/270k labels differ from V34 alone.
+#
+# Top 3 LB historical:
+#   V34 LB 0.97617 (xgb solo + Optuna)
+#   V42 LB 0.97609 (xgb+cb+lgbm meta-stack)
+#   V37 LB 0.97603 (3-XGB + CatBoost meta-stack)
+#
+# Expected LB delta: -0.0005 to +0.0010 — noise/lift depends on which 495
+# rows were flipped.
+ensemble: majority_vote
+sources:
+  - 022_orderedte_xgb       # V34
+  - 025_multiseed_xgb_cb    # V37
+  - 030_xgb_cb_lgbm_cpu     # V42

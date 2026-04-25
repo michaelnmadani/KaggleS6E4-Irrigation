@@ -1,0 +1,11 @@
+{
+  "cv_score": null,
+  "metric": "balanced_accuracy",
+  "method": "majority vote of V34 (LB 0.97617) + V37 (LB 0.97603) + V42 (LB 0.97609)",
+  "modified_labels_vs_v34": 495,
+  "n_test": 270000,
+  "agreement_3of3": 269133,
+  "agreement_2of3": 867,
+  "elapsed_sec": 0,
+  "model": "ensemble_majority_vote"
+}
