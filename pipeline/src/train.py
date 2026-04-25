@@ -125,6 +125,39 @@ def run(config_path: str, input_dir: str, output_dir: str) -> dict:
 
     class_weights_mode = cfg.get("class_weights")
 
+    # Adversarial-validation reweighting (V44): train binary XGB on
+    # concat(train, test) with target=is_test, get per-train-row p(test),
+    # use sample_weight_adv = clip(p/(1-p), 0.1, 10) so train rows that
+    # "look test-like" get more weight in fold loss.
+    adv_weights = None
+    if cfg.get("adversarial_reweight"):
+        log_lines.append("=== Computing adversarial-validation weights ===")
+        try:
+            import xgboost as xgb
+            X_av_tr = X.select_dtypes(include=[np.number]).fillna(0)
+            X_av_te = X_test.reindex(columns=X_av_tr.columns, fill_value=0).fillna(0)
+            X_av = pd.concat([X_av_tr, X_av_te], axis=0, ignore_index=True)
+            y_av = np.concatenate([np.zeros(len(X_av_tr)), np.ones(len(X_av_te))])
+            d_av = xgb.DMatrix(X_av, label=y_av)
+            av_params = {"objective": "binary:logistic", "max_depth": 4,
+                         "eta": 0.1, "tree_method": "hist", "verbosity": 0,
+                         "subsample": 0.8, "colsample_bytree": 0.8}
+            n_rounds = int(cfg["adversarial_reweight"].get("n_rounds", 200) if isinstance(cfg["adversarial_reweight"], dict) else 200)
+            model_av = xgb.train(av_params, d_av, num_boost_round=n_rounds)
+            p_test_train = model_av.predict(xgb.DMatrix(X_av_tr))
+            p_clip = np.clip(p_test_train, 1e-6, 1 - 1e-6)
+            adv_weights = np.clip(p_clip / (1 - p_clip), 0.1, 10.0)
+            adv_weights = adv_weights / adv_weights.mean()
+            log_lines.append(
+                f"AV weights: mean={adv_weights.mean():.4f} "
+                f"median={np.median(adv_weights):.4f} "
+                f"p10={np.percentile(adv_weights, 10):.4f} "
+                f"p90={np.percentile(adv_weights, 90):.4f}"
+            )
+        except Exception as e:
+            log_lines.append(f"AV reweight failed: {e}")
+            adv_weights = None
+
     for f in range(cfg["cv"]["n_splits"]):
         tr_idx, va_idx = np.where(folds != f)[0], np.where(folds == f)[0]
         X_tr, y_tr = X.iloc[tr_idx].reset_index(drop=True), y.iloc[tr_idx].reset_index(drop=True)
@@ -165,6 +198,17 @@ def run(config_path: str, input_dir: str, output_dir: str) -> dict:
             if sw is None:
                 sw = np.ones(len(y_tr), dtype=float)
             sw = sw * np.where(is_orig_tr, float(extra_weight), 1.0)
+
+        # Adversarial-validation weights: multiply per-row so test-like train
+        # rows get more weight in fold loss.
+        if adv_weights is not None:
+            adv_tr = adv_weights[tr_idx]
+            if len(adv_tr) != len(y_tr):
+                reps = len(y_tr) // len(adv_tr)
+                adv_tr = np.tile(adv_tr, reps)
+            if sw is None:
+                sw = np.ones(len(y_tr), dtype=float)
+            sw = sw * adv_tr
 
         for m in model_names:
             res = models_mod.fit_one_fold(
