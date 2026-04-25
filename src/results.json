@@ -2840,6 +2840,17 @@
         "FINDING: AV reweight provides no signal on this synthetic dataset; reject direction",
         "CPU kernel ran 3.3h. NOT submitted (lower CV than V34)"
       ]
+    },
+    {
+      "version": 45,
+      "score": null,
+      "best_model": "killed",
+      "source": "iter 034_pseudo_label (OOM)",
+      "changes": [
+        "Pseudo-label final fit OOMed during full-data refit",
+        "ordered_te 4x shuffle augmentation expands 640k → 2.56M rows; adding pseudo + DMatrix overflowed Kaggle 30GB",
+        "Fix planned for V46: call ordered_te with n_shuffles=1 only for the final fit (skip augmentation)"
+      ]
     }
   ],
   "improvement": {
