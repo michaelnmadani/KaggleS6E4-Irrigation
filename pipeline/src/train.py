@@ -374,6 +374,107 @@ def run(config_path: str, input_dir: str, output_dir: str) -> dict:
             [postprocess_info, caruana_info] if postprocess_info else caruana_info
         )
 
+    # Pseudo-labeling final fit (V45): after CV+postprocess produced reliable
+    # test_preds, filter high-confidence test rows, concat to train, do a
+    # SINGLE final fit per model on the augmented data, predict X_test, blend
+    # using the same weights as the main fold loop. OOF stays from CV.
+    pl_cfg = cfg.get("pseudo_label")
+    if pl_cfg and oof.ndim == 2:
+        threshold = float(pl_cfg.get("threshold", 0.85))
+        weight = float(pl_cfg.get("weight", 0.5))
+        max_probs = test_preds.max(axis=1)
+        pseudo_labels = test_preds.argmax(axis=1)
+        sel = max_probs > threshold
+        n_pseudo = int(sel.sum())
+        log_lines.append(
+            f"=== Pseudo-label final fit: threshold={threshold} weight={weight} "
+            f"selected {n_pseudo}/{len(X_test)} test rows ({100*n_pseudo/len(X_test):.1f}%) ==="
+        )
+        if n_pseudo == 0:
+            log_lines.append("no pseudo rows selected; skipping final fit")
+        else:
+            # Build combined train+pseudo. Apply per-fold blocks ONCE on the
+            # full data (acceptable for a final fit; CV scores are already in).
+            X_orig_full = X.copy()
+            y_orig_full = y.copy()
+            if "_ote_y_shuffled" in X_orig_full.columns:
+                # Already-augmented X — use the original y_tr per-row label that
+                # was smuggled. But for final fit we want clean rows; recompute
+                # per-fold blocks on raw X (no shuffle).
+                pass
+
+            # Pseudo rows from X_test
+            X_pseudo = X_test.iloc[sel].copy().reset_index(drop=True)
+            y_pseudo = pd.Series(pseudo_labels[sel]).reset_index(drop=True)
+
+            # Run per-fold blocks once with full y_orig as y_tr (no fold split).
+            # The per-fold blocks see the entire train, compute TE features
+            # on the full distribution, then we fit on that.
+            X_full_tr = X.copy()
+            X_full_te = pd.concat([X_pseudo, X_test], axis=0, ignore_index=True)
+            for name in per_fold_blocks:
+                fn = feat_mod.BLOCKS[name]
+                X_full_tr, X_full_te = fn(X_full_tr, X_full_te, y_tr=y)
+            if "_ote_y_shuffled" in X_full_tr.columns:
+                y_full_tr = pd.Series(X_full_tr["_ote_y_shuffled"].values).reset_index(drop=True)
+                X_full_tr = X_full_tr.drop(columns=["_ote_y_shuffled"])
+            else:
+                y_full_tr = y.copy()
+            if "_ote_y_shuffled" in X_full_te.columns:
+                X_full_te = X_full_te.drop(columns=["_ote_y_shuffled"])
+            X_pseudo_te = X_full_te.iloc[: len(X_pseudo)].reset_index(drop=True)
+            X_test_te = X_full_te.iloc[len(X_pseudo) :].reset_index(drop=True)
+
+            X_combined = pd.concat([X_full_tr, X_pseudo_te], axis=0, ignore_index=True)
+            y_combined = pd.concat([y_full_tr, y_pseudo], axis=0, ignore_index=True).reset_index(drop=True)
+
+            sw_combined = models_mod.compute_balanced_sample_weights(y_combined) if class_weights_mode == "balanced" else None
+            # Pseudo rows get reduced weight.
+            n_real = len(X_full_tr)
+            pseudo_mask = np.concatenate([np.zeros(n_real, dtype=bool), np.ones(len(X_pseudo_te), dtype=bool)])
+            if sw_combined is None:
+                sw_combined = np.ones(len(y_combined), dtype=float)
+            sw_combined = sw_combined * np.where(pseudo_mask, weight, 1.0)
+            log_lines.append(f"final fit rows: {len(X_combined)} (real {n_real} + pseudo {len(X_pseudo_te)})")
+
+            # Fit each base model once on full augmented data, predict X_test.
+            new_per_model_test = {m: np.zeros((len(X_test_te), n_classes)) for m in model_names}
+            for m in model_names:
+                # Use first row as a dummy "val" set (eval_set not used here).
+                X_dummy_val = X_combined.iloc[:1].reset_index(drop=True)
+                y_dummy_val = y_combined.iloc[:1].reset_index(drop=True)
+                try:
+                    res = models_mod.fit_one_fold(
+                        m, X_combined, y_combined, X_dummy_val, y_dummy_val, X_test_te,
+                        _params_for(m), task, sample_weight=sw_combined,
+                    )
+                    new_per_model_test[m] = res.test_pred
+                    log_lines.append(f"pseudo final fit {m}: done")
+                except Exception as e:
+                    log_lines.append(f"pseudo final fit {m} FAILED: {e}; falling back to CV-averaged test preds")
+                    new_per_model_test[m] = per_model_test[m]
+
+            # Blend with same weights used in CV phase.
+            if len(model_names) == 1:
+                test_preds_pl = new_per_model_test[model_names[0]]
+            else:
+                test_preds_pl = sum(blend_weights[m] * new_per_model_test[m] for m in model_names)
+
+            # Apply postprocess transforms to the new test_preds where applicable.
+            if isinstance(postprocess_info, dict) and postprocess_info.get("kind") == "class_weight_optuna":
+                w = np.array(postprocess_info["weights"])
+                test_preds_pl = test_preds_pl * w
+                test_preds_pl = test_preds_pl / test_preds_pl.sum(axis=1, keepdims=True)
+            elif isinstance(postprocess_info, list):
+                for info in postprocess_info:
+                    if info.get("kind") == "class_weight_optuna" and info.get("applied"):
+                        w = np.array(info["weights"])
+                        test_preds_pl = test_preds_pl * w
+                        test_preds_pl = test_preds_pl / test_preds_pl.sum(axis=1, keepdims=True)
+
+            test_preds = test_preds_pl
+            log_lines.append("pseudo final fit applied: test_preds replaced with augmented-fit predictions")
+
     # Per-class recall (multiclass) for reviewer context.
     recalls = None
     if task == "multiclass" and inverse_label_map is not None:
