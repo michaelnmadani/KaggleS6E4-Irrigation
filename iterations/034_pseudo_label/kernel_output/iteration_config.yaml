@@ -1,0 +1,73 @@
+
+# Iteration 034 (website V45) — V34 + pseudo-label final fit.
+#
+# V34 LB 0.97617 vs CV 0.97503 — test is "easier" than train. Pseudo-labeling
+# can convert that into +0.001-0.003 by exposing the model to test-distribution
+# rows during a final fit.
+#
+# Approach: after the regular CV+postprocess produces averaged test predictions,
+# filter test rows with max_prob > 0.85, label with argmax, concat to train at
+# weight=0.5, do ONE single full-data fit per model (no CV, no early stopping
+# meaningful), predict X_test, apply same postprocess weights.
+#
+# OOF score reported = CV score (unaltered). LB will reflect the augmented fit.
+#
+# CPU kernel (no GPU). Runtime: V44's CV ~3.5h + final fit ~50 min = ~4.5h.
+
+target: Irrigation_Need
+id_col: id
+task: multiclass
+metric: balanced_accuracy
+
+class_weights: balanced
+
+pseudo_label:
+  threshold: 0.85
+  weight: 0.5
+
+extra_dataset:
+  slug: miadul/irrigation-water-requirement-prediction-dataset
+  file: irrigation_prediction.csv
+  weight: 0.35
+
+kernel:
+  enable_gpu: false
+  enable_internet: true
+
+pip_install:
+  - optuna
+
+features:
+  - fill_na_median
+  - s6e4_digit_extraction_wide
+  - s6e4_freq_filter_cats
+  - ordered_te
+
+model:
+  - xgb
+
+postprocess:
+  - class_weight_optuna
+
+optuna_trials: 200
+
+params:
+  xgb:
+    num_boost_round: 700
+    early_stopping_rounds: 1024
+    eta: 0.12
+    max_depth: 3
+    max_leaves: 20
+    subsample: 0.75
+    colsample_bytree: 0.85
+    reg_alpha: 7
+    reg_lambda: 3
+    min_child_weight: 3
+    tree_method: hist
+    max_bin: 256
+    seed: 777
+
+cv:
+  n_splits: 5
+  seed: 42
+  stratified: true
