@@ -2925,6 +2925,48 @@
         "GPU runtime 5.9h — slower than projection due to per-seed overhead",
         "Submitting to LB to test seed diversity transfer"
       ]
+    },
+    {
+      "version": 49,
+      "score": 0.97523,
+      "best_model": "V35 retroactive (CV 0.97523)",
+      "source": "iter 023 retroactive submit",
+      "changes": [
+        "Submitted V35's existing kernel output (CV 0.97523, V34+stratified+miadul)",
+        "LB 0.97517 — DROPPED 0.001 vs V34's 0.97617",
+        "Adding stratified+miadul HURTS LB despite +0.0002 CV — confirms train/test distribution mismatch"
+      ]
+    },
+    {
+      "version": 50,
+      "score": 0.9752595052944998,
+      "best_model": "3-seed XGB on V34 yunsuxiaozi recipe",
+      "source": "autonomous pipeline (iter 038_3seed_yunsuxiaozi)",
+      "plain_accuracy": 0.9806095238095238,
+      "per_class_recall": {
+        "High": 0.972011994859346,
+        "Low": 0.9956071226788712,
+        "Medium": 0.9581593983452822
+      },
+      "fold_std": 0.0009152548335649204,
+      "elapsed_sec": 11003.7,
+      "per_model_cv": {
+        "xgb": 0.9738791600906357,
+        "xgb_a": 0.9737429427531685,
+        "xgb_b": 0.9737408308693509
+      },
+      "blend_weights": {
+        "xgb": 0.34,
+        "xgb_a": 0.33,
+        "xgb_b": 0.33
+      },
+      "changes": [
+        "FINAL iteration. V34 yunsuxiaozi exact recipe (depth=4, lr=0.1, 512 rounds, max_bin=10000) + 3-seed bagging (42/123/777)",
+        "Per-seed CV 0.9737 (very tight, fold_std 0.00091 — best stability of all runs)",
+        "Equal-blend pre-Optuna 0.97383, post-Optuna 0.97526 (+0.00143)",
+        "High recall 0.972 (best across all V34 variants); Medium 0.958",
+        "GPU runtime 3.05h"
+      ]
     }
   ],
   "improvement": {
