@@ -1,5 +1,8 @@
 {
   "001_baseline": {
     "public_lb": "0.96152"
+  },
+  "038_3seed_yunsuxiaozi": {
+    "public_lb": "0.97571"
   }
 }
