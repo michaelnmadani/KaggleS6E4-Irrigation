@@ -2965,7 +2965,8 @@
         "Per-seed CV 0.9737 (very tight, fold_std 0.00091 — best stability of all runs)",
         "Equal-blend pre-Optuna 0.97383, post-Optuna 0.97526 (+0.00143)",
         "High recall 0.972 (best across all V34 variants); Medium 0.958",
-        "GPU runtime 3.05h"
+        "GPU runtime 3.05h",
+        "LB 0.97571 — below V34 (-0.00046). Stopping at V50; 0.98 not reached. V34 remains champion."
       ]
     }
   ],
