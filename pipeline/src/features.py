@@ -406,8 +406,10 @@ def ordered_te(X_tr: pd.DataFrame, X_te: pd.DataFrame, y_tr=None, smoothing: flo
     y = pd.Series(y_tr).reset_index(drop=True).astype(int)
     classes = sorted(y.unique().tolist())
     # Identify integer categoricals (already-encoded or low-nunique ints).
+    # Skip _kaggle_id_int (raw id; not a categorical — it's a position marker).
     cat_cols = [c for c in X_tr.columns
-                if str(X_tr[c].dtype).startswith("int") or str(X_tr[c].dtype) in ("object", "category")]
+                if c != "_kaggle_id_int"
+                and (str(X_tr[c].dtype).startswith("int") or str(X_tr[c].dtype) in ("object", "category"))]
     # Precompute per-category totals on full train for test/val transform.
     global_prior = {k: float((y == k).mean()) for k in classes}
     stats = {c: {k: None for k in classes} for c in cat_cols}
@@ -477,6 +479,37 @@ def s6e4_cat_pair_combined_keys(X_tr, X_te):
     return X_tr, X_te
 
 
+def s6e4_id_modulo(X_tr, X_te):
+    """Row-id structural-leak features. Kaggle synthetic generators often
+    produce data in batches; id mod various sizes can carry signal about
+    which generator-batch a row came from. Cheap to test, free if no leak.
+
+    Inputs: rely on _kaggle_id_int column added by data.py. After extracting
+    modulo features the raw id is preserved (XGB may also use it directly).
+    """
+    X_tr, X_te = X_tr.copy(), X_te.copy()
+    if "_kaggle_id_int" not in X_tr.columns:
+        return X_tr, X_te
+    for X in (X_tr, X_te):
+        idv = X["_kaggle_id_int"].astype(np.int64).values
+        for m in (10, 100, 1000, 10000, 100000):
+            X[f"_id_mod_{m}"] = (idv % m).astype(np.int32)
+        X["_id_div_1000"] = (idv // 1000).astype(np.int32)
+        X["_id_div_10000"] = (idv // 10000).astype(np.int32)
+    return X_tr, X_te
+
+
+def s6e4_drop_id_col(X_tr, X_te):
+    """Drop _kaggle_id_int after feature blocks have used it. Place AFTER
+    s6e4_id_modulo and BEFORE freq_filter / ordered_te to avoid the raw id
+    being treated as a 900k-cardinality cat."""
+    X_tr, X_te = X_tr.copy(), X_te.copy()
+    for col in ("_kaggle_id_int",):
+        if col in X_tr.columns: X_tr = X_tr.drop(columns=[col])
+        if col in X_te.columns: X_te = X_te.drop(columns=[col])
+    return X_tr, X_te
+
+
 BLOCKS = {
     "label_encode": label_encode,
     "fill_na_median": fill_na_median,
@@ -494,6 +527,8 @@ BLOCKS = {
     "s6e4_digit_extraction_wide": s6e4_digit_extraction_wide,
     "s6e4_cat_pair_combined_keys": s6e4_cat_pair_combined_keys,
     "s6e4_freq_filter_cats": s6e4_freq_filter_cats,
+    "s6e4_id_modulo": s6e4_id_modulo,
+    "s6e4_drop_id_col": s6e4_drop_id_col,
     "ordered_te": ordered_te,
 }
 

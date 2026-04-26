@@ -1,0 +1,64 @@
+# Iteration 039 (website V51) — row-id structural-leak features.
+#
+# Category A: structural-leak exploits. Cheapest move with possibly highest
+# reward. Kaggle synthetic generators often produce data in batches; id mod
+# {10, 100, 1000, 10000, 100000} can carry signal about generator-batch.
+#
+# data.py modified to keep _kaggle_id_int. New blocks: s6e4_id_modulo (extracts
+# id_mod_*, id_div_* features), s6e4_drop_id_col (drops _kaggle_id_int after).
+# ordered_te modified to skip _kaggle_id_int (else 900k-cardinality TE = noise).
+#
+# Configuration: V34's exact yunsuxiaozi recipe + 7 new id-derived numeric features.
+# 1.5h GPU runtime.
+
+target: Irrigation_Need
+id_col: id
+task: multiclass
+metric: balanced_accuracy
+
+class_weights: balanced
+
+kernel:
+  enable_gpu: true
+  enable_internet: true
+
+pip_install:
+  - optuna
+
+features:
+  - fill_na_median
+  - s6e4_id_modulo                # NEW: extract id_mod / id_div features
+  - s6e4_digit_extraction_wide
+  - s6e4_drop_id_col              # NEW: drop raw _kaggle_id_int (keep modulo features)
+  - s6e4_freq_filter_cats
+  - ordered_te
+
+model:
+  - xgb
+
+postprocess:
+  - class_weight_optuna
+
+optuna_trials: 200
+
+params:
+  xgb:
+    num_boost_round: 512
+    early_stopping_rounds: 1024
+    eta: 0.1
+    max_depth: 4
+    max_leaves: 30
+    subsample: 0.8
+    colsample_bytree: 0.8
+    reg_alpha: 5
+    reg_lambda: 5
+    min_child_weight: 2
+    tree_method: hist
+    max_bin: 10000
+    device: cuda
+    seed: 42
+
+cv:
+  n_splits: 5
+  seed: 42
+  stratified: false

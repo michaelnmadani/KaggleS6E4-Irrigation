@@ -74,8 +74,14 @@ def load(input_dir: Path, target: str, id_col: str, extra_dataset: dict | None =
         inverse_label_map = {i: c for c, i in label_map.items()}
         y = y.map(label_map).astype(int)
 
+    # Keep id as numeric column (_kaggle_id_int) so feature blocks can derive
+    # modulo / order-based features from it. Original id_col still removed.
+    train_id_int = train[id_col].astype(np.int64).values if id_col in train.columns else np.arange(len(train), dtype=np.int64)
+    test_id_int = test[id_col].astype(np.int64).values if id_col in test.columns else np.arange(len(test), dtype=np.int64)
     X = train.drop(columns=[target, id_col], errors="ignore")
     X_test = test.drop(columns=[id_col], errors="ignore")
+    X["_kaggle_id_int"] = train_id_int
+    X_test["_kaggle_id_int"] = test_id_int
     # Ensure X and X_test have same columns in same order.
     X = X[[c for c in X.columns if c in X_test.columns]]
     X_test = X_test[X.columns]
