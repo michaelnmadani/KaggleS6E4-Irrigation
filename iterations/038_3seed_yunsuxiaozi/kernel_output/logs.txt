@@ -1,0 +1,27 @@
+config: /kaggle/working/iteration_config.yaml
+train=(630000, 19)  test=(270000, 19)  external_rows=0
+target encoded: {0: 'High', 1: 'Low', 2: 'Medium'}
+global features: ['fill_na_median', 's6e4_digit_extraction_wide', 's6e4_freq_filter_cats'] -> 118 cols
+per-fold features: ['ordered_te']
+fold 0 xgb: balanced_accuracy=0.97325
+fold 0 xgb_a: balanced_accuracy=0.97287
+fold 0 xgb_b: balanced_accuracy=0.97330
+fold 1 xgb: balanced_accuracy=0.97408
+fold 1 xgb_a: balanced_accuracy=0.97473
+fold 1 xgb_b: balanced_accuracy=0.97405
+fold 2 xgb: balanced_accuracy=0.97425
+fold 2 xgb_a: balanced_accuracy=0.97401
+fold 2 xgb_b: balanced_accuracy=0.97462
+fold 3 xgb: balanced_accuracy=0.97517
+fold 3 xgb_a: balanced_accuracy=0.97483
+fold 3 xgb_b: balanced_accuracy=0.97469
+fold 4 xgb: balanced_accuracy=0.97269
+fold 4 xgb_a: balanced_accuracy=0.97230
+fold 4 xgb_b: balanced_accuracy=0.97210
+model xgb: CV balanced_accuracy=0.97388
+model xgb_a: CV balanced_accuracy=0.97374
+model xgb_b: CV balanced_accuracy=0.97374
+blend weights (manual): {'xgb': 0.34, 'xgb_a': 0.33, 'xgb_b': 0.33}
+class_weight_optuna: pre=0.97383  post=0.97526  delta=+0.00143  weights=[2.357058461907059, 0.8591363217955509, 1.0577152982053768]
+class_weight_optuna applied (CV: 0.97383 -> 0.97526)
+CV balanced_accuracy=0.97526  plain_acc=0.98061  balanced_acc=0.97526

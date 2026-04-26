@@ -1,0 +1,100 @@
+
+# Iteration 038 (website V50) — 3-seed YUNSUXIAOZI config (depth=4, lr=0.1, 512 rounds).
+#
+# Final iteration. V34 (the yunsuxiaozi recipe with depth=4) holds the LB
+# crown at 0.97617. V37/V38/V42/V48 all used xgb_b's depth=3 alternative which
+# scored slightly lower. V50 brings 3-seed bagging back to V34's exact recipe
+# (NOT xgb_b's). 3 seeds: 42 / 123 / 777.
+#
+# No miadul, no stratified — V49 confirmed those hurt LB despite CV +0.0002.
+#
+# Runtime: 3 XGB GPU × 5 folds × ~5min = ~75 min.
+
+target: Irrigation_Need
+id_col: id
+task: multiclass
+metric: balanced_accuracy
+
+class_weights: balanced
+
+kernel:
+  enable_gpu: true
+  enable_internet: true
+
+pip_install:
+  - optuna
+
+features:
+  - fill_na_median
+  - s6e4_digit_extraction_wide
+  - s6e4_freq_filter_cats
+  - ordered_te
+
+model:
+  - xgb
+  - xgb_a
+  - xgb_b
+
+# Equal-blend the 3 seeds.
+blend_weights:
+  xgb: 0.34
+  xgb_a: 0.33
+  xgb_b: 0.33
+
+postprocess:
+  - class_weight_optuna
+
+optuna_trials: 200
+
+# V34 yunsuxiaozi exact hparams (NOT xgb_b's depth=3)
+params:
+  xgb:
+    num_boost_round: 512
+    early_stopping_rounds: 1024
+    eta: 0.1
+    max_depth: 4
+    max_leaves: 30
+    subsample: 0.8
+    colsample_bytree: 0.8
+    reg_alpha: 5
+    reg_lambda: 5
+    min_child_weight: 2
+    tree_method: hist
+    max_bin: 10000
+    device: cuda
+    seed: 42
+  xgb_a:
+    num_boost_round: 512
+    early_stopping_rounds: 1024
+    eta: 0.1
+    max_depth: 4
+    max_leaves: 30
+    subsample: 0.8
+    colsample_bytree: 0.8
+    reg_alpha: 5
+    reg_lambda: 5
+    min_child_weight: 2
+    tree_method: hist
+    max_bin: 10000
+    device: cuda
+    seed: 123
+  xgb_b:
+    num_boost_round: 512
+    early_stopping_rounds: 1024
+    eta: 0.1
+    max_depth: 4
+    max_leaves: 30
+    subsample: 0.8
+    colsample_bytree: 0.8
+    reg_alpha: 5
+    reg_lambda: 5
+    min_child_weight: 2
+    tree_method: hist
+    max_bin: 10000
+    device: cuda
+    seed: 777
+
+cv:
+  n_splits: 5
+  seed: 42
+  stratified: false
