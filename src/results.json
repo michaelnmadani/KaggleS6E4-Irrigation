@@ -2879,6 +2879,52 @@
         "Submitting to LB despite lower CV: pseudo-labeling specifically targets LB>CV gap closure",
         "Runtime 3.7h CPU — manageable. GPU re-enabled for V47+"
       ]
+    },
+    {
+      "version": 47,
+      "score": null,
+      "best_model": "ensemble_majority_vote",
+      "source": "iter 036_ensemble_vote (no kernel)",
+      "changes": [
+        "Local majority-vote ensemble of V34 (LB 0.97617) + V37 (LB 0.97603) + V42 (LB 0.97609)",
+        "495/270000 labels differ from V34 alone",
+        "LB 0.97614 (-0.00003 vs V34) — V37/V42 errors too correlated with V34 for vote to help"
+      ]
+    },
+    {
+      "version": 48,
+      "score": 0.9753885538069275,
+      "best_model": "5-seed XGB equal-blend",
+      "source": "autonomous pipeline (iter 037_5seed_xgb)",
+      "plain_accuracy": 0.9822484375,
+      "per_class_recall": {
+        "High": 0.9678613258374327,
+        "Low": 0.9958752571311482,
+        "Medium": 0.9624290784522016
+      },
+      "fold_std": 0.0016147071519656165,
+      "elapsed_sec": 21257.6,
+      "per_model_cv": {
+        "xgb": 0.974638191168984,
+        "xgb_a": 0.9746129194214778,
+        "xgb_b": 0.9745940726419408,
+        "xgb_c": 0.9745286586576712,
+        "xgb_d": 0.9747067841306833
+      },
+      "blend_weights": {
+        "xgb": 0.2,
+        "xgb_a": 0.2,
+        "xgb_b": 0.2,
+        "xgb_c": 0.2,
+        "xgb_d": 0.2
+      },
+      "changes": [
+        "5 XGB with identical hparams except seed (42/123/777/999/1234) — bagging diversity only",
+        "Per-seed CV: 0.97453-0.97471 (extremely tight; seed effect minimal)",
+        "Equal-blend pre-Optuna 0.97465, post-Optuna 0.97539 (+0.00074)",
+        "GPU runtime 5.9h — slower than projection due to per-seed overhead",
+        "Submitting to LB to test seed diversity transfer"
+      ]
     }
   ],
   "improvement": {
