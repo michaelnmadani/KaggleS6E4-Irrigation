@@ -1,5 +1,8 @@
 {
   "001_baseline": {
     "public_lb": "0.96152"
+  },
+  "023_v34_stratified_miadul": {
+    "public_lb": "0.97517"
   }
 }
