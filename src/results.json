@@ -3076,6 +3076,32 @@
         "CV 0.97514 = +0.0001 vs V34 — minimal additional signal from deeper decimals",
         "Submitting to compare LB"
       ]
+    },
+    {
+      "version": 55,
+      "score": 0.9750563238142474,
+      "best_model": "xgb + id_modulo + wider_digits combined",
+      "source": "autonomous pipeline (iter 043_additive_id_wider)",
+      "plain_accuracy": 0.9817492063492064,
+      "per_class_recall": {
+        "High": 0.9682993002998714,
+        "Low": 0.9960207289743375,
+        "Medium": 0.9608489421685336
+      },
+      "fold_std": 0.0008281600253994158,
+      "elapsed_sec": 5192.8,
+      "per_model_cv": {
+        "xgb": 0.9736280169748385
+      },
+      "blend_weights": {
+        "xgb": 1
+      },
+      "changes": [
+        "Cat D: stack V51 id-modulo + V54 wider digits (599 features vs V34's 440)",
+        "CV 0.97506 = same as V34 — 159 extra cols added zero signal",
+        "FE additions consistently fail to lift this OrderedTE+XGB recipe past 0.975 CV / 0.97617 LB",
+        "Pivoting V56: CatBoost solo on V34's exact features (never directly tested)"
+      ]
     }
   ],
   "improvement": {
