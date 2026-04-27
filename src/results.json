@@ -3021,6 +3021,35 @@
         "CV 0.97504 unchanged from V34 — TTA only affects test predictions, not OOF",
         "GPU runtime 1.1h. Submitting to compare LB to V34"
       ]
+    },
+    {
+      "version": 53,
+      "score": 0.9751280630350831,
+      "best_model": "xgb + per-class isotonic + bias",
+      "source": "autonomous pipeline (iter 041_per_class_isotonic)",
+      "plain_accuracy": 0.982584126984127,
+      "per_class_recall": {
+        "High": 0.9657289732971583,
+        "Low": 0.9953638248580087,
+        "Medium": 0.9642913909500824
+      },
+      "fold_std": 0.0010349088230682214,
+      "elapsed_sec": 3860.5,
+      "per_model_cv": {
+        "xgb": 0.9738619900029203
+      },
+      "blend_weights": {
+        "xgb": 1
+      },
+      "changes": [
+        "Category C — CALIBRATION. New postprocess per_class_isotonic_calibration replacing class_weight_optuna",
+        "IsotonicRegression per class fit on (oof_pred_k vs y==k); applied to test, renormalized",
+        "Then 200-trial Optuna additive logit-bias search [(-2.0, 2.0) per class]",
+        "XGB raw 0.97386 -> isotonic alone 0.97007 (HURT) -> + bias 0.97513 (recovered)",
+        "Net CV 0.97513 vs V34 0.97503 — marginal +0.0001",
+        "Bias landed [1.12, -1.06, -1.15] — mostly zero-sum class shifts",
+        "V52 TTA hurt -0.0012 LB; V53 likely transfers similarly. Submitting"
+      ]
     }
   ],
   "improvement": {
