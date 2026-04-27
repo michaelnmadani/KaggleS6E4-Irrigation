@@ -3249,7 +3249,8 @@
         "Optuna +0.00382 — BIGGEST class-weight delta of all 60 iterations (deeper trees give Optuna more uncalibrated probability distribution to fix)",
         "CV 0.97608 = +0.001 over V34. Highest CV across all 60 iterations.",
         "Class weights [2.96, 0.59, 0.67] — heavy down-weight on Low and Medium",
-        "Submitting"
+        "Submitting",
+        "LB 0.97646 — NEW CHAMPION! +0.00029 over V34. Deeper XGB + real early stopping broke the 25-iteration V34 LB plateau."
       ]
     }
   ],
