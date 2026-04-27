@@ -1,5 +1,8 @@
 {
   "001_baseline": {
     "public_lb": "0.96152"
+  },
+  "041_per_class_isotonic": {
+    "public_lb": "0.97598"
   }
 }
