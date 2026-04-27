@@ -295,7 +295,7 @@ def class_weight_optuna(probs: np.ndarray, test_probs: np.ndarray, y: np.ndarray
 
 # ------------------------------------------------------------------------
 # Per-class isotonic calibration + per-class additive logit bias (V53).
-# Different from class_weight_optuna (multiplicative) — calibration recalibrates
+# Different from class_weight_optuna (multiplicative) - calibration recalibrates
 # probabilities monotonically, then bias optimizes argmax thresholds.
 # ------------------------------------------------------------------------
 
