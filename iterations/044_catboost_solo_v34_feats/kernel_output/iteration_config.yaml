@@ -1,0 +1,53 @@
+
+# Iteration 044 (website V56) - CatBoost solo on V34's exact features.
+#
+# Cat F (different model family). V36/V42 used CatBoost in a meta-stack but
+# never CB solo on V34's OrderedTE features. CB extracts signal differently
+# from XGB - might generalize differently to LB.
+#
+# Runtime: CB GPU on 4x-augmented data ~2h. Comfortable.
+
+target: Irrigation_Need
+id_col: id
+task: multiclass
+metric: balanced_accuracy
+
+class_weights: balanced
+
+kernel:
+  enable_gpu: true
+  enable_internet: true
+
+pip_install:
+  - optuna
+
+features:
+  - fill_na_median
+  - s6e4_digit_extraction_wide
+  - s6e4_freq_filter_cats
+  - ordered_te
+
+model:
+  - catboost
+
+postprocess:
+  - class_weight_optuna
+
+optuna_trials: 200
+
+params:
+  catboost:
+    iterations: 3000
+    early_stopping_rounds: 100
+    learning_rate: 0.05
+    depth: 6
+    l2_leaf_reg: 5.0
+    random_seed: 42
+    task_type: GPU
+    bootstrap_type: Bayesian
+    bagging_temperature: 1.0
+
+cv:
+  n_splits: 5
+  seed: 42
+  stratified: false
