@@ -372,6 +372,30 @@ def s6e4_digit_extraction_wide(X_tr: pd.DataFrame, X_te: pd.DataFrame) -> tuple[
     return X_tr, X_te
 
 
+def s6e4_digit_extraction_wider(X_tr, X_te):
+    """V54: extend digit positions to k in [-6, 5] (12 positions vs V34's 9).
+    Hypothesis: deeper decimal positions (-5, -6) might capture additional
+    synthetic-data fingerprint signal beyond [-4, 4]."""
+    X_tr, X_te = X_tr.copy(), X_te.copy()
+    num_cols = [c for c in _V11_NUMERIC_SOURCES if c in X_tr.columns]
+    max_vals = {c: float(X_tr[c].max()) for c in num_cols}
+    for c in num_cols:
+        v_tr = X_tr[c].astype(float).fillna(0.0).values
+        v_te = X_te[c].astype(float).fillna(0.0).values
+        for k in range(-6, 6):
+            p = 10.0 ** k
+            X_tr[f"{c}_digit{k}"] = (np.floor(v_tr / p).astype(np.int64) % 10).astype(np.int16)
+            X_te[f"{c}_digit{k}"] = (np.floor(v_te / p).astype(np.int64) % 10).astype(np.int16)
+        m = max_vals[c]
+        if m < 10:
+            X_tr[c] = X_tr[c].round(3); X_te[c] = X_te[c].round(3)
+        elif m < 100:
+            X_tr[c] = X_tr[c].round(2); X_te[c] = X_te[c].round(2)
+        else:
+            X_tr[c] = X_tr[c].round(1); X_te[c] = X_te[c].round(1)
+    return X_tr, X_te
+
+
 def s6e4_freq_filter_cats(X_tr: pd.DataFrame, X_te: pd.DataFrame, min_count: int = 5) -> tuple[pd.DataFrame, pd.DataFrame]:
     """yunsuxiaozi V34 port: for each object/category/digit col, map values with
     train-count >= min_count to indices 0..K-1; rare values -> K (default bucket)."""
@@ -525,6 +549,7 @@ BLOCKS = {
     "s6e4_quantile_bins": s6e4_quantile_bins,
     "target_encode_multiclass": target_encode_multiclass,
     "s6e4_digit_extraction_wide": s6e4_digit_extraction_wide,
+    "s6e4_digit_extraction_wider": s6e4_digit_extraction_wider,
     "s6e4_cat_pair_combined_keys": s6e4_cat_pair_combined_keys,
     "s6e4_freq_filter_cats": s6e4_freq_filter_cats,
     "s6e4_id_modulo": s6e4_id_modulo,
