@@ -1,5 +1,8 @@
 {
   "001_baseline": {
     "public_lb": "0.96152"
+  },
+  "039_id_modulo_features": {
+    "public_lb": "0.97611"
   }
 }
