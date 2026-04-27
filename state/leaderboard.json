@@ -1,5 +1,8 @@
 {
   "001_baseline": {
     "public_lb": "0.96152"
+  },
+  "040_tta_gaussian": {
+    "public_lb": "0.97500"
   }
 }
