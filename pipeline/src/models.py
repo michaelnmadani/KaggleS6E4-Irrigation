@@ -51,6 +51,9 @@ def _xgb_fit(X_tr, y_tr, X_val, y_val, X_test, params, task, sample_weight=None)
     base.update(params)
     num_boost_round = base.pop("num_boost_round", 2000)
     early_stop = base.pop("early_stopping_rounds", 100)
+    # TTA params (V52). Pop so they aren't forwarded to xgb.train.
+    tta_n = int(base.pop("tta_n_passes", 0))
+    tta_sigma = float(base.pop("tta_sigma", 0.01))
     dtr = xgb.DMatrix(X_tr, label=y_tr, weight=sample_weight)
     dval = xgb.DMatrix(X_val, label=y_val)
     dtest = xgb.DMatrix(X_test)
@@ -67,7 +70,24 @@ def _xgb_fit(X_tr, y_tr, X_val, y_val, X_test, params, task, sample_weight=None)
             evals=[(dval, "val")], callbacks=[EarlyStopping(rounds=early_stop, save_best=True)],
             verbose_eval=False,
         )
-    return FitResult(model=model, val_pred=model.predict(dval), test_pred=model.predict(dtest))
+    test_pred = model.predict(dtest)
+    if tta_n > 0:
+        # Test-Time Augmentation: jitter continuous numerics with Gaussian noise,
+        # repeat predict, average. Skip integer-coded cols (cats / digit features).
+        rng = np.random.default_rng(int(base.get("seed", 42)) + 999)
+        cont_cols = [c for c in X_test.columns
+                     if (pd.api.types.is_float_dtype(X_test[c].dtype)
+                         and X_test[c].nunique() > 50)]
+        std_per_col = {c: float(X_test[c].std()) for c in cont_cols}
+        accum = np.copy(test_pred)
+        for i in range(tta_n):
+            X_jit = X_test.copy()
+            for c in cont_cols:
+                noise = rng.normal(0, tta_sigma * max(std_per_col[c], 1e-9), len(X_test))
+                X_jit[c] = X_jit[c].astype(float) + noise
+            accum = accum + model.predict(xgb.DMatrix(X_jit))
+        test_pred = accum / (tta_n + 1)
+    return FitResult(model=model, val_pred=model.predict(dval), test_pred=test_pred)
 
 
 def _catboost_fit(X_tr, y_tr, X_val, y_val, X_test, params, task, sample_weight=None) -> FitResult:
