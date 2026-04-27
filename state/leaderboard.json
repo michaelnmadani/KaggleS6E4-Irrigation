@@ -1,5 +1,8 @@
 {
   "001_baseline": {
     "public_lb": "0.96152"
+  },
+  "045_xgb_cb_equal_blend": {
+    "public_lb": "0.97564"
   }
 }
