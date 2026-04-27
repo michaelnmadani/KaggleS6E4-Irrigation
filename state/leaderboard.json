@@ -1,5 +1,8 @@
 {
   "001_baseline": {
     "public_lb": "0.96152"
+  },
+  "044_catboost_solo_v34_feats": {
+    "public_lb": "0.97547"
   }
 }
