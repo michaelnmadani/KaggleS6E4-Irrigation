@@ -3223,6 +3223,34 @@
         "CV 0.97518 — extends V50's 3-seed (CV 0.97526) with no extra benefit",
         "GPU runtime 8h"
       ]
+    },
+    {
+      "version": 60,
+      "score": 0.9760803849827212,
+      "best_model": "XGB depth=5 + real early stopping + Optuna",
+      "source": "autonomous pipeline (iter 048_xgb_deeper)",
+      "plain_accuracy": 0.9820952380952381,
+      "per_class_recall": {
+        "High": 0.9703936408206006,
+        "Low": 0.9955638697329401,
+        "Medium": 0.9622836443946226
+      },
+      "fold_std": 0.001176069132347088,
+      "elapsed_sec": 7921.4,
+      "per_model_cv": {
+        "xgb": 0.9722617085163966
+      },
+      "blend_weights": {
+        "xgb": 1
+      },
+      "changes": [
+        "Final iteration. XGB depth=5 (vs V34's 4), max_leaves=50 (vs 30), lr=0.07 (vs 0.10), 1000 rounds with REAL early stopping at 80 rounds",
+        "Per-fold XGB raw CV: 0.97226 (lower than V34) — deeper trees with ES fit fewer rounds",
+        "Optuna +0.00382 — BIGGEST class-weight delta of all 60 iterations (deeper trees give Optuna more uncalibrated probability distribution to fix)",
+        "CV 0.97608 = +0.001 over V34. Highest CV across all 60 iterations.",
+        "Class weights [2.96, 0.59, 0.67] — heavy down-weight on Low and Medium",
+        "Submitting"
+      ]
     }
   ],
   "improvement": {
