@@ -2968,6 +2968,33 @@
         "GPU runtime 3.05h",
         "LB 0.97571 — below V34 (-0.00046). Stopping at V50; 0.98 not reached. V34 remains champion."
       ]
+    },
+    {
+      "version": 51,
+      "score": 0.9751224611442519,
+      "best_model": "xgb + s6e4_id_modulo (Cat A: leak features)",
+      "source": "autonomous pipeline (iter 039_id_modulo_features)",
+      "plain_accuracy": 0.9814746031746032,
+      "per_class_recall": {
+        "High": 0.9691560759674426,
+        "Low": 0.9957639146078715,
+        "Medium": 0.9604473928574416
+      },
+      "fold_std": 0.0009392227990172053,
+      "elapsed_sec": 4085.7,
+      "per_model_cv": {
+        "xgb": 0.9736555174716958
+      },
+      "blend_weights": {
+        "xgb": 1
+      },
+      "changes": [
+        "Category A — STRUCTURAL LEAK CHECK. New blocks: s6e4_id_modulo (id mod 10/100/1k/10k/100k + id_div_*) + s6e4_drop_id_col",
+        "data.py keeps _kaggle_id_int column; ordered_te skips it; XGB sees 7 new id-derived numerics",
+        "CV 0.97512 = +0.00009 over V34 0.97503 — marginal, suggests minimal id-batch leak",
+        "Features 439 → 467 (+28 due to id_div_* with high cardinality)",
+        "GPU runtime 1.1h. Submitting since CV is slightly higher"
+      ]
     }
   ],
   "improvement": {
