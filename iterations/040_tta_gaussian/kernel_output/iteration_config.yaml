@@ -1,0 +1,62 @@
+
+# Iteration 040 (website V52) — Test-Time Augmentation with Gaussian jitter.
+#
+# Category B: TTA. V34's exact recipe + 8 perturbed predictions per fold:
+# add Gaussian noise (sigma = 0.01 * col_std) to continuous numerics, predict,
+# average with clean prediction. Standard +0.0005-0.002 in tabular comps.
+#
+# Implementation in _xgb_fit: tta_n_passes=8, tta_sigma=0.01 in params.
+# Per-fold runtime: clean predict (~1s) + 8 perturbed predicts (~8s) — minimal
+# overhead. Full pipeline ~1.5h on GPU.
+
+target: Irrigation_Need
+id_col: id
+task: multiclass
+metric: balanced_accuracy
+
+class_weights: balanced
+
+kernel:
+  enable_gpu: true
+  enable_internet: true
+
+pip_install:
+  - optuna
+
+features:
+  - fill_na_median
+  - s6e4_digit_extraction_wide
+  - s6e4_freq_filter_cats
+  - ordered_te
+
+model:
+  - xgb
+
+postprocess:
+  - class_weight_optuna
+
+optuna_trials: 200
+
+params:
+  xgb:
+    num_boost_round: 512
+    early_stopping_rounds: 1024
+    eta: 0.1
+    max_depth: 4
+    max_leaves: 30
+    subsample: 0.8
+    colsample_bytree: 0.8
+    reg_alpha: 5
+    reg_lambda: 5
+    min_child_weight: 2
+    tree_method: hist
+    max_bin: 10000
+    device: cuda
+    seed: 42
+    tta_n_passes: 8       # Gaussian-jitter rounds
+    tta_sigma: 0.01
+
+cv:
+  n_splits: 5
+  seed: 42
+  stratified: false
