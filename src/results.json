@@ -3183,6 +3183,46 @@
         "CV 0.97526 vs V34 0.97503 — fold-seed gave +0.00023",
         "Tests fold-split LB sensitivity"
       ]
+    },
+    {
+      "version": 59,
+      "score": 0.9751823472707062,
+      "best_model": "8-seed XGB averaging on V34 recipe",
+      "source": "autonomous pipeline (iter 047_xgb_8seed)",
+      "plain_accuracy": 0.9818,
+      "per_class_recall": {
+        "High": 0.9685848921890619,
+        "Low": 0.9960504653746651,
+        "Medium": 0.9609116842483917
+      },
+      "fold_std": 0.0009299061283718817,
+      "elapsed_sec": 28664.7,
+      "per_model_cv": {
+        "xgb": 0.9738463121390185,
+        "xgb_a": 0.9736114792747376,
+        "xgb_b": 0.9736763384074433,
+        "xgb_c": 0.9739469703526379,
+        "xgb_d": 0.9738584034873999,
+        "xgb_e": 0.9738389097935022,
+        "xgb_f": 0.9737405029904435,
+        "xgb_g": 0.973767479393119
+      },
+      "blend_weights": {
+        "xgb": 0.125,
+        "xgb_a": 0.125,
+        "xgb_b": 0.125,
+        "xgb_c": 0.125,
+        "xgb_d": 0.125,
+        "xgb_e": 0.125,
+        "xgb_f": 0.125,
+        "xgb_g": 0.125
+      },
+      "changes": [
+        "8 XGB seeds (42, 123, 777, 999, 1234, 555, 1111, 2222) equal-blend on V34 yunsuxiaozi recipe",
+        "Per-seed CV 0.97361-0.97395 (very tight; bagging variance ~3e-4)",
+        "CV 0.97518 — extends V50's 3-seed (CV 0.97526) with no extra benefit",
+        "GPU runtime 8h"
+      ]
     }
   ],
   "improvement": {
