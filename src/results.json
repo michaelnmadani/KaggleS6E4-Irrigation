@@ -3158,6 +3158,31 @@
         "High-class recall 0.9717 (best across all iterations)",
         "GPU 1.3h. Submitting"
       ]
+    },
+    {
+      "version": 58,
+      "score": 0.9752580194207651,
+      "best_model": "xgb V34 ablation (cv.seed=999)",
+      "source": "autonomous pipeline (iter 046_v34_fold_seed_999)",
+      "plain_accuracy": 0.981568253968254,
+      "per_class_recall": {
+        "High": 0.9694416678566329,
+        "Low": 0.9959477396280787,
+        "Medium": 0.9603846507775835
+      },
+      "fold_std": 0.0009544520180499244,
+      "elapsed_sec": 3811.1,
+      "per_model_cv": {
+        "xgb": 0.9735415492658076
+      },
+      "blend_weights": {
+        "xgb": 1
+      },
+      "changes": [
+        "V34 EXACT recipe with cv.seed=999 (was 42)",
+        "CV 0.97526 vs V34 0.97503 — fold-seed gave +0.00023",
+        "Tests fold-split LB sensitivity"
+      ]
     }
   ],
   "improvement": {
