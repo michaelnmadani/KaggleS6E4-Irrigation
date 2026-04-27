@@ -3102,6 +3102,33 @@
         "FE additions consistently fail to lift this OrderedTE+XGB recipe past 0.975 CV / 0.97617 LB",
         "Pivoting V56: CatBoost solo on V34's exact features (never directly tested)"
       ]
+    },
+    {
+      "version": 56,
+      "score": 0.9754331023064129,
+      "best_model": "CatBoost solo on V34 features",
+      "source": "autonomous pipeline (iter 044_catboost_solo_v34_feats)",
+      "plain_accuracy": 0.982284126984127,
+      "per_class_recall": {
+        "High": 0.9679185111142844,
+        "Low": 0.9958963767547855,
+        "Medium": 0.9624844190501686
+      },
+      "fold_std": 0.001047777861359087,
+      "elapsed_sec": 1309.7,
+      "per_model_cv": {
+        "catboost": 0.9729958493713764
+      },
+      "blend_weights": {
+        "catboost": 1
+      },
+      "changes": [
+        "Cat F: CatBoost solo (never tested on V34's exact features)",
+        "CB CV 0.97300 -> Optuna 0.97543 (+0.00243 — biggest postprocess delta yet)",
+        "CV 0.97543 vs V34 0.97503 — +0.0004",
+        "GPU runtime 22 min (CB GPU is fast)",
+        "Submitting to compare LB"
+      ]
     }
   ],
   "improvement": {
