@@ -1,0 +1,62 @@
+
+# Iteration 042 (website V54) - wider digit-position window k in [-6, 5].
+#
+# Category D: NEW FE. V34 uses k in [-4, 4] (9 positions). V54 extends to
+# k in [-6, 5] (12 positions). Hypothesis: deeper decimal positions might
+# expose additional synthetic-generator signal.
+#
+# Per numeric: +3 new digit cols (positions -6, -5, 5). With 11 numerics:
+# +33 new digit cols beyond V34. After freq_filter + ordered_te, expect ~+99
+# new TE cols.
+#
+# Runtime: similar to V34 with a few more cols. ~1.3h GPU.
+
+target: Irrigation_Need
+id_col: id
+task: multiclass
+metric: balanced_accuracy
+
+class_weights: balanced
+
+kernel:
+  enable_gpu: true
+  enable_internet: true
+
+pip_install:
+  - optuna
+
+features:
+  - fill_na_median
+  - s6e4_digit_extraction_wider
+  - s6e4_freq_filter_cats
+  - ordered_te
+
+model:
+  - xgb
+
+postprocess:
+  - class_weight_optuna
+
+optuna_trials: 200
+
+params:
+  xgb:
+    num_boost_round: 512
+    early_stopping_rounds: 1024
+    eta: 0.1
+    max_depth: 4
+    max_leaves: 30
+    subsample: 0.8
+    colsample_bytree: 0.8
+    reg_alpha: 5
+    reg_lambda: 5
+    min_child_weight: 2
+    tree_method: hist
+    max_bin: 10000
+    device: cuda
+    seed: 42
+
+cv:
+  n_splits: 5
+  seed: 42
+  stratified: false

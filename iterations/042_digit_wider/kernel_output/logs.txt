@@ -1,0 +1,14 @@
+config: /kaggle/working/iteration_config.yaml
+train=(630000, 20)  test=(270000, 20)  external_rows=0
+target encoded: {0: 'High', 1: 'Low', 2: 'Medium'}
+global features: ['fill_na_median', 's6e4_digit_extraction_wider', 's6e4_freq_filter_cats'] -> 152 cols
+per-fold features: ['ordered_te']
+fold 0 xgb: balanced_accuracy=0.97321
+fold 1 xgb: balanced_accuracy=0.97426
+fold 2 xgb: balanced_accuracy=0.97415
+fold 3 xgb: balanced_accuracy=0.97499
+fold 4 xgb: balanced_accuracy=0.97251
+model xgb: CV balanced_accuracy=0.97382
+class_weight_optuna: pre=0.97382  post=0.97514  delta=+0.00132  weights=[2.93807349259126, 2.169855798822682, 1.462213113392103]
+class_weight_optuna applied (CV: 0.97382 -> 0.97514)
+CV balanced_accuracy=0.97514  plain_acc=0.98143  balanced_acc=0.97514
