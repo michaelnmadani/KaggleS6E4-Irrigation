@@ -1,5 +1,8 @@
 {
   "001_baseline": {
     "public_lb": "0.96152"
+  },
+  "042_digit_wider": {
+    "public_lb": "0.97528"
   }
 }
