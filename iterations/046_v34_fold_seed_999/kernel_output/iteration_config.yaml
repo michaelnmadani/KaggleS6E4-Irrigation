@@ -1,0 +1,46 @@
+
+# Iteration 046 (website V58) - V34 exact recipe with cv.seed=999.
+#
+# Pure ablation: changes ONLY the fold split (random_state=999 vs V34's 42).
+# If LB shifts >|0.0005|, fold randomness is a major variance source.
+
+target: Irrigation_Need
+id_col: id
+task: multiclass
+metric: balanced_accuracy
+class_weights: balanced
+kernel:
+  enable_gpu: true
+  enable_internet: true
+pip_install:
+  - optuna
+features:
+  - fill_na_median
+  - s6e4_digit_extraction_wide
+  - s6e4_freq_filter_cats
+  - ordered_te
+model:
+  - xgb
+postprocess:
+  - class_weight_optuna
+optuna_trials: 200
+params:
+  xgb:
+    num_boost_round: 512
+    early_stopping_rounds: 1024
+    eta: 0.1
+    max_depth: 4
+    max_leaves: 30
+    subsample: 0.8
+    colsample_bytree: 0.8
+    reg_alpha: 5
+    reg_lambda: 5
+    min_child_weight: 2
+    tree_method: hist
+    max_bin: 10000
+    device: cuda
+    seed: 42
+cv:
+  n_splits: 5
+  seed: 999      # was 42 in V34
+  stratified: false
