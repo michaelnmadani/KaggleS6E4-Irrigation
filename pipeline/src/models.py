@@ -333,6 +333,9 @@ FITTERS = {
     "xgb_b": _xgb_fit,
     "xgb_c": _xgb_fit,
     "xgb_d": _xgb_fit,
+    "xgb_e": _xgb_fit,
+    "xgb_f": _xgb_fit,
+    "xgb_g": _xgb_fit,
     "catboost": _catboost_fit,
     # Aliases for multi-seed CatBoost ensembling; config supplies distinct random_seed/rsm.
     "catboost_a": _catboost_fit,
