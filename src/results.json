@@ -3050,6 +3050,32 @@
         "Bias landed [1.12, -1.06, -1.15] — mostly zero-sum class shifts",
         "V52 TTA hurt -0.0012 LB; V53 likely transfers similarly. Submitting"
       ]
+    },
+    {
+      "version": 54,
+      "score": 0.9751411562504525,
+      "best_model": "xgb + wider digit window k in [-6,5]",
+      "source": "autonomous pipeline (iter 042_digit_wider)",
+      "plain_accuracy": 0.9814333333333334,
+      "per_class_recall": {
+        "High": 0.9694892665048312,
+        "Low": 0.9960180256652168,
+        "Medium": 0.9599161765813096
+      },
+      "fold_std": 0.0008673440905833424,
+      "elapsed_sec": 4877,
+      "per_model_cv": {
+        "xgb": 0.9738168159148862
+      },
+      "blend_weights": {
+        "xgb": 1
+      },
+      "changes": [
+        "Cat D: NEW FE — extend digit positions to k in [-6, 5] (12 vs V34's 9)",
+        "Features 440 -> 572 (+132 cols from extra digit positions + their TE'd versions)",
+        "CV 0.97514 = +0.0001 vs V34 — minimal additional signal from deeper decimals",
+        "Submitting to compare LB"
+      ]
     }
   ],
   "improvement": {
