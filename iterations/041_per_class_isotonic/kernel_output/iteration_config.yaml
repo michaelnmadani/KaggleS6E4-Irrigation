@@ -1,0 +1,67 @@
+
+# Iteration 041 (website V53) — per-class isotonic + additive logit bias.
+#
+# Category C: calibration. V34 uses class_weight_optuna (multiplicative weights).
+# V53 stacks per-class isotonic recalibration BEFORE Optuna additive-bias.
+#
+# Process:
+#   1. Train V34 model (CV produces oof + test preds)
+#   2. Per class k: fit IsotonicRegression on (oof_pred_k, y==k binary)
+#   3. Apply iso to test_preds[:,k], renormalize
+#   4. Optuna 200-trial search over (b0, b1, b2) additive logit-space bias
+#   5. Apply best bias to OOF + test, renormalize
+#
+# Different from class_weight_optuna's multiplicative weights — calibrates
+# probability magnitudes monotonically, then optimizes argmax thresholds.
+#
+# Runtime: same as V34 + ~1 min postprocess. ~1.2h GPU.
+
+target: Irrigation_Need
+id_col: id
+task: multiclass
+metric: balanced_accuracy
+
+class_weights: balanced
+
+kernel:
+  enable_gpu: true
+  enable_internet: true
+
+pip_install:
+  - optuna
+
+features:
+  - fill_na_median
+  - s6e4_digit_extraction_wide
+  - s6e4_freq_filter_cats
+  - ordered_te
+
+model:
+  - xgb
+
+postprocess:
+  - per_class_isotonic        # NEW: monotonic recalibration + additive bias
+
+optuna_trials: 200
+
+params:
+  xgb:
+    num_boost_round: 512
+    early_stopping_rounds: 1024
+    eta: 0.1
+    max_depth: 4
+    max_leaves: 30
+    subsample: 0.8
+    colsample_bytree: 0.8
+    reg_alpha: 5
+    reg_lambda: 5
+    min_child_weight: 2
+    tree_method: hist
+    max_bin: 10000
+    device: cuda
+    seed: 42
+
+cv:
+  n_splits: 5
+  seed: 42
+  stratified: false
