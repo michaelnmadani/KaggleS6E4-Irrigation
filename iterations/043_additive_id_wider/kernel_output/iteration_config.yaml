@@ -1,0 +1,61 @@
+
+# Iteration 043 (website V55) - additive stack: V51 id-modulo + V54 wider digits.
+#
+# V51 (id-modulo): CV 0.97512 / LB 0.97611 (-0.00006 vs V34)
+# V54 (wider digits): CV 0.97514 (LB pending)
+# V55: combine both feature additions onto V34 base
+#
+# Hypothesis: tiny CV bumps might compound; the two FE additions are
+# orthogonal (id-derived vs digit-position-derived). +0.0002 to +0.0005 CV.
+
+target: Irrigation_Need
+id_col: id
+task: multiclass
+metric: balanced_accuracy
+
+class_weights: balanced
+
+kernel:
+  enable_gpu: true
+  enable_internet: true
+
+pip_install:
+  - optuna
+
+features:
+  - fill_na_median
+  - s6e4_id_modulo
+  - s6e4_digit_extraction_wider
+  - s6e4_drop_id_col
+  - s6e4_freq_filter_cats
+  - ordered_te
+
+model:
+  - xgb
+
+postprocess:
+  - class_weight_optuna
+
+optuna_trials: 200
+
+params:
+  xgb:
+    num_boost_round: 512
+    early_stopping_rounds: 1024
+    eta: 0.1
+    max_depth: 4
+    max_leaves: 30
+    subsample: 0.8
+    colsample_bytree: 0.8
+    reg_alpha: 5
+    reg_lambda: 5
+    min_child_weight: 2
+    tree_method: hist
+    max_bin: 10000
+    device: cuda
+    seed: 42
+
+cv:
+  n_splits: 5
+  seed: 42
+  stratified: false
