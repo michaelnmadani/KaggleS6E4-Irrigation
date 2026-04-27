@@ -3129,6 +3129,35 @@
         "GPU runtime 22 min (CB GPU is fast)",
         "Submitting to compare LB"
       ]
+    },
+    {
+      "version": 57,
+      "score": 0.9756356501809319,
+      "best_model": "XGB+CatBoost 50/50 blend on V34 features",
+      "source": "autonomous pipeline (iter 045_xgb_cb_equal_blend)",
+      "plain_accuracy": 0.9811809523809524,
+      "per_class_recall": {
+        "High": 0.9717264029701557,
+        "Low": 0.995820684099406,
+        "Medium": 0.9593598634732342
+      },
+      "fold_std": 0.0009832417072028283,
+      "elapsed_sec": 4802.8,
+      "per_model_cv": {
+        "xgb": 0.973852359312514,
+        "catboost": 0.9729958493713764
+      },
+      "blend_weights": {
+        "xgb": 0.5,
+        "catboost": 0.5
+      },
+      "changes": [
+        "V34 XGB + V56 CatBoost 50/50 probability blend on V34 features",
+        "Per-model: XGB 0.97385, CB 0.97300; blend 0.97349 -> Optuna 0.97564",
+        "CV 0.97564 = +0.0006 over V34 — BEST CV YET",
+        "High-class recall 0.9717 (best across all iterations)",
+        "GPU 1.3h. Submitting"
+      ]
     }
   ],
   "improvement": {
