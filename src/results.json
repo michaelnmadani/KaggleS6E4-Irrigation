@@ -2995,6 +2995,32 @@
         "Features 439 → 467 (+28 due to id_div_* with high cardinality)",
         "GPU runtime 1.1h. Submitting since CV is slightly higher"
       ]
+    },
+    {
+      "version": 52,
+      "score": 0.9750427004124599,
+      "best_model": "xgb + TTA Gaussian jitter",
+      "source": "autonomous pipeline (iter 040_tta_gaussian)",
+      "plain_accuracy": 0.9820190476190476,
+      "per_class_recall": {
+        "High": 0.9672997286877053,
+        "Low": 0.9957287715893025,
+        "Medium": 0.9620996009603721
+      },
+      "fold_std": 0.0009248557628934413,
+      "elapsed_sec": 3984.5,
+      "per_model_cv": {
+        "xgb": 0.973818367606711
+      },
+      "blend_weights": {
+        "xgb": 1
+      },
+      "changes": [
+        "Category B — TEST-TIME AUGMENTATION. _xgb_fit now supports tta_n_passes (8) + tta_sigma (0.01)",
+        "Continuous numerics (>=50 unique) jittered with Gaussian noise; 8 perturbed predicts averaged with clean prediction",
+        "CV 0.97504 unchanged from V34 — TTA only affects test predictions, not OOF",
+        "GPU runtime 1.1h. Submitting to compare LB to V34"
+      ]
     }
   ],
   "improvement": {
