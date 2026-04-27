@@ -291,3 +291,74 @@ def class_weight_optuna(probs: np.ndarray, test_probs: np.ndarray, y: np.ndarray
         "weights": best_w.tolist(),
         "n_trials": n_trials,
     }
+
+
+# ------------------------------------------------------------------------
+# Per-class isotonic calibration + per-class additive logit bias (V53).
+# Different from class_weight_optuna (multiplicative) — calibration recalibrates
+# probabilities monotonically, then bias optimizes argmax thresholds.
+# ------------------------------------------------------------------------
+
+
+def per_class_isotonic_calibration(oof: np.ndarray, test_probs: np.ndarray,
+                                   y: np.ndarray, metric_fn, n_trials: int = 200,
+                                   seed: int = 42) -> dict:
+    """Fit IsotonicRegression per class on OOF (pred_k vs y==k binary), apply
+    to test_probs, renormalize. Then Optuna search per-class additive bias in
+    logit space maximizing balanced_acc on OOF. Stacks on top of any prior
+    class_weight_optuna stage if present."""
+    from sklearn.isotonic import IsotonicRegression
+    import optuna
+    from optuna.samplers import TPESampler
+    optuna.logging.set_verbosity(optuna.logging.WARNING)
+
+    y = np.asarray(y).astype(int)
+    n_classes = oof.shape[1]
+    pre_score = float(metric_fn(y, oof))
+
+    cal_oof = np.zeros_like(oof)
+    cal_test = np.zeros_like(test_probs)
+    for k in range(n_classes):
+        ir = IsotonicRegression(out_of_bounds="clip", y_min=1e-6, y_max=1 - 1e-6)
+        ir.fit(oof[:, k], (y == k).astype(int))
+        cal_oof[:, k] = ir.predict(oof[:, k])
+        cal_test[:, k] = ir.predict(test_probs[:, k])
+    cal_oof = cal_oof / np.clip(cal_oof.sum(axis=1, keepdims=True), 1e-9, None)
+    cal_test = cal_test / np.clip(cal_test.sum(axis=1, keepdims=True), 1e-9, None)
+    iso_score = float(metric_fn(y, cal_oof))
+
+    def _logits(P):
+        return np.log(np.clip(P, 1e-6, 1 - 1e-6))
+
+    def _objective(trial):
+        b = np.array([trial.suggest_float(f"b{k}", -2.0, 2.0) for k in range(n_classes)])
+        L = _logits(cal_oof) + b
+        L = L - L.max(axis=1, keepdims=True)
+        e = np.exp(L)
+        p = e / e.sum(axis=1, keepdims=True)
+        return float(metric_fn(y, p))
+
+    study = optuna.create_study(direction="maximize", sampler=TPESampler(seed=seed))
+    study.optimize(_objective, n_trials=n_trials, show_progress_bar=False)
+    best_b = np.array([study.best_params[f"b{k}"] for k in range(n_classes)])
+
+    def _apply_bias(P, b):
+        L = _logits(P) + b
+        L = L - L.max(axis=1, keepdims=True)
+        e = np.exp(L)
+        return e / e.sum(axis=1, keepdims=True)
+
+    final_oof = _apply_bias(cal_oof, best_b)
+    final_test = _apply_bias(cal_test, best_b)
+    post_score = float(metric_fn(y, final_oof))
+
+    return {
+        "oof": final_oof,
+        "test": final_test,
+        "pre_score": pre_score,
+        "iso_score": iso_score,
+        "post_score": post_score,
+        "bias": best_b.tolist(),
+        "n_trials": n_trials,
+    }
+

@@ -342,6 +342,37 @@ def run(config_path: str, input_dir: str, output_dir: str) -> dict:
             ([*postprocess_info, cwo_info] if isinstance(postprocess_info, list) else cwo_info)
         )
 
+    # Post-processing: per-class isotonic + additive bias (V53).
+    if "per_class_isotonic" in pp_stages and oof.ndim == 2:
+        pci = post_mod.per_class_isotonic_calibration(
+            oof, test_preds, np.asarray(y), metric_fn,
+            n_trials=int(cfg.get("optuna_trials", 200)),
+        )
+        log_lines.append(
+            f"per_class_isotonic: pre={pci['pre_score']:.5f}  iso={pci['iso_score']:.5f}  "
+            f"post={pci['post_score']:.5f}  delta={pci['post_score']-pci['pre_score']:+.5f}  "
+            f"bias={pci['bias']}"
+        )
+        if pci["post_score"] > pci["pre_score"]:
+            oof = pci["oof"]
+            test_preds = pci["test"]
+            cv_score = float(metric_fn(y, oof))
+            plain_acc = float(accuracy_score(y, _hard_labels(oof)))
+            bal_acc = float(balanced_accuracy_score(y, _hard_labels(oof)))
+            log_lines.append(f"per_class_isotonic applied (CV: {pci['pre_score']:.5f} -> {cv_score:.5f})")
+        pci_info = {
+            "kind": "per_class_isotonic",
+            "pre_score": pci["pre_score"],
+            "iso_score": pci["iso_score"],
+            "post_score": pci["post_score"],
+            "bias": pci["bias"],
+            "applied": pci["post_score"] > pci["pre_score"],
+        }
+        postprocess_info = (
+            [postprocess_info, pci_info] if isinstance(postprocess_info, dict) else
+            ([*postprocess_info, pci_info] if isinstance(postprocess_info, list) else pci_info)
+        )
+
     # Post-processing: Caruana greedy hill-climb on balanced_accuracy (V26).
     # Runs AFTER meta-stacker — only accepted if it beats whatever's current.
     if "caruana" in pp_stages and len(model_names) >= 2 and oof.ndim == 2:
