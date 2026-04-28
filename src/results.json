@@ -1940,8 +1940,8 @@
       }
     }
   },
-  "best_model": "logit_bias_tuned",
-  "best_score": 0.97256,
+  "best_model": "V60: XGB depth=5 + real early stopping + Optuna class-weight",
+  "best_score": 0.97608,
   "review": {
     "verdict": "APPROVE",
     "issues": [],
@@ -3250,8 +3250,10 @@
         "CV 0.97608 = +0.001 over V34. Highest CV across all 60 iterations.",
         "Class weights [2.96, 0.59, 0.67] — heavy down-weight on Low and Medium",
         "Submitting",
-        "LB 0.97646 — NEW CHAMPION! +0.00029 over V34. Deeper XGB + real early stopping broke the 25-iteration V34 LB plateau."
-      ]
+        "LB 0.97646 — NEW CHAMPION! +0.00029 over V34. Deeper XGB + real early stopping broke the 25-iteration V34 LB plateau.",
+        "FINAL submission — accepted by user 2026-04-29."
+      ],
+      "is_final": true
     },
     {
       "version": 61,
@@ -3276,8 +3278,10 @@
         "V60 recipe + miadul/irrigation-water-requirement-prediction-dataset @ weight=0.35",
         "n_train 640000 (630k synthetic + 10k miadul, 0 dedupe drops)",
         "Raw XGB CV 0.97250 (+0.00024 vs V60); Optuna +0.00362 (smaller delta vs V60's +0.00382) → 0.97612",
-        "Net CV ~unchanged. Pending LB."
-      ]
+        "LB 0.97601 — miadul augmentation HURT LB by 0.00045 vs V60. miadul thread closed; V60 retained as final."
+      ],
+      "public_lb": 0.97601,
+      "lb_delta_vs_v60": -0.00045
     }
   ],
   "improvement": {
@@ -3291,5 +3295,33 @@
       "Proved CatBoost is the strongest single model on this feature set (0.96987 standalone), within 0.003 of V11's 0.97256 benchmark",
       "Identified blend-weight strategy weakness: score-proportional with near-identical scores collapses to uniform average, which underperforms the best single model — V15 must use CV-optimized weights or go CatBoost-solo"
     ]
+  },
+  "final_submission": {
+    "version": 60,
+    "iteration": "048_xgb_deeper",
+    "cv_score": 0.97608,
+    "public_lb": 0.97646,
+    "status": "final — accepted by user 2026-04-29 after V61 miadul experiment showed -0.00045 LB regression",
+    "recipe": {
+      "features": [
+        "fill_na_median",
+        "s6e4_digit_extraction_wide",
+        "s6e4_freq_filter_cats",
+        "ordered_te"
+      ],
+      "model": "XGBoost (single, GPU)",
+      "xgb_params": {
+        "num_boost_round": 1000,
+        "early_stopping_rounds": 80,
+        "eta": 0.07,
+        "max_depth": 5,
+        "max_leaves": 50,
+        "max_bin": 10000
+      },
+      "cv": "5-fold KFold (stratified=false), seed=42",
+      "postprocess": "Optuna class-weight search (200 trials), weights=[2.96, 0.59, 0.67]"
+    },
+    "iterations_run": 60,
+    "miadul_experiment_summary": "V61 (V60+miadul w=0.35): CV 0.97612 / LB 0.97601 (-0.00045). V62-V65 not run — Kaggle GPU quota exhausted. Decision: V60 is final."
   }
 }
