@@ -1,0 +1,50 @@
+
+# Iter 049 (website V61) — V60 (LB champion) recipe + miadul external data @ weight=0.35.
+# Isolates the miadul effect (V35 conflated stratified+miadul). Every other knob
+# matches V60 exactly: stratified=false, depth=5, lr=0.07, ES=80, 1000 rounds.
+target: Irrigation_Need
+id_col: id
+task: multiclass
+metric: balanced_accuracy
+class_weights: balanced
+
+extra_dataset:
+  slug: miadul/irrigation-water-requirement-prediction-dataset
+  file: irrigation_prediction.csv
+  weight: 0.35
+
+kernel:
+  enable_gpu: true
+  enable_internet: true
+pip_install:
+  - optuna
+features:
+  - fill_na_median
+  - s6e4_digit_extraction_wide
+  - s6e4_freq_filter_cats
+  - ordered_te
+model:
+  - xgb
+postprocess:
+  - class_weight_optuna
+optuna_trials: 200
+params:
+  xgb:
+    num_boost_round: 1000
+    early_stopping_rounds: 80
+    eta: 0.07
+    max_depth: 5
+    max_leaves: 50
+    subsample: 0.8
+    colsample_bytree: 0.8
+    reg_alpha: 5
+    reg_lambda: 5
+    min_child_weight: 2
+    tree_method: hist
+    max_bin: 10000
+    device: cuda
+    seed: 42
+cv:
+  n_splits: 5
+  seed: 42
+  stratified: false
