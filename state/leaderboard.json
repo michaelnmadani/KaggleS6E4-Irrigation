@@ -1,5 +1,8 @@
 {
   "001_baseline": {
     "public_lb": "0.96152"
+  },
+  "049_v60_miadul": {
+    "public_lb": "0.97601"
   }
 }
