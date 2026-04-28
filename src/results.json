@@ -3252,6 +3252,32 @@
         "Submitting",
         "LB 0.97646 — NEW CHAMPION! +0.00029 over V34. Deeper XGB + real early stopping broke the 25-iteration V34 LB plateau."
       ]
+    },
+    {
+      "version": 61,
+      "score": 0.9761209938911942,
+      "best_model": "V60 + miadul ext data @ weight=0.35",
+      "source": "autonomous pipeline (iter 049_v60_miadul)",
+      "plain_accuracy": 0.9817203125,
+      "per_class_recall": {
+        "High": 0.9717498243148278,
+        "Low": 0.9957980845226342,
+        "Medium": 0.9608150728361208
+      },
+      "fold_std": 0.0016048899783579142,
+      "elapsed_sec": 8124.5,
+      "per_model_cv": {
+        "xgb": 0.9724997030897596
+      },
+      "blend_weights": {
+        "xgb": 1
+      },
+      "changes": [
+        "V60 recipe + miadul/irrigation-water-requirement-prediction-dataset @ weight=0.35",
+        "n_train 640000 (630k synthetic + 10k miadul, 0 dedupe drops)",
+        "Raw XGB CV 0.97250 (+0.00024 vs V60); Optuna +0.00362 (smaller delta vs V60's +0.00382) → 0.97612",
+        "Net CV ~unchanged. Pending LB."
+      ]
     }
   ],
   "improvement": {
