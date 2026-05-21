@@ -1,0 +1,52 @@
+
+# Iteration 008 (website V20) — SYNTHESIS of V12-V19 learnings.
+#
+# Rationale from full comparison:
+# - V15 (CatBoost + 10-fold + extdata): 0.96978 = current best
+# - V14 CatBoost solo: 0.96987 — tree path tops out here on existing features
+# - V16 (+logit-bias on V15): 0.0 delta_nested — already well-calibrated, skip
+# - V19 (RealMLP port): 0.95991 — port didn't match reference, skip further debug
+# - RealMLP reference: 0.97802 (+0.008 CV over V15). Gap likely comes from
+#   pairwise-interaction features that RealMLP notebook uses BUT my V19 failed to
+#   replicate due to TE differences and port bugs
+#
+# V20 isolates the pairwise-interaction idea from the RealMLP architecture:
+# take V15's proven CatBoost pipeline and ADD the pairwise features (without
+# factorizing originals so CatBoost keeps continuous signal). Expected: the
+# pairwise features + TE on them give CatBoost new cross-feature signals it
+# couldn't see with single-column features.
+
+target: Irrigation_Need
+id_col: id
+task: multiclass
+metric: balanced_accuracy
+
+class_weights: balanced
+
+extra_dataset:
+  slug: miadul/irrigation-water-requirement-prediction-dataset
+  file: irrigation_prediction.csv
+  weight: 0.35
+
+features:
+  - fill_na_median
+  - s6e4_threshold_booleans        # keep V13's 4 boolean thresholds
+  - s6e4_interactions              # keep V13's 9 weather/soil ratios/products
+  - s6e4_pairwise_only             # NEW: 15 pairwise-concat factorized cats
+  - label_encode                   # label-encode 8 string categoricals
+  - target_encode_multiclass       # per-fold TE on the 15 pairwise (45 TE cols)
+
+model: catboost
+
+params:
+  iterations: 2500
+  early_stopping_rounds: 150
+  learning_rate: 0.04
+  depth: 7
+  l2_leaf_reg: 5.0
+  random_seed: 42
+
+cv:
+  n_splits: 10
+  seed: 42
+  stratified: true
