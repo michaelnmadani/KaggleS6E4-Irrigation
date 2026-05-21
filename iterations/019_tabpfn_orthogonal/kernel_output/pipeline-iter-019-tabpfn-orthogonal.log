@@ -1,0 +1,217 @@
+[{"stream_name":"stderr","time":5.538746237,"data":"/usr/local/lib/python3.12/dist-packages/nbformat/__init__.py:96: MissingIDFieldWarning: Cell is missing an id field, this will become a hard error in future nbformat versions. You may want to use `normalize()` on your notebooks before validations (available since nbformat 5.1.4). Previous versions of nbformat are fixing this issue transparently, and will stop doing so in the future.\n"}
+,{"stream_name":"stderr","time":5.5388261629999995,"data":"  validate(nb)\n"}
+,{"stream_name":"stderr","time":6.314186285,"data":"0.00s - Debugger warning: It seems that frozen modules are being used, which may\n"}
+,{"stream_name":"stderr","time":6.314219385,"data":"0.00s - make the debugger miss breakpoints. Please pass -Xfrozen_modules=off\n"}
+,{"stream_name":"stderr","time":6.314223096,"data":"0.00s - to python to disable frozen modules.\n"}
+,{"stream_name":"stderr","time":6.314226156,"data":"0.00s - Note: Debugging will proceed. Set PYDEVD_DISABLE_FILE_VALIDATION=1 to disable this validation.\n"}
+,{"stream_name":"stderr","time":6.906577468,"data":"0.00s - Debugger warning: It seems that frozen modules are being used, which may\n"}
+,{"stream_name":"stderr","time":6.906608323,"data":"0.00s - make the debugger miss breakpoints. Please pass -Xfrozen_modules=off\n"}
+,{"stream_name":"stderr","time":6.906618238,"data":"0.00s - to python to disable frozen modules.\n"}
+,{"stream_name":"stderr","time":6.906620955,"data":"0.00s - Note: Debugging will proceed. Set PYDEVD_DISABLE_FILE_VALIDATION=1 to disable this validation.\n"}
+,{"stream_name":"stdout","time":8.015910229,"data":"Tue Apr 21 19:25:19 2026       \r\n"}
+,{"stream_name":"stdout","time":8.015960622,"data":"+-----------------------------------------------------------------------------------------+\r\n"}
+,{"stream_name":"stdout","time":8.015965382,"data":"| NVIDIA-SMI 580.105.08             Driver Version: 580.105.08     CUDA Version: 13.0     |\r\n"}
+,{"stream_name":"stdout","time":8.015969974,"data":"+-----------------------------------------+------------------------+----------------------+\r\n"}
+,{"stream_name":"stdout","time":8.015976545,"data":"| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |\r\n"}
+,{"stream_name":"stdout","time":8.015980453,"data":"| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |\r\n"}
+,{"stream_name":"stdout","time":8.015986085,"data":"|                                         |                        |               MIG M. |\r\n"}
+,{"stream_name":"stdout","time":8.01598997,"data":"|=========================================+========================+======================|\r\n"}
+,{"stream_name":"stdout","time":8.015993939,"data":"|   0  Tesla P100-PCIE-16GB           Off |   00000000:00:04.0 Off |                    0 |\r\n"}
+,{"stream_name":"stdout","time":8.015997674,"data":"| N/A   30C    P0             25W /  250W |       0MiB /  16384MiB |      0%      Default |\r\n"}
+,{"stream_name":"stdout","time":8.016001332,"data":"|                                         |                        |                  N/A |\r\n"}
+,{"stream_name":"stdout","time":8.016005162,"data":"+-----------------------------------------+------------------------+----------------------+\r\n"}
+,{"stream_name":"stdout","time":8.016010069,"data":"\r\n"}
+,{"stream_name":"stdout","time":8.016016316,"data":"+-----------------------------------------------------------------------------------------+\r\n"}
+,{"stream_name":"stdout","time":8.016021172,"data":"| Processes:                                                                              |\r\n"}
+,{"stream_name":"stdout","time":8.016025099,"data":"|  GPU   GI   CI              PID   Type   Process name                        GPU Memory |\r\n"}
+,{"stream_name":"stdout","time":8.016044544,"data":"|        ID   ID                                                               Usage      |\r\n"}
+,{"stream_name":"stdout","time":8.01605197,"data":"|=========================================================================================|\r\n"}
+,{"stream_name":"stdout","time":8.016055559,"data":"|  No running processes found                                                             |\r\n"}
+,{"stream_name":"stdout","time":8.016059107,"data":"+-----------------------------------------------------------------------------------------+\r\n"}
+,{"stream_name":"stdout","time":10.479958279,"data":"\u001b[?25l     \u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\u001b[0m \u001b[32m0.0/42.0 kB\u001b[0m \u001b[31m?\u001b[0m eta \u001b[36m-:--:--\u001b[0m\r\u001b[2K     \u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\u001b[0m \u001b[32m42.0/42.0 kB\u001b[0m \u001b[31m2.7 MB/s\u001b[0m eta \u001b[36m0:00:00\u001b[0m\r\n"}
+,{"stream_name":"stdout","time":11.594453783,"data":"\u001b[?25h\u001b[?25l   \u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\u001b[0m \u001b[32m0.0/660.6 kB\u001b[0m \u001b[31m?\u001b[0m eta \u001b[36m-:--:--\u001b[0m\r\u001b[2K   \u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\u001b[0m \u001b[32m660.6/660.6 kB\u001b[0m \u001b[31m37.3 MB/s\u001b[0m eta \u001b[36m0:00:00\u001b[0m\r\n"}
+,{"stream_name":"stdout","time":11.645358447,"data":"\u001b[?25h\u001b[?25l   \u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\u001b[0m \u001b[32m0.0/227.4 kB\u001b[0m \u001b[31m?\u001b[0m eta \u001b[36m-:--:--\u001b[0m\r\u001b[2K   \u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\u001b[0m \u001b[32m227.4/227.4 kB\u001b[0m \u001b[31m17.1 MB/s\u001b[0m eta \u001b[36m0:00:00\u001b[0m\r\n"}
+,{"stream_name":"stdout","time":11.645390432,"data":"\u001b[?25h\u001b[?25l   \u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\u001b[0m \u001b[32m0.0/64.9 kB\u001b[0m \u001b[31m?\u001b[0m eta \u001b[36m-:--:--\u001b[0m\r\u001b[2K   \u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\u001b[0m \u001b[32m64.9/64.9 kB\u001b[0m \u001b[31m5.1 MB/s\u001b[0m eta \u001b[36m0:00:00\u001b[0m\r\n"}
+,{"stream_name":"stdout","time":14.637398673,"data":"\u001b[?25h\u001b[31mERROR: pip's dependency resolver does not currently take into account all the packages that are installed. This behaviour is the source of the following dependency conflicts.\r\n"}
+,{"stream_name":"stdout","time":14.637435802,"data":"bigframes 2.35.0 requires google-cloud-bigquery-storage\u003c3.0.0,\u003e=2.30.0, which is not installed.\r\n"}
+,{"stream_name":"stdout","time":14.637440871,"data":"google-adk 1.25.1 requires google-cloud-bigquery-storage\u003e=2.0.0, which is not installed.\r\n"}
+,{"stream_name":"stdout","time":14.637445022,"data":"google-colab 1.0.0 requires jupyter-server==2.14.0, but you have jupyter-server 2.12.5 which is incompatible.\r\n"}
+,{"stream_name":"stdout","time":14.637448643,"data":"google-colab 1.0.0 requires pandas==2.2.2, but you have pandas 2.3.3 which is incompatible.\r\n"}
+,{"stream_name":"stdout","time":14.637452237,"data":"google-colab 1.0.0 requires requests==2.32.4, but you have requests 2.33.1 which is incompatible.\r\n"}
+,{"stream_name":"stdout","time":14.637479555,"data":"gcsfs 2025.3.0 requires fsspec==2025.3.0, but you have fsspec 2026.2.0 which is incompatible.\u001b[0m\u001b[31m\r\n"}
+,{"stream_name":"stdout","time":18.950201239,"data":"\u001b[0mtorch: 2.10.0+cu128 cuda: True device: Tesla P100-PCIE-16GB\n"}
+,{"stream_name":"stderr","time":18.951212969,"data":"/usr/local/lib/python3.12/dist-packages/torch/cuda/__init__.py:435: UserWarning: \n"}
+,{"stream_name":"stderr","time":18.951235913,"data":"    Found GPU0 Tesla P100-PCIE-16GB which is of cuda capability 6.0.\n"}
+,{"stream_name":"stderr","time":18.951241243,"data":"    Minimum and Maximum cuda capability supported by this version of PyTorch is\n"}
+,{"stream_name":"stderr","time":18.951245854,"data":"    (7.0) - (12.0)\n"}
+,{"stream_name":"stderr","time":18.951250226,"data":"    \n"}
+,{"stream_name":"stderr","time":18.951254282,"data":"  queued_call()\n"}
+,{"stream_name":"stderr","time":18.951258186,"data":"/usr/local/lib/python3.12/dist-packages/torch/cuda/__init__.py:435: UserWarning: \n"}
+,{"stream_name":"stderr","time":18.951262231,"data":"    Please install PyTorch with a following CUDA\n"}
+,{"stream_name":"stderr","time":18.951266326,"data":"    configurations:  12.6 following instructions at\n"}
+,{"stream_name":"stderr","time":18.951270386,"data":"    https://pytorch.org/get-started/locally/\n"}
+,{"stream_name":"stderr","time":18.951274371,"data":"    \n"}
+,{"stream_name":"stderr","time":18.951278113,"data":"  queued_call()\n"}
+,{"stream_name":"stderr","time":18.951281929,"data":"/usr/local/lib/python3.12/dist-packages/torch/cuda/__init__.py:435: UserWarning: \n"}
+,{"stream_name":"stderr","time":18.951285967,"data":"Tesla P100-PCIE-16GB with CUDA capability sm_60 is not compatible with the current PyTorch installation.\n"}
+,{"stream_name":"stderr","time":18.951290158,"data":"The current PyTorch install supports CUDA capabilities sm_70 sm_75 sm_80 sm_86 sm_90 sm_100 sm_120.\n"}
+,{"stream_name":"stderr","time":18.951294277,"data":"If you want to use the Tesla P100-PCIE-16GB GPU with PyTorch, please check the instructions at https://pytorch.org/get-started/locally/\n"}
+,{"stream_name":"stderr","time":18.95129843,"data":"\n"}
+,{"stream_name":"stderr","time":18.951304383,"data":"  queued_call()\n"}
+,{"stream_name":"stderr","time":18.951312905,"data":"\n"}
+,{"stream_name":"stderr","time":18.951316113,"data":"/usr/local/lib/python3.12/dist-packages/torch/cuda/__init__.py:435: UserWarning: \n"}
+,{"stream_name":"stderr","time":18.951318794,"data":"    Found GPU0 Tesla P100-PCIE-16GB which is of cuda capability 6.0.\n"}
+,{"stream_name":"stderr","time":18.951321448,"data":"    Minimum and Maximum cuda capability supported by this version of PyTorch is\n"}
+,{"stream_name":"stderr","time":18.951324556,"data":"    (7.0) - (12.0)\n"}
+,{"stream_name":"stderr","time":18.951327199,"data":"    \n"}
+,{"stream_name":"stderr","time":18.951329649,"data":"  queued_call()\n"}
+,{"stream_name":"stderr","time":18.95133216,"data":"/usr/local/lib/python3.12/dist-packages/torch/cuda/__init__.py:435: UserWarning: \n"}
+,{"stream_name":"stderr","time":18.951334916,"data":"    Please install PyTorch with a following CUDA\n"}
+,{"stream_name":"stderr","time":18.951337543,"data":"    configurations:  12.6 following instructions at\n"}
+,{"stream_name":"stderr","time":18.951340122,"data":"    https://pytorch.org/get-started/locally/\n"}
+,{"stream_name":"stderr","time":18.951342684,"data":"    \n"}
+,{"stream_name":"stderr","time":18.951345211,"data":"  queued_call()\n"}
+,{"stream_name":"stderr","time":18.951347712,"data":"/usr/local/lib/python3.12/dist-packages/torch/cuda/__init__.py:435: UserWarning: \n"}
+,{"stream_name":"stderr","time":18.951360666,"data":"Tesla P100-PCIE-16GB with CUDA capability sm_60 is not compatible with the current PyTorch installation.\n"}
+,{"stream_name":"stderr","time":18.951363636,"data":"The current PyTorch install supports CUDA capabilities sm_70 sm_75 sm_80 sm_86 sm_90 sm_100 sm_120.\n"}
+,{"stream_name":"stderr","time":18.951366372,"data":"If you want to use the Tesla P100-PCIE-16GB GPU with PyTorch, please check the instructions at https://pytorch.org/get-started/locally/\n"}
+,{"stream_name":"stderr","time":18.95136922,"data":"\n"}
+,{"stream_name":"stderr","time":18.951371686,"data":"  queued_call()\n"}
+,{"stream_name":"stdout","time":21.620564239,"data":"mounts under /kaggle/input: ['competitions', 'datasets']\n"}
+,{"stream_name":"stdout","time":21.620603565,"data":"  competitions/: ['playground-series-s6e4']\n"}
+,{"stream_name":"stdout","time":21.620606855,"data":"  datasets/: ['miadul']\n"}
+,{"stream_name":"stdout","time":21.620609317,"data":"FALLBACK input_dir=/kaggle/input/competitions/playground-series-s6e4\n"}
+,{"stream_name":"stdout","time":25.162051393,"data":"extra_dataset resolved to /kaggle/input/datasets/miadul/irrigation-water-requirement-prediction-dataset/irrigation_prediction.csv\n"}
+,{"stream_name":"stdout","time":25.408701248,"data":"extra_dataset: loaded 10000 rows, dropped 0 test-row duplicates, kept 10000\n"}
+,{"stream_name":"stdout","time":37.418455949,"data":"Training until validation scores don't improve for 100 rounds\n"}
+,{"stream_name":"stdout","time":321.208645394,"data":"Early stopping, best iteration is:\n"}
+,{"stream_name":"stdout","time":321.208694833,"data":"[1125]\tvalid_0's multi_logloss: 0.0556923\n"}
+,{"stream_name":"stderr","time":1401.433422544,"data":"Traceback (most recent call last):\n"}
+,{"stream_name":"stderr","time":1401.433492609,"data":"  File \"\u003cstring\u003e\", line 1, in \u003cmodule\u003e\n"}
+,{"stream_name":"stderr","time":1401.433499516,"data":"  File \"/usr/local/lib/python3.12/dist-packages/papermill/execute.py\", line 131, in execute_notebook\n"}
+,{"stream_name":"stderr","time":1401.433555688,"data":"    raise_for_execution_errors(nb, output_path)\n"}
+,{"stream_name":"stderr","time":1401.433598513,"data":"  File \"/usr/local/lib/python3.12/dist-packages/papermill/execute.py\", line 251, in raise_for_execution_errors\n"}
+,{"stream_name":"stderr","time":1401.433831689,"data":"    raise error\n"}
+,{"stream_name":"stderr","time":1401.434348302,"data":"papermill.exceptions.PapermillExecutionError: \n"}
+,{"stream_name":"stderr","time":1401.434380193,"data":"---------------------------------------------------------------------------\n"}
+,{"stream_name":"stderr","time":1401.43438415,"data":"Exception encountered at \"In [7]\":\n"}
+,{"stream_name":"stderr","time":1401.434387361,"data":"---------------------------------------------------------------------------\n"}
+,{"stream_name":"stderr","time":1401.434390588,"data":"TabPFNLicenseError                        Traceback (most recent call last)\n"}
+,{"stream_name":"stderr","time":1401.434393646,"data":"/tmp/ipykernel_23/2124856208.py in \u003ccell line: 0\u003e()\n"}
+,{"stream_name":"stderr","time":1401.434397096,"data":"    126 cfg_path = pathlib.Path(\"/kaggle/working/iteration_config.yaml\")\n"}
+,{"stream_name":"stderr","time":1401.434413805,"data":"    127 cfg_path.write_text(CONFIG_YAML)\n"}
+,{"stream_name":"stderr","time":1401.434419486,"data":"--\u003e 128 metrics = run(\n"}
+,{"stream_name":"stderr","time":1401.434424791,"data":"    129     config_path=str(cfg_path),\n"}
+,{"stream_name":"stderr","time":1401.434429928,"data":"    130     input_dir=input_dir,\n"}
+,{"stream_name":"stderr","time":1401.434444495,"data":"\n"}
+,{"stream_name":"stderr","time":1401.434448045,"data":"/tmp/ipykernel_23/3902456292.py in run(config_path, input_dir, output_dir)\n"}
+,{"stream_name":"stderr","time":1401.434451556,"data":"    149 \n"}
+,{"stream_name":"stderr","time":1401.434454847,"data":"    150         for m in model_names:\n"}
+,{"stream_name":"stderr","time":1401.434458275,"data":"--\u003e 151             res = fit_one_fold(\n"}
+,{"stream_name":"stderr","time":1401.434463531,"data":"    152                 m, X_tr, y_tr, X_va, y_va, X_te_fold,\n"}
+,{"stream_name":"stderr","time":1401.434469856,"data":"    153                 _params_for(m), task, sample_weight=sw,\n"}
+,{"stream_name":"stderr","time":1401.43447228,"data":"\n"}
+,{"stream_name":"stderr","time":1401.434474496,"data":"/tmp/ipykernel_23/901504360.py in fit_one_fold(name, X_tr, y_tr, X_val, y_val, X_test, params, task, sample_weight)\n"}
+,{"stream_name":"stderr","time":1401.434476929,"data":"    322     if name not in FITTERS:\n"}
+,{"stream_name":"stderr","time":1401.434479161,"data":"    323         raise KeyError(f\"unknown model {name!r}; known: {sorted(FITTERS)}\")\n"}
+,{"stream_name":"stderr","time":1401.434481565,"data":"--\u003e 324     return FITTERS[name](X_tr, y_tr, X_val, y_val, X_test, params, task, sample_weight=sample_weight)\n"}
+,{"stream_name":"stderr","time":1401.434483978,"data":"    325 \n"}
+,{"stream_name":"stderr","time":1401.434486159,"data":"    326 \n"}
+,{"stream_name":"stderr","time":1401.434488356,"data":"\n"}
+,{"stream_name":"stderr","time":1401.434491028,"data":"/tmp/ipykernel_23/901504360.py in _tabpfn_bagged_fit(X_tr, y_tr, X_val, y_val, X_test, params, task, sample_weight)\n"}
+,{"stream_name":"stderr","time":1401.434493376,"data":"    182             random_state=int(rng.integers(0, 2**31 - 1)),\n"}
+,{"stream_name":"stderr","time":1401.434496194,"data":"    183         )\n"}
+,{"stream_name":"stderr","time":1401.434510181,"data":"--\u003e 184         clf.fit(X_bag, y_bag)\n"}
+,{"stream_name":"stderr","time":1401.434514546,"data":"    185         val_sum += clf.predict_proba(X_val_num)\n"}
+,{"stream_name":"stderr","time":1401.434518941,"data":"    186         test_sum += clf.predict_proba(X_test_num)\n"}
+,{"stream_name":"stderr","time":1401.434523058,"data":"\n"}
+,{"stream_name":"stderr","time":1401.434526835,"data":"/usr/lib/python3.12/contextlib.py in inner(*args, **kwds)\n"}
+,{"stream_name":"stderr","time":1401.434530332,"data":"     79         def inner(*args, **kwds):\n"}
+,{"stream_name":"stderr","time":1401.434533695,"data":"     80             with self._recreate_cm():\n"}
+,{"stream_name":"stderr","time":1401.434537098,"data":"---\u003e 81                 return func(*args, **kwds)\n"}
+,{"stream_name":"stderr","time":1401.434540665,"data":"     82         return inner\n"}
+,{"stream_name":"stderr","time":1401.434544019,"data":"     83 \n"}
+,{"stream_name":"stderr","time":1401.434547343,"data":"\n"}
+,{"stream_name":"stderr","time":1401.434550698,"data":"/usr/local/lib/python3.12/dist-packages/tabpfn_common_utils/telemetry/core/decorators.py in wrapper(*args, **kwargs)\n"}
+,{"stream_name":"stderr","time":1401.434554325,"data":"    319         @functools.wraps(func)\n"}
+,{"stream_name":"stderr","time":1401.434557754,"data":"    320         def wrapper(*args: Any, **kwargs: Any) -\u003e Any:\n"}
+,{"stream_name":"stderr","time":1401.434562257,"data":"--\u003e 321             return _safe_call_with_telemetry(\n"}
+,{"stream_name":"stderr","time":1401.434565786,"data":"    322                 func, args, kwargs, model_method, param_names\n"}
+,{"stream_name":"stderr","time":1401.434571061,"data":"    323             )\n"}
+,{"stream_name":"stderr","time":1401.434578617,"data":"\n"}
+,{"stream_name":"stderr","time":1401.434584523,"data":"/usr/local/lib/python3.12/dist-packages/tabpfn_common_utils/telemetry/core/decorators.py in _safe_call_with_telemetry(func, args, kwargs, model_method, param_names)\n"}
+,{"stream_name":"stderr","time":1401.434587149,"data":"    363     # Step 2: Run the actual function\n"}
+,{"stream_name":"stderr","time":1401.434589428,"data":"    364     start = time.perf_counter()\n"}
+,{"stream_name":"stderr","time":1401.434592548,"data":"--\u003e 365     result = func(*args, **kwargs)\n"}
+,{"stream_name":"stderr","time":1401.434606244,"data":"    366     duration_ms = int((time.perf_counter() - start) * 1000)\n"}
+,{"stream_name":"stderr","time":1401.434610494,"data":"    367 \n"}
+,{"stream_name":"stderr","time":1401.434614612,"data":"\n"}
+,{"stream_name":"stderr","time":1401.434618561,"data":"/usr/local/lib/python3.12/dist-packages/tabpfn/classifier.py in fit(self, X, y)\n"}
+,{"stream_name":"stderr","time":1401.434622561,"data":"    760 \n"}
+,{"stream_name":"stderr","time":1401.434625903,"data":"    761         static_seed, _ = infer_random_state(self.random_state)\n"}
+,{"stream_name":"stderr","time":1401.434629455,"data":"--\u003e 762         byte_size = self._initialize_model_variables()\n"}
+,{"stream_name":"stderr","time":1401.434632984,"data":"    763         ensemble_configs, X, y = self._initialize_dataset_preprocessing(\n"}
+,{"stream_name":"stderr","time":1401.434636476,"data":"    764             X=X, y=y, random_state=static_seed\n"}
+,{"stream_name":"stderr","time":1401.434639864,"data":"\n"}
+,{"stream_name":"stderr","time":1401.434643041,"data":"/usr/local/lib/python3.12/dist-packages/tabpfn/classifier.py in _initialize_model_variables(self)\n"}
+,{"stream_name":"stderr","time":1401.434646569,"data":"    570             The determined byte_size.\n"}
+,{"stream_name":"stderr","time":1401.434649943,"data":"    571         \"\"\"\n"}
+,{"stream_name":"stderr","time":1401.434653326,"data":"--\u003e 572         return initialize_model_variables_helper(self, self.estimator_type)\n"}
+,{"stream_name":"stderr","time":1401.434656893,"data":"    573 \n"}
+,{"stream_name":"stderr","time":1401.434660075,"data":"    574     def _initialize_for_differentiable_input(\n"}
+,{"stream_name":"stderr","time":1401.434663403,"data":"\n"}
+,{"stream_name":"stderr","time":1401.434666588,"data":"/usr/local/lib/python3.12/dist-packages/tabpfn/base.py in initialize_model_variables_helper(calling_instance, model_type)\n"}
+,{"stream_name":"stderr","time":1401.434670226,"data":"    377     \"\"\"\n"}
+,{"stream_name":"stderr","time":1401.434673614,"data":"    378     models, architecture_configs, maybe_bardist, inference_config = (\n"}
+,{"stream_name":"stderr","time":1401.434679265,"data":"--\u003e 379         initialize_tabpfn_model(\n"}
+,{"stream_name":"stderr","time":1401.43468564,"data":"    380             model_path=calling_instance.model_path,  # pyright: ignore[reportArgumentType]\n"}
+,{"stream_name":"stderr","time":1401.434700347,"data":"    381             which=model_type,\n"}
+,{"stream_name":"stderr","time":1401.43470489,"data":"\n"}
+,{"stream_name":"stderr","time":1401.434708862,"data":"/usr/local/lib/python3.12/dist-packages/tabpfn/base.py in initialize_tabpfn_model(model_path, which, fit_mode)\n"}
+,{"stream_name":"stderr","time":1401.434713051,"data":"    183         if which == \"classifier\":\n"}
+,{"stream_name":"stderr","time":1401.434717125,"data":"    184             models, _, architecture_configs, inference_config = (\n"}
+,{"stream_name":"stderr","time":1401.434720528,"data":"--\u003e 185                 load_model_criterion_config(\n"}
+,{"stream_name":"stderr","time":1401.434723977,"data":"    186                     model_path=model_path,  # pyright: ignore[reportArgumentType]\n"}
+,{"stream_name":"stderr","time":1401.434730891,"data":"    187                     # The classifier's bar distribution is not used\n"}
+,{"stream_name":"stderr","time":1401.434734526,"data":"\n"}
+,{"stream_name":"stderr","time":1401.434738297,"data":"/usr/local/lib/python3.12/dist-packages/tabpfn/model_loading.py in load_model_criterion_config(model_path, check_bar_distribution_criterion, cache_trainset_representation, which, version, download_if_not_exists)\n"}
+,{"stream_name":"stderr","time":1401.434743802,"data":"    645                         f\"Then place it at: {path}\",\n"}
+,{"stream_name":"stderr","time":1401.434747511,"data":"    646                     ) from res[0]\n"}
+,{"stream_name":"stderr","time":1401.434750906,"data":"--\u003e 647                 raise res[0]\n"}
+,{"stream_name":"stderr","time":1401.434754292,"data":"    648 \n"}
+,{"stream_name":"stderr","time":1401.434757495,"data":"    649         loaded_model, criterion, architecture_config, inference_config = load_model(\n"}
+,{"stream_name":"stderr","time":1401.43476097,"data":"\n"}
+,{"stream_name":"stderr","time":1401.434764194,"data":"/usr/local/lib/python3.12/dist-packages/tabpfn/model_loading.py in _download_model(to, version, which, model_name)\n"}
+,{"stream_name":"stderr","time":1401.434767771,"data":"    470             from tabpfn.browser_auth import ensure_license_accepted  # noqa: PLC0415\n"}
+,{"stream_name":"stderr","time":1401.434775956,"data":"    471 \n"}
+,{"stream_name":"stderr","time":1401.43477883,"data":"--\u003e 472             ensure_license_accepted(hf_repo_id=_HF_REPOS[version])\n"}
+,{"stream_name":"stderr","time":1401.434781952,"data":"    473         except Exception as e:  # noqa: BLE001\n"}
+,{"stream_name":"stderr","time":1401.434796051,"data":"    474             return [e]\n"}
+,{"stream_name":"stderr","time":1401.434800123,"data":"\n"}
+,{"stream_name":"stderr","time":1401.434803978,"data":"/usr/local/lib/python3.12/dist-packages/tabpfn/browser_auth.py in ensure_license_accepted(hf_repo_id)\n"}
+,{"stream_name":"stderr","time":1401.434808436,"data":"    600     token = try_browser_login(gui_url, hf_repo_id=hf_repo_id)\n"}
+,{"stream_name":"stderr","time":1401.434812229,"data":"    601     if token is None:\n"}
+,{"stream_name":"stderr","time":1401.434815545,"data":"--\u003e 602         raise TabPFNLicenseError(\n"}
+,{"stream_name":"stderr","time":1401.434818923,"data":"    603             \"TabPFN requires a one-time license acceptance to download\\n\"\n"}
+,{"stream_name":"stderr","time":1401.434822549,"data":"    604             \"model weights for local inference, but no interactive terminal\\n\"\n"}
+,{"stream_name":"stderr","time":1401.434826097,"data":"\n"}
+,{"stream_name":"stderr","time":1401.434829273,"data":"TabPFNLicenseError: TabPFN requires a one-time license acceptance to download\n"}
+,{"stream_name":"stderr","time":1401.434832659,"data":"model weights for local inference, but no interactive terminal\n"}
+,{"stream_name":"stderr","time":1401.434836107,"data":"is available.\n"}
+,{"stream_name":"stderr","time":1401.43483936,"data":"\n"}
+,{"stream_name":"stderr","time":1401.434842585,"data":"To authenticate in a non-interactive environment:\n"}
+,{"stream_name":"stderr","time":1401.434848773,"data":"  1. Open https://ux.priorlabs.ai in a browser and log in (or register)\n"}
+,{"stream_name":"stderr","time":1401.434852276,"data":"  2. Accept the license on the Licenses tab\n"}
+,{"stream_name":"stderr","time":1401.434855583,"data":"  3. Copy your API Key from https://ux.priorlabs.ai/account\n"}
+,{"stream_name":"stderr","time":1401.434859006,"data":"  4. Set the environment variable: export TABPFN_TOKEN=\"\u003cyour-api-key\u003e\"\n"}
+,{"stream_name":"stderr","time":1401.434872812,"data":"     or in Python (before calling .fit()): import os; os.environ[\"TABPFN_TOKEN\"] = \"\u003cyour-api-key\u003e\"\n"}
+,{"stream_name":"stderr","time":1401.434876616,"data":"\n"}
+,{"stream_name":"stderr","time":1403.588714037,"data":"/usr/local/lib/python3.12/dist-packages/mistune.py:435: SyntaxWarning: invalid escape sequence '\\|'\n"}
+,{"stream_name":"stderr","time":1403.588741051,"data":"  cells[i][c] = re.sub('\\\\\\\\\\|', '|', cell)\n"}
+,{"stream_name":"stderr","time":1403.736281203,"data":"/usr/local/lib/python3.12/dist-packages/nbconvert/filters/filter_links.py:36: SyntaxWarning: invalid escape sequence '\\_'\n"}
+,{"stream_name":"stderr","time":1403.736311077,"data":"  text = re.sub(r'_', '\\_', text) # Escape underscores in display text\n"}
+,{"stream_name":"stderr","time":1404.407783548,"data":"[NbConvertApp] Converting notebook __notebook__.ipynb to notebook\n"}
+,{"stream_name":"stderr","time":1404.721933005,"data":"[NbConvertApp] Writing 113367 bytes to __notebook__.ipynb\n"}
+,{"stream_name":"stderr","time":1407.152503931,"data":"[NbConvertApp] Converting notebook __notebook__.ipynb to html\n"}
+,{"stream_name":"stderr","time":1408.248331607,"data":"[NbConvertApp] Writing 631959 bytes to __results__.html\n"}
+]
