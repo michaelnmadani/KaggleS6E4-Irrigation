@@ -1,0 +1,40 @@
+config: /kaggle/working/iteration_config.yaml
+train=(640000, 19)  test=(270000, 19)  external_rows=10000
+target encoded: {0: 'High', 1: 'Low', 2: 'Medium'}
+global features: ['fill_na_median', 's6e4_threshold_booleans', 's6e4_interactions', 'label_encode'] -> 32 cols
+per-fold features: ['target_encode_multiclass']
+fold 0 lgbm: balanced_accuracy=0.96810
+fold 0 xgb: balanced_accuracy=0.96810
+fold 0 catboost: balanced_accuracy=0.97020
+fold 1 lgbm: balanced_accuracy=0.96915
+fold 1 xgb: balanced_accuracy=0.96887
+fold 1 catboost: balanced_accuracy=0.97097
+fold 2 lgbm: balanced_accuracy=0.96777
+fold 2 xgb: balanced_accuracy=0.96756
+fold 2 catboost: balanced_accuracy=0.96890
+fold 3 lgbm: balanced_accuracy=0.96900
+fold 3 xgb: balanced_accuracy=0.96878
+fold 3 catboost: balanced_accuracy=0.97256
+fold 4 lgbm: balanced_accuracy=0.96704
+fold 4 xgb: balanced_accuracy=0.96675
+fold 4 catboost: balanced_accuracy=0.97071
+fold 5 lgbm: balanced_accuracy=0.96812
+fold 5 xgb: balanced_accuracy=0.96667
+fold 5 catboost: balanced_accuracy=0.97001
+fold 6 lgbm: balanced_accuracy=0.96778
+fold 6 xgb: balanced_accuracy=0.96831
+fold 6 catboost: balanced_accuracy=0.97067
+fold 7 lgbm: balanced_accuracy=0.96796
+fold 7 xgb: balanced_accuracy=0.96719
+fold 7 catboost: balanced_accuracy=0.97058
+fold 8 lgbm: balanced_accuracy=0.96649
+fold 8 xgb: balanced_accuracy=0.96579
+fold 8 catboost: balanced_accuracy=0.96878
+fold 9 lgbm: balanced_accuracy=0.96193
+fold 9 xgb: balanced_accuracy=0.95981
+fold 9 catboost: balanced_accuracy=0.96441
+model lgbm: CV balanced_accuracy=0.96733
+model xgb: CV balanced_accuracy=0.96678
+model catboost: CV balanced_accuracy=0.96978
+blend weights (manual): {'lgbm': 0.25, 'xgb': 0.1, 'catboost': 0.65}
+CV balanced_accuracy=0.96893  plain_acc=0.98504  balanced_acc=0.96893
