@@ -1,0 +1,29 @@
+config: /kaggle/working/iteration_config.yaml
+train=(640000, 19)  test=(270000, 19)  external_rows=10000
+target encoded: {0: 'High', 1: 'Low', 2: 'Medium'}
+global features: ['fill_na_median', 's6e4_threshold_booleans', 's6e4_interactions', 'label_encode'] -> 32 cols
+per-fold features: ['target_encode_multiclass']
+fold 0 lgbm: balanced_accuracy=0.96824
+fold 0 catboost: balanced_accuracy=0.97009
+fold 0 pytabkit_realmlp: balanced_accuracy=0.96279
+fold 1 lgbm: balanced_accuracy=0.96783
+fold 1 catboost: balanced_accuracy=0.96975
+fold 1 pytabkit_realmlp: balanced_accuracy=0.96295
+fold 2 lgbm: balanced_accuracy=0.96724
+fold 2 catboost: balanced_accuracy=0.97022
+fold 2 pytabkit_realmlp: balanced_accuracy=0.96226
+fold 3 lgbm: balanced_accuracy=0.96792
+fold 3 catboost: balanced_accuracy=0.97021
+fold 3 pytabkit_realmlp: balanced_accuracy=0.96287
+fold 4 lgbm: balanced_accuracy=0.96387
+fold 4 catboost: balanced_accuracy=0.96585
+fold 4 pytabkit_realmlp: balanced_accuracy=0.95786
+model lgbm: CV balanced_accuracy=0.96702
+model catboost: CV balanced_accuracy=0.96922
+model pytabkit_realmlp: CV balanced_accuracy=0.96175
+blend weights (manual): {'lgbm': 0.30000000000000004, 'catboost': 0.6000000000000001, 'pytabkit_realmlp': 0.10000000000000002}
+meta-stacker: pre=0.96794  meta=0.97155  delta=+0.00362  per_learner={'l2': 0.9707691918699305, 'l1': 0.9712259230143614, 'en': 0.9714396023167922}  weights={'l2': 0.32901810342266335, 'l1': 0.33424061029889496, 'en': 0.3367412862784418}  pruned=4/21
+meta-stacker applied (CV: 0.96794 -> 0.97155)
+caruana: pre=0.97155  caruana=0.96859  delta=-0.00296  weights={'lgbm': 0.3, 'catboost': 0.7, 'pytabkit_realmlp': 0.0}
+caruana skipped (did not improve)
+CV balanced_accuracy=0.97155  plain_acc=0.98100  balanced_acc=0.97155
