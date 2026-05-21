@@ -1,0 +1,62 @@
+[{"stream_name":"stderr","time":9.72508194,"data":"/usr/local/lib/python3.12/dist-packages/nbformat/__init__.py:96: MissingIDFieldWarning: Cell is missing an id field, this will become a hard error in future nbformat versions. You may want to use `normalize()` on your notebooks before validations (available since nbformat 5.1.4). Previous versions of nbformat are fixing this issue transparently, and will stop doing so in the future.\n"}
+,{"stream_name":"stderr","time":9.725204643,"data":"  validate(nb)\n"}
+,{"stream_name":"stderr","time":11.458807596,"data":"0.00s - Debugger warning: It seems that frozen modules are being used, which may\n"}
+,{"stream_name":"stderr","time":11.458850693,"data":"0.00s - make the debugger miss breakpoints. Please pass -Xfrozen_modules=off\n"}
+,{"stream_name":"stderr","time":11.458856587,"data":"0.00s - to python to disable frozen modules.\n"}
+,{"stream_name":"stderr","time":11.45886064,"data":"0.00s - Note: Debugging will proceed. Set PYDEVD_DISABLE_FILE_VALIDATION=1 to disable this validation.\n"}
+,{"stream_name":"stderr","time":12.457620848,"data":"0.00s - Debugger warning: It seems that frozen modules are being used, which may\n"}
+,{"stream_name":"stderr","time":12.457674272,"data":"0.00s - make the debugger miss breakpoints. Please pass -Xfrozen_modules=off\n"}
+,{"stream_name":"stderr","time":12.457681106999999,"data":"0.00s - to python to disable frozen modules.\n"}
+,{"stream_name":"stderr","time":12.457685558,"data":"0.00s - Note: Debugging will proceed. Set PYDEVD_DISABLE_FILE_VALIDATION=1 to disable this validation.\n"}
+,{"stream_name":"stdout","time":19.010953622,"data":"mounts under /kaggle/input: ['competitions', 'datasets']\n"}
+,{"stream_name":"stdout","time":19.011031133,"data":"  competitions/: ['playground-series-s6e4']\n"}
+,{"stream_name":"stdout","time":19.011037642,"data":"  datasets/: ['miadul']\n"}
+,{"stream_name":"stdout","time":19.011041591,"data":"FALLBACK input_dir=/kaggle/input/competitions/playground-series-s6e4\n"}
+,{"stream_name":"stdout","time":23.452008483,"data":"extra_dataset resolved to /kaggle/input/datasets/miadul/irrigation-water-requirement-prediction-dataset/irrigation_prediction.csv\n"}
+,{"stream_name":"stdout","time":23.711754994,"data":"extra_dataset: loaded 10000 rows, dropped 0 test-row duplicates, kept 10000\n"}
+,{"stream_name":"stdout","time":12137.533772361,"data":"{\n"}
+,{"stream_name":"stdout","time":12137.533852992,"data":"  \"cv_score\": 0.9693189508389128,\n"}
+,{"stream_name":"stdout","time":12137.533858526,"data":"  \"metric\": \"balanced_accuracy\",\n"}
+,{"stream_name":"stdout","time":12137.533862226,"data":"  \"plain_accuracy\": 0.9844625,\n"}
+,{"stream_name":"stdout","time":12137.533865651,"data":"  \"balanced_accuracy\": 0.9693189508389128,\n"}
+,{"stream_name":"stdout","time":12137.533869134,"data":"  \"fold_scores\": [\n"}
+,{"stream_name":"stdout","time":12137.533872517,"data":"    0.9704283439764536,\n"}
+,{"stream_name":"stdout","time":12137.53387558,"data":"    0.9704992236054922,\n"}
+,{"stream_name":"stdout","time":12137.533878857,"data":"    0.9678120317006472,\n"}
+,{"stream_name":"stdout","time":12137.533882076,"data":"    0.9715439368557744,\n"}
+,{"stream_name":"stdout","time":12137.533885341,"data":"    0.9707534359121294,\n"}
+,{"stream_name":"stdout","time":12137.533888571,"data":"    0.9700669793830322,\n"}
+,{"stream_name":"stdout","time":12137.533891616,"data":"    0.9706644645848946,\n"}
+,{"stream_name":"stdout","time":12137.533894769,"data":"    0.9698902995691991,\n"}
+,{"stream_name":"stdout","time":12137.533897864,"data":"    0.9676604513035333,\n"}
+,{"stream_name":"stdout","time":12137.533900907,"data":"    0.963872265077657\n"}
+,{"stream_name":"stdout","time":12137.533904225,"data":"  ],\n"}
+,{"stream_name":"stdout","time":12137.53400242,"data":"  \"fold_mean\": 0.9693191431968813,\n"}
+,{"stream_name":"stdout","time":12137.534007374,"data":"  \"fold_std\": 0.0021683245112916554,\n"}
+,{"stream_name":"stdout","time":12137.534010202,"data":"  \"per_class_recall\": {\n"}
+,{"stream_name":"stdout","time":12137.534012696,"data":"    \"High\": 0.941391426563598,\n"}
+,{"stream_name":"stdout","time":12137.534015154,"data":"    \"Low\": 0.9956916395453735,\n"}
+,{"stream_name":"stdout","time":12137.534017587,"data":"    \"Medium\": 0.970873786407767\n"}
+,{"stream_name":"stdout","time":12137.534020194,"data":"  },\n"}
+,{"stream_name":"stdout","time":12137.534022537,"data":"  \"elapsed_sec\": 12118.6,\n"}
+,{"stream_name":"stdout","time":12137.53402526,"data":"  \"model\": \"catboost\",\n"}
+,{"stream_name":"stdout","time":12137.534027946,"data":"  \"per_model_cv\": {\n"}
+,{"stream_name":"stdout","time":12137.534030628,"data":"    \"catboost\": 0.9693189508389128\n"}
+,{"stream_name":"stdout","time":12137.534033211,"data":"  },\n"}
+,{"stream_name":"stdout","time":12137.534035674,"data":"  \"blend_weights\": {\n"}
+,{"stream_name":"stdout","time":12137.534038084,"data":"    \"catboost\": 1.0\n"}
+,{"stream_name":"stdout","time":12137.534040583,"data":"  },\n"}
+,{"stream_name":"stdout","time":12137.534042926,"data":"  \"postprocess\": null,\n"}
+,{"stream_name":"stdout","time":12137.53404577,"data":"  \"n_features\": 124,\n"}
+,{"stream_name":"stdout","time":12137.534048318,"data":"  \"n_train\": 640000,\n"}
+,{"stream_name":"stdout","time":12137.534050876,"data":"  \"n_test\": 270000\n"}
+,{"stream_name":"stdout","time":12137.534053418,"data":"}\n"}
+,{"stream_name":"stderr","time":12143.647925203,"data":"/usr/local/lib/python3.12/dist-packages/mistune.py:435: SyntaxWarning: invalid escape sequence '\\|'\n"}
+,{"stream_name":"stderr","time":12143.647995735,"data":"  cells[i][c] = re.sub('\\\\\\\\\\|', '|', cell)\n"}
+,{"stream_name":"stderr","time":12143.988686089,"data":"/usr/local/lib/python3.12/dist-packages/nbconvert/filters/filter_links.py:36: SyntaxWarning: invalid escape sequence '\\_'\n"}
+,{"stream_name":"stderr","time":12143.988737731,"data":"  text = re.sub(r'_', '\\_', text) # Escape underscores in display text\n"}
+,{"stream_name":"stderr","time":12145.088402781,"data":"[NbConvertApp] Converting notebook __notebook__.ipynb to notebook\n"}
+,{"stream_name":"stderr","time":12145.540902588,"data":"[NbConvertApp] Writing 68146 bytes to __notebook__.ipynb\n"}
+,{"stream_name":"stderr","time":12149.365524651,"data":"[NbConvertApp] Converting notebook __notebook__.ipynb to html\n"}
+,{"stream_name":"stderr","time":12150.983360621,"data":"[NbConvertApp] Writing 522390 bytes to __results__.html\n"}
+]
