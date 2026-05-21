@@ -1,0 +1,80 @@
+
+# Iteration 007 (website V19) — RealMLP port of the 0.97802-CV reference notebook.
+#
+# Copies the mahoganybuttstrings/pg-s6e4-realmlp approach verbatim:
+# - RealMLP deep model with PBLD periodic numeric embeddings, 8-head parallel
+#   ensemble, flat-cos LR schedule, label smoothing + dropout schedules
+# - FE: duplicate numerics (_2), factorize ALL cats+nums to int codes, add 15
+#   pairwise-concat interactions over the 6 generator columns
+# - Kernel: GPU-enabled (T4), internet-enabled (to pip install pytabkit/sklearn)
+# - NB uses sklearn==1.5.2's TargetEncoder(target_type='multiclass', cv=5).
+#   Our custom target_encode_multiclass is equivalent for this purpose.
+# Target: CV >= 0.975 to validate the port before moving on to V20+ blending.
+
+target: Irrigation_Need
+id_col: id
+task: multiclass
+metric: balanced_accuracy
+
+class_weights: balanced
+
+extra_dataset:
+  slug: miadul/irrigation-water-requirement-prediction-dataset
+  file: irrigation_prediction.csv
+  weight: 1.0             # NB appends original at full weight; not down-weighted
+
+kernel:
+  enable_gpu: true
+  enable_internet: true   # needed to pip install deps (sklearn 1.5.2)
+
+pip_install:
+  # Kaggle's base torch 2.10 dropped sm_60 (P100) support. Force 2.4.1 which
+  # still ships kernels for sm_60-sm_90, covering both T4 and P100 allocations.
+  - torch==2.4.1 torchvision==0.19.1 --index-url https://download.pytorch.org/whl/cu121
+  - scikit-learn==1.5.2
+
+extra_modules:
+  - realmlp               # include pipeline/src/realmlp.py in the notebook
+
+features:
+  - s6e4_realmlp_fe       # dup numerics + factorize all + pairwise interactions
+  - target_encode_multiclass   # per-fold multiclass TE on the factorized columns
+
+model: realmlp
+
+params:
+  n_ens: 8
+  embed_dim: 6
+  onehot_thresh: 8
+  hidden_dims: [512, 64, 128]
+  dropout: 0.05
+  activation: silu
+  pbld_hidden_dim: 20
+  pbld_out_dim: 5
+  pbld_freq_scale: 1.0
+  pbld_activation: gelu
+  pbld_lr_factor: 0.1
+  lr: 0.01
+  lr_sched: flat_cos
+  flat_ratio: 0.3
+  first_layer_lr_factor: 1.0
+  lr_scale_mult: 10.0
+  lr_bias_mult: 0.1
+  weight_decay: 0.01
+  wd_scale_mult: 0.1
+  wd_bias_mult: 0.5
+  grad_clip: 1.0
+  ls_eps: 0.04
+  ls_eps_sched: cos
+  p_drop_sched: expm4t
+  epochs: 3
+  train_bs: 256
+  eval_bs: 10240
+  tfms: [median_center, robust_scale, smooth_clip]
+  device: cuda
+  verbosity: 1
+
+cv:
+  n_splits: 5
+  seed: 42
+  stratified: true

@@ -1,0 +1,12 @@
+config: /kaggle/working/iteration_config.yaml
+train=(640000, 19)  test=(270000, 19)  external_rows=10000
+target encoded: {0: 'High', 1: 'Low', 2: 'Medium'}
+global features: ['s6e4_realmlp_fe'] -> 39 cols
+per-fold features: ['target_encode_multiclass']
+fold 0 realmlp: balanced_accuracy=0.96489
+fold 1 realmlp: balanced_accuracy=0.96093
+fold 2 realmlp: balanced_accuracy=0.95356
+fold 3 realmlp: balanced_accuracy=0.96486
+fold 4 realmlp: balanced_accuracy=0.95532
+model realmlp: CV balanced_accuracy=0.95991
+CV balanced_accuracy=0.95991  plain_acc=0.98199  balanced_acc=0.95991
