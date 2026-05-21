@@ -1,0 +1,16 @@
+config: /kaggle/working/iteration_config.yaml
+train=(640000, 19)  test=(270000, 19)  external_rows=10000
+target encoded: {0: 'High', 1: 'Low', 2: 'Medium'}
+global features: ['fill_na_median', 's6e4_digit_extraction_wide', 's6e4_freq_filter_cats'] -> 118 cols
+per-fold features: ['ordered_te']
+=== Computing adversarial-validation weights ===
+AV weights: mean=1.0000 median=1.0016 p10=0.9357 p90=1.0632
+fold 0 xgb: balanced_accuracy=0.97575
+fold 1 xgb: balanced_accuracy=0.97423
+fold 2 xgb: balanced_accuracy=0.97549
+fold 3 xgb: balanced_accuracy=0.97421
+fold 4 xgb: balanced_accuracy=0.97106
+model xgb: CV balanced_accuracy=0.97415
+class_weight_optuna: pre=0.97415  post=0.97478  delta=+0.00063  weights=[2.1011977720584865, 1.6192249896528885, 1.4792410547565897]
+class_weight_optuna applied (CV: 0.97415 -> 0.97478)
+CV balanced_accuracy=0.97478  plain_acc=0.98171  balanced_acc=0.97478
