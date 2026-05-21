@@ -1,0 +1,23 @@
+config: /kaggle/working/iteration_config.yaml
+train=(640000, 19)  test=(270000, 19)  external_rows=10000
+target encoded: {0: 'High', 1: 'Low', 2: 'Medium'}
+global features: ['fill_na_median', 's6e4_digit_extraction_wide', 's6e4_cat_pair_combined_keys', 's6e4_freq_filter_cats'] -> 133 cols
+per-fold features: ['ordered_te']
+fold 0 xgb: balanced_accuracy=0.97545
+fold 0 catboost: balanced_accuracy=0.97439
+fold 1 xgb: balanced_accuracy=0.97419
+fold 1 catboost: balanced_accuracy=0.97371
+fold 2 xgb: balanced_accuracy=0.97547
+fold 2 catboost: balanced_accuracy=0.97365
+fold 3 xgb: balanced_accuracy=0.97448
+fold 3 catboost: balanced_accuracy=0.97328
+fold 4 xgb: balanced_accuracy=0.97131
+fold 4 catboost: balanced_accuracy=0.96884
+model xgb: CV balanced_accuracy=0.97418
+model catboost: CV balanced_accuracy=0.97278
+blend weights (manual): {'xgb': 0.6, 'catboost': 0.4}
+meta-stacker: pre=0.97397  meta=0.97525  delta=+0.00128  per_learner={'l2': 0.9751668560196526, 'l1': 0.9753226709491916, 'en': 0.9751281565148643}  weights={'l2': 0.3328054887724488, 'l1': 0.3349068532951854, 'en': 0.33228765793236587}  pruned=6/18
+meta-stacker applied (CV: 0.97397 -> 0.97525)
+class_weight_optuna: pre=0.97525  post=0.97552  delta=+0.00027  weights=[1.0638992788000914, 2.7377958620177587, 0.7878625926248183]
+class_weight_optuna applied (CV: 0.97525 -> 0.97552)
+CV balanced_accuracy=0.97552  plain_acc=0.98146  balanced_acc=0.97552
